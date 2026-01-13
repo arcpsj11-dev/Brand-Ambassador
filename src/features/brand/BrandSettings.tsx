@@ -12,6 +12,8 @@ export const BrandSettings: React.FC = () => {
         address: brand.address,
         subjects: brand.subjects,
         philosophy: brand.philosophy,
+        equipment: brand.equipment,
+        facilities: brand.facilities,
         blogUrl: brand.blogUrl,
     });
 
@@ -199,6 +201,68 @@ export const BrandSettings: React.FC = () => {
                         value={formData.philosophy}
                         onChange={(e) => setFormData({ ...formData, philosophy: e.target.value })}
                     />
+                </div>
+
+                {/* 추가: 보유 장비 및 시설 관리 섹션 */}
+                <div className="glass-card p-6 space-y-4 md:col-span-2 border-brand-primary/20 bg-brand-primary/5">
+                    <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 text-brand-primary font-bold uppercase tracking-tighter italic">
+                            <Zap size={18} /> 도담의 보물들 (보유 장비)
+                        </label>
+                        <span className="text-[10px] text-brand-primary font-black uppercase tracking-widest bg-brand-primary/10 px-2 py-0.5 rounded-full">AI Match Enabled</span>
+                    </div>
+                    <textarea
+                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 h-32 focus:outline-none focus:border-brand-primary/50 transition-colors placeholder:text-gray-600"
+                        placeholder="예: '수술 없이 디스크 치료 돕는 고가 감압치료기', '최신식 추나 전용 베드' 등"
+                        value={formData.equipment}
+                        onChange={(e) => setFormData({ ...formData, equipment: e.target.value })}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                        {['고가 감압치료기', '최신 추나 베드', '정밀 ICT 장비', '무중력 트랙션'].map(item => (
+                            <button
+                                key={item}
+                                type="button"
+                                onClick={() => {
+                                    const current = formData.equipment ? formData.equipment + ', ' : '';
+                                    if (!current.includes(item)) {
+                                        setFormData({ ...formData, equipment: current + item });
+                                    }
+                                }}
+                                className="text-[10px] bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-gray-400 hover:text-brand-primary hover:border-brand-primary/50 transition-all font-bold"
+                            >
+                                + {item}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="glass-card p-6 space-y-4 md:col-span-2 border-brand-accent/20 bg-brand-accent/5">
+                    <label className="flex items-center gap-2 text-brand-accent font-bold uppercase tracking-tighter italic">
+                        <Building2 size={18} /> 편의 시설 & 환경
+                    </label>
+                    <textarea
+                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 h-24 focus:outline-none focus:border-brand-accent/50 transition-colors placeholder:text-gray-600"
+                        placeholder="예: '무료 주차 가능', '카페 같은 넓은 대기실', '프라이빗 1인 진료실' 등"
+                        value={formData.facilities}
+                        onChange={(e) => setFormData({ ...formData, facilities: e.target.value })}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                        {['넓은 주차장', '1인 진료실', '카페형 대기실', '키즈존'].map(item => (
+                            <button
+                                key={item}
+                                type="button"
+                                onClick={() => {
+                                    const current = formData.facilities ? formData.facilities + ', ' : '';
+                                    if (!current.includes(item)) {
+                                        setFormData({ ...formData, facilities: current + item });
+                                    }
+                                }}
+                                className="text-[10px] bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-gray-400 hover:text-brand-accent hover:border-brand-accent/50 transition-all font-bold"
+                            >
+                                + {item}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <motion.button

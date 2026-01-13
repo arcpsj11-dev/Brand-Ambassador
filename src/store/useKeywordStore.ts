@@ -18,7 +18,9 @@ interface KeywordState {
     keywords: Keyword[];
     addKeywords: (newKeywords: Keyword[]) => void;
     deleteKeyword: (id: string) => void;
+    deleteKeywords: (ids: string[]) => void;
     restoreKeyword: (id: string) => void;
+    clearActiveKeywords: () => void;
     permanentlyDelete: () => void;
 }
 
@@ -36,10 +38,22 @@ export const useKeywordStore = create<KeywordState>()(
                         k.id === id ? { ...k, isDeleted: true, deletedAt: Date.now() } : k
                     ),
                 })),
+            deleteKeywords: (ids) =>
+                set((state) => ({
+                    keywords: state.keywords.map((k) =>
+                        ids.includes(k.id) ? { ...k, isDeleted: true, deletedAt: Date.now() } : k
+                    ),
+                })),
             restoreKeyword: (id) =>
                 set((state) => ({
                     keywords: state.keywords.map((k) =>
                         k.id === id ? { ...k, isDeleted: false, deletedAt: undefined } : k
+                    ),
+                })),
+            clearActiveKeywords: () =>
+                set((state) => ({
+                    keywords: state.keywords.map((k) =>
+                        !k.isDeleted ? { ...k, isDeleted: true, deletedAt: Date.now() } : k
                     ),
                 })),
             permanentlyDelete: () =>

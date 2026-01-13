@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrandSettings } from './features/brand/BrandSettings';
 import { KeywordVault } from './features/keywords/KeywordVault';
 import { MidnightScout } from './features/keywords/MidnightScout';
-import { ContentFactory } from './features/content/ContentFactory';
+import { MarketingCanvas } from './features/content/MarketingCanvas';
+import { ContentKitchen } from './features/content/ContentKitchen';
 import { JennyChat } from './components/JennyChat';
 import { useAuthStore } from './store/useAuthStore';
+import { useUIStore } from './store/useUIStore';
 import { Login } from './features/auth/Login';
 import { AdminDashboard } from './features/admin/AdminDashboard';
-import { LayoutDashboard, FileText, Database, Settings, Sparkles, Lock, BarChart, LogOut } from 'lucide-react';
+import { LayoutDashboard, Database, Settings, Sparkles, Lock, BarChart, LogOut, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'vault' | 'content' | 'settings' | 'admin'>('dashboard');
+  const { activeTab, setActiveTab, contentMode, setContentMode } = useUIStore();
 
   if (!isAuthenticated) {
     return <Login />;
@@ -21,7 +23,7 @@ const App: React.FC = () => {
   const navItems = [
     { id: 'dashboard', label: '대시보드', icon: LayoutDashboard, minTier: 'Free' },
     { id: 'vault', label: '키워드 보관소', icon: Database, minTier: 'Free' },
-    { id: 'content', label: '콘텐츠 공장', icon: FileText, minTier: 'Silver' },
+    { id: 'content', label: '마케팅 캔버스', icon: Calendar, minTier: 'Silver' },
     { id: 'settings', label: '브랜드 설정', icon: Settings, minTier: 'Free' },
   ];
 
@@ -44,7 +46,7 @@ const App: React.FC = () => {
           <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-neon">
             <Sparkles className="text-black" size={20} />
           </div>
-          <span className="font-black text-xl tracking-tight">JENNY <br /><span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em]">MARKETER</span></span>
+          <span className="font-black text-xl tracking-tight">WONJANG <br /><span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em]">AI DIRECTOR</span></span>
         </div>
 
         <nav className="flex-1 px-4 space-y-1 mt-4">
@@ -92,7 +94,7 @@ const App: React.FC = () => {
               <span className="text-gray-400 font-bold uppercase tracking-widest text-[9px]">{user?.tier} PLAN</span>
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             </div>
-            <p className="text-[10px] text-gray-600">제니 AI 엔진 가동 중</p>
+            <p className="text-[10px] text-gray-600">베테랑 원장 AI 엔진 가동 중</p>
           </div>
         </div>
       </aside>
@@ -110,7 +112,11 @@ const App: React.FC = () => {
             {activeTab === 'dashboard' && <MidnightScout />}
             {activeTab === 'vault' && <KeywordVault />}
             {activeTab === 'settings' && <BrandSettings />}
-            {activeTab === 'content' && <ContentFactory />}
+            {activeTab === 'content' && (
+              contentMode === 'canvas'
+                ? <MarketingCanvas />
+                : <ContentKitchen onBack={() => setContentMode('canvas')} />
+            )}
             {activeTab === 'admin' && <AdminDashboard />}
           </motion.div>
         </AnimatePresence>
