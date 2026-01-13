@@ -3,6 +3,7 @@ import { Lock, ChevronRight, Zap, Banana, Loader2 } from 'lucide-react';
 import { geminiReasoningService } from '../../services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlannerStore } from '../../store/usePlannerStore';
+import { useBrandStore } from '../../store/useBrandStore';
 import { useChatStore } from '../../store/useChatStore';
 import { useUIStore } from '../../store/useUIStore';
 
@@ -25,17 +26,9 @@ const MarketingCard: React.FC<{ plan: any; onClick: () => void }> = ({ plan, onC
             </div>
 
             <header className="flex justify-between items-start z-10">
-                <div className="flex flex-col gap-1">
-                    <span className={`text-[10px] font-black tracking-widest uppercase ${isDone ? 'text-yellow-500' : 'text-gray-500'}`}>
-                        Day {String(plan.day).padStart(2, '0')}
-                    </span>
-                    {plan.type && (
-                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-sm w-fit uppercase tracking-tighter ${plan.type === 'pillar' ? 'bg-brand-primary text-black' : 'bg-white/10 text-gray-400'
-                            }`}>
-                            {plan.set}-{plan.type}
-                        </span>
-                    )}
-                </div>
+                <span className={`text-[10px] font-black tracking-widest uppercase ${isDone ? 'text-yellow-500' : 'text-gray-500'}`}>
+                    Day {String(plan.day).padStart(2, '0')}
+                </span>
                 {isLocked ? <Lock size={14} className="text-gray-600" /> :
                     isDone ? <Banana size={16} className="text-yellow-500 fill-yellow-500 animate-pulse" /> :
                         <div className="w-2 h-2 rounded-full bg-brand-primary animate-pulse shadow-neon" />}
@@ -78,20 +71,27 @@ const MarketingCard: React.FC<{ plan: any; onClick: () => void }> = ({ plan, onC
 };
 
 export const MarketingCanvas: React.FC = () => {
+    const brand = useBrandStore();
     const ui = useUIStore();
     const { monthlyPlan, isScouted, persona, topic, setMonthlyPlan, setPersona, setTopic, setActiveDraft } = usePlannerStore();
     const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
 
     // [나노바나나] 지수 기반 전략 생성 엔진 (AI 리얼 생성)
     const generateChameleonStrategy = async () => {
-        if (!topic.trim()) {
-            alert('원장님, 마케팅 주제를 먼저 입력해 주세요! 🍌');
+        if (!persona.trim() || !topic.trim()) {
+            alert('원장님, 페르소나와 주제를 먼저 입력해주세요! 🍌');
             return;
         }
 
         setIsGeneratingTitles(true);
+        const score = brand.blogIndex;
+        let strat: 'A-READ+' | 'A-READ' | 'PASONA' = 'A-READ+';
+
+        if (score >= 30 && score < 70) strat = 'A-READ';
+        if (score >= 70) strat = 'PASONA';
+
         try {
-            const titles = await geminiReasoningService.generateMonthlyTitles(topic);
+            const titles = await geminiReasoningService.generateMonthlyTitles(topic, persona, strat);
             const planWithStatus = titles.map((t: any) => ({
                 ...t,
                 status: 'ready' as const
@@ -101,19 +101,12 @@ export const MarketingCanvas: React.FC = () => {
             const chat = useChatStore.getState();
             chat.addMessage({
                 role: 'assistant',
-                content: `원장님, 우리 이웃분들께 신뢰를 드릴 수 있는 30일치 클러스터링 전략을 수립했습니다. 🚀 
-
-**[전략 리포트]**
-- **Set A (1~10일)**: 질환 원인과 증상 중심의 의학 정보
-- **Set B (11~20일)**: 도담한의원의 고유 치료법과 시설 자랑
-- **Set C (21~30일)**: 주차, 진료시간 등 실제 내원 전환 유도
-
-각 세트의 첫 번째 글은 전체를 아우르는 '필러(Pillar)' 콘텐츠이며, 나머지는 이를 뒷받침하는 '클러스터(Cluster)' 콘텐츠입니다. 1번 카드부터 원장님의 진심을 담아 검토해 보시지요. ✨`
+                content: `원장님, 우리 이웃분들께 신뢰를 드릴 수 있는 30일치 제목들을 준비했습니다. 🚀 특히 ${strat} 전략을 녹여 전문가의 통찰력이 돋보이도록 구성했으니, 1번 카드부터 차근차근 검토해 보시지요. ✨`
             });
             chat.setIsOpen(true);
         } catch (error) {
             console.error("Titles Generation Error:", error);
-            alert("원장님, 전략 수립 중에 기술적인 결함이 발생했습니다. 다시 시도해 주세요. 🙏");
+            alert("원장님, 제목을 뽑는 중에 제니 회로에 바나나가 꼈나 봐요! 다시 시도해 주세요. 💦");
         } finally {
             setIsGeneratingTitles(false);
         }

@@ -8,8 +8,6 @@ export interface DailyPlan {
     topic: string;
     description: string;
     status: 'lock' | 'ready' | 'done';
-    type?: 'pillar' | 'cluster';
-    set?: 'A' | 'B' | 'C';
 }
 
 interface PlannerState {
