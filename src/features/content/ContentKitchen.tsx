@@ -2,18 +2,30 @@ import React, { useState } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { useBrandStore } from '../../store/useBrandStore';
 import { useChatStore } from '../../store/useChatStore';
+import { useContentStore } from '../../store/useContentStore';
+import { useStepStore } from '../../store/useStepStore';
 import { Wand2, ArrowLeft, Target, FileText, CheckCircle2, Lock, Bot, ImageIcon, Send, Rocket } from 'lucide-react';
 import { geminiReasoningService } from '../../services/geminiService';
+import { RiskFilterEngine } from '../../services/RiskFilterEngine';
+import { medicalRuleSet } from '../../services/MedicalRuleSet';
+import { RiskCheckPanel } from './RiskCheckPanel';
+import { SchedulePublish } from './SchedulePublish';
 
 export const ContentKitchen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const { activeDraft, updateDayStatus, setActiveDraft, persona } = usePlannerStore();
     const brand = useBrandStore();
     const chat = useChatStore();
+    const contentStore = useContentStore();
+    const { currentStep, canEditTitle } = useStepStore();
 
     const [content, setContent] = useState('');
     const [title, setTitle] = useState(activeDraft?.topic || '');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
+    const [riskCheckResult, setRiskCheckResult] = useState<any>(null);
+
+    // 리스크 필터 엔진 초기화
+    const riskFilter = new RiskFilterEngine(medicalRuleSet);
 
 
     const handleGenerateDraft = async () => {
@@ -40,6 +52,10 @@ export const ContentKitchen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 const filteredContent = fullContent.replace(/\[(?!IMAGE_PLACEHOLDER).*?\]/g, '');
                 setContent(filteredContent);
             }
+
+            // 생성 완료 후 리스크 체크
+            const result = riskFilter.checkContent(fullContent);
+            setRiskCheckResult(result);
         } catch (error) {
             console.error("AI Generation Error:", error);
             setContent("원장님, 제니 엔진에 바나나 껍질이 끼었나 봐요! 💦 다시 한번만 시도해 주시겠어요?");
@@ -110,7 +126,8 @@ export const ContentKitchen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                             <input
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full bg-transparent text-4xl font-black italic border-b border-white/10 pb-4 outline-none focus:border-brand-primary transition-all placeholder:opacity-20"
+                                disabled={!canEditTitle()}
+                                className={`w-full bg-transparent text-4xl font-black italic border-b border-white/10 pb-4 outline-none focus:border-brand-primary transition-all placeholder:opacity-20 ${!canEditTitle() ? 'cursor-not-allowed opacity-50' : ''}`}
                                 placeholder="제목을 입력하세요..."
                             />
                         </div>
@@ -279,9 +296,41 @@ export const ContentKitchen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                                 </div>
                             </div>
 
+                            {/* 리스크 체크 패널 */}
+                            {riskCheckResult && (
+                                <RiskCheckPanel
+                                    result={riskCheckResult}
+                                    onRecheck={() => {
+                                        const result = riskFilter.checkContent(content);
+                                        setRiskCheckResult(result);
+                                    }}
+                                />
+                            )}
+
+                            {/* 예약 발행 시스템 */}
+                            {content && riskCheckResult?.passed && (
+                                <SchedulePublish
+                                    onSchedule={(date) => {
+                                        // 콘텐츠 저장
+                                        contentStore.addContent({
+                                            title,
+                                            body: content,
+                                            status: 'SCHEDULED',
+                                            riskCheckPassed: true,
+                                            riskCheckResults: riskCheckResult,
+                                            scheduledPublishAt: date,
+                                        });
+                                        chat.addMessage({
+                                            role: 'assistant',
+                                            content: `원장님! 콘텐츠가 ${date.toLocaleString('ko-KR')}에 발행 예약되었습니다. 🎯`,
+                                        });
+                                    }}
+                                />
+                            )}
+
                             <button
                                 onClick={handlePublish}
-                                disabled={isPublished || !content}
+                                disabled={isPublished || !content || !riskCheckResult?.passed}
                                 className={`w-full p-6 rounded-3xl font-black text-xl italic uppercase tracking-tighter transition-all flex flex-col items-center justify-center gap-1 group relative overflow-hidden shadow-[0_20px_50px_rgba(234,179,8,0.2)] ${isPublished || !content ? 'bg-gray-800 text-gray-600 grayscale' : 'bg-brand-primary text-black hover:scale-105 active:scale-95'
                                     }`}
                             >

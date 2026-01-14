@@ -1,101 +1,91 @@
 import React from 'react';
-import { BrandSettings } from './features/brand/BrandSettings';
-import { KeywordVault } from './features/keywords/KeywordVault';
-import { MidnightScout } from './features/keywords/MidnightScout';
-import { MarketingCanvas } from './features/content/MarketingCanvas';
-import { ContentKitchen } from './features/content/ContentKitchen';
-import { JennyChat } from './components/JennyChat';
 import { useAuthStore } from './store/useAuthStore';
-import { useUIStore } from './store/useUIStore';
+import { useProfileStore } from './store/useProfileStore';
 import { Login } from './features/auth/Login';
-import { AdminDashboard } from './features/admin/AdminDashboard';
-import { LayoutDashboard, Database, Settings, Sparkles, Lock, BarChart, LogOut, Calendar } from 'lucide-react';
+import { ProfileSetup } from './features/profile/ProfileSetup';
+import { OPGConverter } from './features/opg/OPGConverter';
+import { TodayAction } from './features/dashboard/TodayAction';
+import { ContentArchive } from './features/content/ContentArchive';
+import { Step3UnlockOverlay } from './features/dashboard/Step3UnlockOverlay';
+import { BlogMetricCard } from './features/dashboard/BlogMetricCard';
+import { Sparkles, FileText, LogOut, LayoutDashboard, Database } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+type AppTab = 'dashboard' | 'opg' | 'archive' | 'profile';
 
 const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
-  const { activeTab, setActiveTab, contentMode, setContentMode } = useUIStore();
+  const { isProfileComplete } = useProfileStore();
+  const [activeTab, setActiveTab] = React.useState<AppTab>('dashboard');
 
   if (!isAuthenticated) {
     return <Login />;
   }
 
-  const navItems = [
-    { id: 'dashboard', label: '대시보드', icon: LayoutDashboard, minTier: 'Free' },
-    { id: 'vault', label: '키워드 보관소', icon: Database, minTier: 'Free' },
-    { id: 'content', label: '마케팅 캔버스', icon: Calendar, minTier: 'Silver' },
-    { id: 'settings', label: '브랜드 설정', icon: Settings, minTier: 'Free' },
-  ];
-
-  // 어드민 전용 메뉴 추가
-  if (user?.role === 'admin') {
-    navItems.push({ id: 'admin', label: '관리자 통계', icon: BarChart, minTier: 'Diamond' });
+  // 관리자는 프로파일 설정 건너뛰기 가능
+  // 일반 사용자는 프로파일 완료 필수
+  if (!isProfileComplete && user?.role !== 'admin') {
+    return <ProfileSetup />;
   }
 
-  const checkTierAccess = (minTier: string) => {
-    if (!user) return false;
-    const tiers = ['Free', 'Silver', 'Diamond'];
-    return tiers.indexOf(user.tier) >= tiers.indexOf(minTier);
-  };
+  const navItems = [
+    { id: 'dashboard' as AppTab, label: '대시보드', icon: LayoutDashboard },
+    { id: 'opg' as AppTab, label: '원내 홍보물', icon: FileText },
+    { id: 'archive' as AppTab, label: '콘텐츠 아카이브', icon: Database },
+    { id: 'profile' as AppTab, label: '프로파일 설정', icon: Sparkles },
+  ];
 
   return (
     <div className="min-h-screen flex bg-background text-white selection:bg-brand-primary/30">
+      <Step3UnlockOverlay />
       {/* Sidebar */}
       <aside className="w-64 border-r border-white/5 flex flex-col fixed h-full bg-background/50 backdrop-blur-xl z-50">
         <div className="p-8 flex items-center gap-3">
           <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-neon">
             <Sparkles className="text-black" size={20} />
           </div>
-          <span className="font-black text-xl tracking-tight">WONJANG <br /><span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em]">AI DIRECTOR</span></span>
+          <div>
+            <span className="font-black text-xl tracking-tight block">ANTIGRAVITY</span>
+            <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em]">MVP DEMO</span>
+          </div>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1 mt-4">
+        <nav className="flex-1 px-4 space-y-2">
           {navItems.map((item) => {
-            const hasAccess = checkTierAccess(item.minTier);
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+
             return (
               <button
                 key={item.id}
-                onClick={() => hasAccess && setActiveTab(item.id as any)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium transition-all duration-300 group ${activeTab === item.id
-                  ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20 shadow-[0_0_15px_rgba(0,224,255,0.05)]'
-                  : hasAccess ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-700 cursor-not-allowed opacity-50'
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive
+                  ? 'bg-brand-primary text-black shadow-neon'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
               >
-                <div className="flex items-center gap-3">
-                  <item.icon size={20} />
-                  {item.label}
-                </div>
-                {!hasAccess && <Lock size={14} className="text-gray-700" />}
-                {hasAccess && item.minTier !== 'Free' && (
-                  <span className="text-[8px] bg-brand-accent/20 text-brand-accent px-1.5 py-0.5 rounded font-black uppercase">
-                    {item.minTier}
-                  </span>
-                )}
+                <Icon size={20} className={isActive ? 'text-black' : 'text-gray-500 group-hover:text-brand-primary'} />
+                <span className="font-bold text-sm">{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        <div className="p-6 border-t border-white/5 space-y-4">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-[10px] font-bold border border-white/10">
-              {user?.tier[0]}
+        <div className="p-4 space-y-3 border-t border-white/5">
+          <div className="glass-card px-3 py-2 text-xs">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">User</span>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-xs font-bold truncate">{user?.id}</p>
-              <p className="text-[10px] text-gray-500">{user?.tier} Member</p>
-            </div>
-            <button onClick={logout} className="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-red-400 transition-colors">
-              <LogOut size={16} />
-            </button>
+            <p className="font-black text-sm truncate">{user?.id}</p>
+            <p className="text-[10px] text-brand-primary mt-0.5">{user?.tier} PLAN</p>
           </div>
-          <div className="glass-card p-4 text-xs space-y-2 bg-gradient-to-br from-brand-accent/10 to-transparent">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400 font-bold uppercase tracking-widest text-[9px]">{user?.tier} PLAN</span>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            </div>
-            <p className="text-[10px] text-gray-600">베테랑 원장 AI 엔진 가동 중</p>
-          </div>
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-all text-sm font-bold"
+          >
+            <LogOut size={16} />
+            로그아웃
+          </button>
         </div>
       </aside>
 
@@ -109,21 +99,94 @@ const App: React.FC = () => {
             exit={{ opacity: 0, y: -10, filter: 'blur(10px)' }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
-            {activeTab === 'dashboard' && <MidnightScout />}
-            {activeTab === 'vault' && <KeywordVault />}
-            {activeTab === 'settings' && <BrandSettings />}
-            {activeTab === 'content' && (
-              contentMode === 'canvas'
-                ? <MarketingCanvas />
-                : <ContentKitchen onBack={() => setContentMode('canvas')} />
+            {activeTab === 'dashboard' && (
+              <div className="space-y-8">
+                <header className="space-y-3">
+                  <h1 className="text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
+                    대시보드
+                  </h1>
+                  <p className="text-gray-500 font-medium">
+                    안티그래비티 MVP 데모 - 새로 구현된 기능을 확인하세요
+                  </p>
+                </header>
+
+                <TodayAction />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                  <div className="space-y-6 flex flex-col">
+                    <div className="glass-card p-6 space-y-3 flex-1">
+                      <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                        <Sparkles className="text-green-500" size={24} />
+                      </div>
+                      <h3 className="font-black text-lg">프로파일 완료</h3>
+                      <p className="text-sm text-gray-500">초기 설정이 완료되었습니다</p>
+                    </div>
+
+                    <div className="glass-card p-6 space-y-3 flex-1">
+                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                        <FileText className="text-purple-500" size={24} />
+                      </div>
+                      <h3 className="font-black text-lg">OPG 모듈</h3>
+                      <p className="text-sm text-gray-500">원내 홍보물 변환 기능</p>
+                    </div>
+                  </div>
+
+                  <BlogMetricCard />
+                </div>
+
+                <div className="glass-card p-8 space-y-4">
+                  <h3 className="font-black text-xl uppercase tracking-tight">구현 완료된 기능</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm">프로파일 시스템</h4>
+                        <p className="text-xs text-gray-500">3단계 온보딩 완료</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm">STEP 권한 제어</h4>
+                        <p className="text-xs text-gray-500">단계별 편집 제한</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm">리스크 필터 엔진</h4>
+                        <p className="text-xs text-gray-500">의료법 위반 자동 검증</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm">OPG 변환 모듈</h4>
+                        <p className="text-xs text-gray-500">블로그 → PDF/이미지</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
-            {activeTab === 'admin' && <AdminDashboard />}
+            {activeTab === 'opg' && <OPGConverter />}
+            {activeTab === 'archive' && <ContentArchive />}
+            {activeTab === 'profile' && (
+              <div className="max-w-4xl mx-auto">
+                <ProfileSetup />
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
-
-      {/* Jenny Chat UI - Global Component */}
-      <JennyChat />
     </div>
   );
 };

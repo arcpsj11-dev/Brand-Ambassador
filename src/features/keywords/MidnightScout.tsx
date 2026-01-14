@@ -4,6 +4,7 @@ import { useBrandStore } from '../../store/useBrandStore';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { Zap, Building2, Database, BarChart3, Diamond, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { TodayAction } from '../dashboard/TodayAction';
 
 // [나노바나나] 지수 전광판 상태 기반 색상 로직
 const getIndexTheme = (score: number) => {
@@ -42,6 +43,9 @@ export const MidnightScout: React.FC = () => {
 
     return (
         <div className="space-y-12 pb-20">
+            {/* 오늘의 액션 카드 */}
+            <TodayAction />
+
             {/* [Section 1] 통합 관제 센터 (Dashboard) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 메인 지수 전광판 */}

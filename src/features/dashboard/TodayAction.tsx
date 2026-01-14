@@ -1,0 +1,138 @@
+import React, { useState, useEffect } from 'react';
+import { Target, ChevronRight, Lock, Trophy, Clock, ShieldCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useContentStore } from '../../store/useContentStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useStepStore } from '../../store/useStepStore';
+import { TodayActionFlow } from './TodayActionFlow';
+
+/**
+ * 오늘의 액션 카드 컴포넌트
+ * 일일 1건의 작업만 표시 (관리자는 바이패스 가능)
+ */
+export const TodayAction: React.FC = () => {
+    const { actionStatus, setActionStatus, lastActionDate, completedCount, regenerationTopic } = useContentStore();
+    const { syncUpgrade } = useStepStore();
+    const { user } = useAuthStore();
+    const [showFlow, setShowFlow] = useState(false);
+
+    // STEP 동기화: 기존 포스팅 개수가 이미 기준치를 넘었을 경우 자동으로 승급
+    useEffect(() => {
+        syncUpgrade(completedCount);
+    }, [completedCount, syncUpgrade]);
+
+    const today = new Date().toISOString().split('T')[0];
+    const isAdmin = user?.role === 'admin';
+    const isLocked = lastActionDate === today && !isAdmin && !regenerationTopic;
+    const hasCompletedToday = lastActionDate === today;
+    const isResuming = actionStatus !== 'IDLE' && actionStatus !== 'COMPLETED';
+
+    // 자동 복구: 앱 로드 시 진행 중인 상태면 자동으로 플로우 실행
+    useEffect(() => {
+        if (isResuming) {
+            setShowFlow(true);
+        }
+    }, [isResuming]);
+
+    const handleStart = () => {
+        if (isLocked) return;
+
+        // 관리자 재실행 시 상태 초기화
+        if (isAdmin && hasCompletedToday && actionStatus === 'COMPLETED') {
+            setActionStatus('IDLE');
+        }
+
+        setShowFlow(true);
+    };
+
+    return (
+        <div className="space-y-4">
+            <AnimatePresence>
+                {showFlow && <TodayActionFlow onClose={() => setShowFlow(false)} />}
+            </AnimatePresence>
+
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`glass-card p-6 border-brand-primary/20 bg-gradient-to-br from-brand-primary/10 to-transparent relative overflow-hidden ${isLocked ? 'grayscale opacity-70' : 'hover:shadow-neon transition-all'
+                    }`}
+            >
+                {/* Admin Bypass Badge */}
+                {isAdmin && hasCompletedToday && (
+                    <div className="absolute top-0 right-0 bg-brand-primary text-black text-[8px] font-black px-3 py-1 uppercase tracking-tighter rounded-bl-lg shadow-neon flex items-center gap-1">
+                        <ShieldCheck size={10} /> Admin Bypass Active
+                    </div>
+                )}
+
+                <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isLocked ? 'bg-gray-800 text-gray-400' : 'bg-brand-primary/20 text-brand-primary shadow-neon-sm'
+                        }`}>
+                        {isLocked ? <Lock size={24} /> : <Target size={24} />}
+                    </div>
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${isLocked ? 'text-gray-500' : 'text-brand-primary'
+                                }`}>
+                                {isLocked ? 'Action Locked' : isAdmin && hasCompletedToday ? 'Admin Override' : "Today's Action"}
+                            </span>
+                            {!isLocked && <div className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />}
+                        </div>
+                        <h3 className="font-black text-lg mb-1">
+                            {regenerationTopic ? `[${regenerationTopic}] 재생성` : isLocked ? '오늘의 액션 완료' : isResuming ? '진행 중인 작업 계속하기' : isAdmin && hasCompletedToday ? '오늘의 액션 (관리자 재실행)' : '오늘의 콘텐츠 발행하기'}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                            {regenerationTopic
+                                ? `아카이브에서 요청하신 '${regenerationTopic}' 주제를 새로운 V4 엔진으로 다시 생성합니다.`
+                                : isLocked
+                                    ? '오늘의 할당량을 완료했습니다. 내일 오전 9시에 새로운 액션이 열립니다.'
+                                    : isResuming
+                                        ? '“원장님, 오늘의 글은 이미 생성 중입니다. 시스템이 이어서 처리하겠습니다.”'
+                                        : isAdmin && hasCompletedToday
+                                            ? '관리자 권한으로 일일 제한을 무시하고 새로운 액션을 실행할 수 있습니다.'
+                                            : 'A-READ 구조 기반의 맞춤형 콘텐츠 생성을 시작합니다.'}
+                        </p>
+                    </div>
+                    {!isLocked && (
+                        <button
+                            onClick={handleStart}
+                            className="px-6 py-3 rounded-xl bg-brand-primary text-black font-black uppercase text-xs tracking-widest hover:scale-105 transition-all flex items-center gap-2 shadow-neon-sm"
+                        >
+                            {isResuming ? '이어서 진행' : isAdmin && hasCompletedToday ? '재실행' : '시작'}
+                            <ChevronRight size={18} />
+                        </button>
+                    )}
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-3 gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center">
+                            <Trophy size={16} className="text-brand-primary" />
+                        </div>
+                        <div>
+                            <div className="text-[9px] font-black text-gray-500 uppercase leading-none mb-1">Total Impact</div>
+                            <div className="text-sm font-black italic">{completedCount} 건</div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                            <Clock size={16} className="text-gray-400" />
+                        </div>
+                        <div>
+                            <div className="text-[9px] font-black text-gray-500 uppercase leading-none mb-1">Next Action</div>
+                            <div className="text-sm font-bold text-white">내일 09:00</div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                            <ShieldCheck size={16} className="text-green-500" />
+                        </div>
+                        <div>
+                            <div className="text-[9px] font-black text-gray-500 uppercase leading-none mb-1">Safety Engine</div>
+                            <div className="text-sm font-bold text-green-500 uppercase">Active</div>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
