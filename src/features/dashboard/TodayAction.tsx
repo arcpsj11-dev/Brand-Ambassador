@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Target, ChevronRight, Lock, Trophy, Clock, ShieldCheck } from 'lucide-react';
+import { Target, ChevronRight, Lock, Trophy, Clock, ShieldCheck, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useContentStore } from '../../store/useContentStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStepStore } from '../../store/useStepStore';
 import { TodayActionFlow } from './TodayActionFlow';
+import { useSlotStore } from '../../store/useSlotStore';
 
 /**
  * 오늘의 액션 카드 컴포넌트
  * 일일 1건의 작업만 표시 (관리자는 바이패스 가능)
  */
 export const TodayAction: React.FC = () => {
-    const { actionStatus, setActionStatus, lastActionDate, completedCount, regenerationTopic } = useContentStore();
+    const { actionStatus, setActionStatus, completedCount, regenerationTopic } = useContentStore();
+    const { slots, activeSlotId } = useSlotStore();
     const { syncUpgrade } = useStepStore();
     const { user } = useAuthStore();
     const [showFlow, setShowFlow] = useState(false);
+
+    const activeSlot = slots.find(s => s.slotId === activeSlotId);
 
     // STEP 동기화: 기존 포스팅 개수가 이미 기준치를 넘었을 경우 자동으로 승급
     useEffect(() => {
@@ -23,16 +27,12 @@ export const TodayAction: React.FC = () => {
 
     const today = new Date().toISOString().split('T')[0];
     const isAdmin = user?.role === 'admin';
-    const isLocked = lastActionDate === today && !isAdmin && !regenerationTopic;
-    const hasCompletedToday = lastActionDate === today;
-    const isResuming = actionStatus !== 'IDLE' && actionStatus !== 'COMPLETED';
 
-    // 자동 복구: 앱 로드 시 진행 중인 상태면 자동으로 플로우 실행
-    useEffect(() => {
-        if (isResuming) {
-            setShowFlow(true);
-        }
-    }, [isResuming]);
+    // 개별 슬롯의 잠금 상태 확인
+    const slotLastActionDate = activeSlot?.lastActionDate;
+    const isLocked = slotLastActionDate === today && !isAdmin && !regenerationTopic;
+    const hasCompletedToday = slotLastActionDate === today;
+    const isResuming = actionStatus !== 'IDLE' && actionStatus !== 'COMPLETED';
 
     const handleStart = () => {
         if (isLocked) return;
@@ -75,27 +75,39 @@ export const TodayAction: React.FC = () => {
                                 }`}>
                                 {isLocked ? 'Action Locked' : isAdmin && hasCompletedToday ? 'Admin Override' : "Today's Action"}
                             </span>
+                            <div className="w-1 h-3 bg-white/10 rounded-full" />
+                            <span className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${activeSlot ? 'text-gray-400' : 'text-red-500 animate-pulse'
+                                }`}>
+                                <LayoutGrid size={10} />
+                                {activeSlot?.slotName || '이용할 블로그 슬롯을 먼저 선택해주세요'}
+                            </span>
                             {!isLocked && <div className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />}
                         </div>
                         <h3 className="font-black text-lg mb-1">
-                            {regenerationTopic ? `[${regenerationTopic}] 재생성` : isLocked ? '오늘의 액션 완료' : isResuming ? '진행 중인 작업 계속하기' : isAdmin && hasCompletedToday ? '오늘의 액션 (관리자 재실행)' : '오늘의 콘텐츠 발행하기'}
+                            {regenerationTopic ? `[${regenerationTopic}] 재생성` : isLocked ? '오늘의 액션 완료' : isResuming ? '진행 중인 작업 계속하기' : isAdmin && hasCompletedToday ? '오늘의 액션 (관리자 재실행)' : activeSlot ? `${activeSlot.slotName} 콘텐츠 발행하기` : '슬롯을 선택해주세요'}
                         </h3>
                         <p className="text-sm text-gray-500">
-                            {regenerationTopic
-                                ? `아카이브에서 요청하신 '${regenerationTopic}' 주제를 새로운 V4 엔진으로 다시 생성합니다.`
-                                : isLocked
-                                    ? '오늘의 할당량을 완료했습니다. 내일 오전 9시에 새로운 액션이 열립니다.'
-                                    : isResuming
-                                        ? '“원장님, 오늘의 글은 이미 생성 중입니다. 시스템이 이어서 처리하겠습니다.”'
-                                        : isAdmin && hasCompletedToday
-                                            ? '관리자 권한으로 일일 제한을 무시하고 새로운 액션을 실행할 수 있습니다.'
-                                            : 'A-READ 구조 기반의 맞춤형 콘텐츠 생성을 시작합니다.'}
+                            {!activeSlot
+                                ? '상단의 슬롯 선택기에서 글을 작성할 블로그를 선택한 후 시작할 수 있습니다.'
+                                : regenerationTopic
+                                    ? `아카이브에서 요청하신 '${regenerationTopic}' 주제를 새로운 V4 엔진으로 다시 생성합니다.`
+                                    : isLocked
+                                        ? '오늘의 할당량을 완료했습니다. 내일 오전 9시에 새로운 액션이 열립니다.'
+                                        : isResuming
+                                            ? '“원장님, 오늘의 글은 이미 생성 중입니다. 시스템이 이어서 처리하겠습니다.”'
+                                            : isAdmin && hasCompletedToday
+                                                ? '관리자 권한으로 일일 제한을 무시하고 새로운 액션을 실행할 수 있습니다.'
+                                                : 'A-READ 구조 기반의 맞춤형 콘텐츠 생성을 시작합니다.'}
                         </p>
                     </div>
                     {!isLocked && (
                         <button
                             onClick={handleStart}
-                            className="px-6 py-3 rounded-xl bg-brand-primary text-black font-black uppercase text-xs tracking-widest hover:scale-105 transition-all flex items-center gap-2 shadow-neon-sm"
+                            disabled={!activeSlot}
+                            className={`px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all flex items-center gap-2 shadow-neon-sm ${activeSlot
+                                ? 'bg-brand-primary text-black hover:scale-105'
+                                : 'bg-gray-800 text-gray-500 cursor-not-allowed opacity-50'
+                                }`}
                         >
                             {isResuming ? '이어서 진행' : isAdmin && hasCompletedToday ? '재실행' : '시작'}
                             <ChevronRight size={18} />
@@ -109,8 +121,8 @@ export const TodayAction: React.FC = () => {
                             <Trophy size={16} className="text-brand-primary" />
                         </div>
                         <div>
-                            <div className="text-[9px] font-black text-gray-500 uppercase leading-none mb-1">Total Impact</div>
-                            <div className="text-sm font-black italic">{completedCount} 건</div>
+                            <div className="text-[9px] font-black text-gray-500 uppercase leading-none mb-1">Current Progress</div>
+                            <div className="text-sm font-black italic">{activeSlot?.currentCluster.currentIndex || 0} / 10</div>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">

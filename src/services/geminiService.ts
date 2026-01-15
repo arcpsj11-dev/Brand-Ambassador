@@ -18,7 +18,7 @@ const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export const geminiReasoningService = {
-    // [나노바나나] 지능형 인텐트 분석 (전역 제어 포함)
+    // [나노바나나] 지능형 인텐트 분석
     async analyzeIntent(input: string): Promise<'analysis' | 'planner' | 'action' | 'chat'> {
         const lower = input.toLowerCase();
         if (lower.includes('분석') || lower.includes('키워드')) return 'analysis';
@@ -68,7 +68,7 @@ export const geminiReasoningService = {
         };
     },
 
-    // [나노바나나] 실시간 스트리밍 대화 서비스
+    // [나노바나나] 실시간 스트리밍 대화 서비스 (TodayActionFlow용)
     async *generateStream(input: string, context: {
         clinicName: string;
         address: string;
@@ -81,43 +81,41 @@ export const geminiReasoningService = {
         try {
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-            // [나노바나나] 전용 전략 엔진: A-READ V4 (최종 확정 가이드 반영)
             const systemPrompt = `당신은 '도담한의원'의 수석 마케터이자 전문 의료 칼럼니스트 '제니(Jenny)'입니다.
 
 [1. 글의 정체성 및 톤앤매너]
-- 역할: 신뢰받는 의료 전문가(90%) + 세련된 마케터(10%).
-- 톤앤매너: 전문적이고 논리적인 어조를 유지하되, 환자의 고통에 깊이 공감합니다. 가벼운 비유(엿처럼, 직빵 등)는 절대 금지하며, "섬유화", "즉각적 완화", "편타성 손상" 등 전문 용어를 사용하여 권위를 확보합니다.
-- 가독성: 모바일 환경을 위해 한 문단은 2~3줄 내외로 제한합니다.
-- 이모지: 문장 끝 남발 금지. 핵심 강조용 아이콘(🚨, ✅, 📍) 및 단계별 솔루션 아이콘(1️⃣, 2️⃣, 3️⃣)만 허용합니다.
+- 역할: 의료 전문가(90%) + 세련된 마케터(10%).
+- 톤앤매너: 도담한의원 원장님이 환자에게 직접 상담하듯 따뜻하고 논리적인 말투.
+- 가독성: 모바일 최적화 (한 문단 2~3줄 내외). 핵심 아이콘(🚨, ✅, 📍)만 최소 활용.
 
-[2. SEO 및 키워드 전략]
+[2. SEO 전략]
 - 필수 키워드: '김포 운양동 한의원', '교통사고 후유증', '도담한의원', '추나요법', '약침치료'.
-- **SEO 최적화**: 본문 서두(300자 내)에 위 필수 키워드를 자연스럽게 배치하여 검색 가시성을 확보합니다.
+- 서두 300자 내 키워드 배치 필수.
 
-[3. 본문 작성 공식: A-READ V4 구조]
-- **[A] Attention**: 퇴근길, 혹은 야간에 갑자기 찾아오는 통증 등 구체적이고 일상적인 상황을 제시하며 깊은 공감을 유도합니다.
-- **[R] Relevance**: 한의학적 용어(어혈, 담음 등)를 사용하되, 이것이 신체 정렬과 통증에 미치는 영향력을 해부학적으로 논리 있게 설명합니다.
-- **[E] Evidence**: '대한한방내과학회지' 등 공신력 있는 학회지나 임상 데이터를 1회 이상 반드시 인용하여 의학적 신뢰도를 확보합니다.
-  - **이 섹션 뒤에 [Image_Tag: 이미지에 대한 상세 설명(Alt text)] 삽입.**
-- **[A] Action**: 1️⃣, 2️⃣, 3️⃣ 아이콘을 사용하여 도담만의 3단계 맞춤 솔루션(추나, 약침, 한순간의 처방이 아닌 근본 치료)을 시각화하여 제시합니다.
-  - **이 섹션 뒤에 [Image_Tag: 치료 과정이나 도담한의원의 전문성을 보여주는 이미지 설명(Alt text)] 삽입.**
-- **[D] Delight**: 병원 정보(031-988-1575 / 김포 운양동 광장프라자 311호)를 깔끔하게 하단 고정 배치하고, 회복된 미래를 축복하며 마무리합니다.
+[3. 본문 작성 공식: A-READ V5]
+- [A] 구체적 상황 제시, [R] 한의학적 해부학 소견, [E] 학회지/임상 데이터 인용, [A] 번호 나열 없는 서술형 솔루션, [D] 치유 회복 축복.
 
-[4. 💡 제니의 추천 팩트체크!]
-- 본문이 끝난 후, '제니'만의 말투(친근함 + 위트 100%)로 브랜드 아이덴티티를 강화하는 짧은 팁 섹션을 추가합니다.
+[4. 글의 흐름 및 시각화 가이드]
+- 서술형 체제: 번호 나열(1, 2, 3...) 절대 금지. 전문가 칼럼 스타일로 작성.
+- 이미지 앵커: 각 소제목(##) 아래 내용이 끝나는 지점에 [이미지: (여기에 들어갈 이미지의 상세 영문 프롬프트)]를 반드시 생성.
+- 영문 프롬프트 규칙: Photorealistic, high quality, Cinematic lighting, Soft focus background, Clean and professional atmosphere 포함.
+
+[5. 마무리 구성]
+- Jennie's Pick: MZ세대 위트 팩트체크 한 문장 추가.
+- 병원 정보: 도담한의원(031-988-1575), 운양동 광장프라자 311호.
+- 해시태그: #김포운양동한의원 #도담한의원 등 5~8개 한 줄 나열.
 
 ---
-병원 정보: ${context.clinicName} / ${context.address} / ${context.phoneNumber}
-추가 맥락: ${context.extraPrompt || ''}`;
+Clinic info: ${context.clinicName} / ${context.address} / ${context.phoneNumber}`;
 
-            const prompt = `${systemPrompt} \n사용자 질문: "${input}"`;
+            const prompt = `${systemPrompt} \nUser Request: "${input}"`;
             const result = await model.generateContentStream(prompt);
             for await (const chunk of result.stream) {
                 yield chunk.text();
             }
         } catch (error) {
             console.error("Streaming Error:", error);
-            yield "원장님, 나노바나나 엔진 회로에 바나나 껍질이 꼈나 봐요! 💦 다시 시도할게요!";
+            yield "원장님, 엔진 점검이 필요한 것 같아요! 다시 시도해 주세요.";
         }
     },
 
@@ -130,25 +128,20 @@ export const geminiReasoningService = {
             });
 
             const prompt = `"${input}" 주제에 대해 김포 ${context.city} 지역 SEO 전략을 수립하세요.
-결과는 반드시 아래 JSON 형식을 따르세요:
+            Result MUST be JSON:
             {
-                "briefing": "제니 특유의 말투로 작성된 전략 요약",
-                    "keywords": ["확장키워드15개"],
-                        "recommendation": "최종 추천 다이아 키워드 1개"
-            } `;
+                "briefing": "Strategy summary in Jenny's tone",
+                "keywords": ["15 keywords"],
+                "recommendation": "1 main recommendation"
+            }`;
 
             const result = await model.generateContent(prompt);
             const aiData = JSON.parse(result.response.text());
 
-            const steps: ReasoningStep[] = [
-                { id: '1', label: 'Context Analysis', description: '김포 지역 특성 분석 완료', status: 'completed' },
-                { id: '2', label: 'Seasonal Trends', description: '검색량 가중치 산출 완료', status: 'completed' },
-                { id: '3', label: 'Competitor Intelligence', description: '경쟁 노출 전략 역추적 완료', status: 'completed' },
-                { id: '4', label: 'Strategic Planning', description: 'Gemini 2.0 키워드 선별 완료', status: 'completed' }
-            ];
-
             return {
-                thoughtChain: steps,
+                thoughtChain: [
+                    { id: '1', label: 'Analysis', description: 'Context and locality analyzed.', status: 'completed' }
+                ],
                 briefing: aiData.briefing,
                 keywords: aiData.keywords,
                 recommendation: aiData.recommendation
@@ -159,7 +152,7 @@ export const geminiReasoningService = {
         }
     },
 
-    // [나노바나나] 30일 마케팅 클러스터링 기반 타이틀 벌크 생성 엔진
+    // [나노바나나] 30일 마케팅 타이틀 벌크 생성
     async generateMonthlyTitles(topic: string): Promise<any> {
         try {
             const model = genAI.getGenerativeModel({
@@ -167,50 +160,174 @@ export const geminiReasoningService = {
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            const prompt = `당신은 '나노바나나'의 수석 마케터 '제니(Jenny)'입니다.
-                주제: "${topic}"
-            전략: "클러스터링 (1 Pillar + 9 Supporting) x 3 Clusters"
+            const prompt = `Generate 30 blog titles for medical clustering strategy based on "${topic}".
+            1 Pillar + 9 Supporting per cluster, 3 clusters total. Tone: Professional yet catchy (MZ style).
+            Result MUST be JSON with "clusters" array.`;
 
-            [제니의 보이스 & 제목 규칙]
-            - Hook(갈고리): 질문형, 숫자, 강렬한 단어(갓벽, 팩트체크, 셧다운 등)를 전면에 배치.
-- Locality: '김포', '운양동', '도담한의원' 등을 자연스럽게 믹스.
-- 말투: 세련되고 위트 있는 MZ 느낌.
+            const result = await model.generateContent(prompt);
+            const text = result.response.text();
+            const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(jsonStr);
+        } catch (error) {
+            console.error("Bulk Title Error:", error);
+            throw error;
+        }
+    },
 
-[클러스터링 생성 규칙]
-입력된 주제를 바탕으로 총 30개의 세부 주제를 3개의 클러스터(Cluster)로 나누어 생성하세요.
-각 클러스터(10개 글)는 1개의 '필러글(Pillar)'과 9개의 '연결글(Supporting)'로 구성됩니다.
+    // [나노바나나] 이미지 프롬프트 추출/생성
+    async generateImagePrompts(contentBody: string): Promise<string[]> {
+        try {
+            const model = genAI.getGenerativeModel({
+                model: "gemini-2.0-flash",
+                generationConfig: { responseMimeType: "application/json" }
+            });
 
-- 필러글(Pillar): 해당 주제에 대한 가장 포괄적이고 전문적인 메가 콘텐츠.
-- 연결글(Supporting): 필러글의 세부 내용을 다루며, 필러글로의 유입을 유도함.
+            const prompt = `Extract or generate high-quality image prompts from the content below.
+            Rules:
+            1. Language: English.
+            2. Style: Photorealistic, high quality, Cinematic lighting, Soft focus background, Clean and professional atmosphere.
+            3. Extract from [이미지: (prompt)] tags if they exist.
+            Format: JSON { "prompts": [] }
+            Content: ${contentBody.substring(0, 3000)}`;
 
-결과는 반드시 아래 JSON 형식을 따르세요:
-            {
-                "clusters": [
-                    {
-                        "id": "cluster_1",
-                        "category": "전문/정보 (Medical)",
-                        "topics": [
-                            {
-                                "day": 1,
-                                "type": "pillar",
-                                "title": "필러글 제목",
-                                "description": "전략 설명"
-                            },
-                            ... (나머지 9개는 type: "supporting")
-                        ]
-                    },
-                    ... (총 3개 클러스터)
-                ]
-            }
+            const result = await model.generateContent(prompt);
+            const data = JSON.parse(result.response.text());
+            return data.prompts || ["Clinic room photorealistic, high quality"];
+        } catch (error) {
+            console.error("Image Prompt Error:", error);
+            return [];
+        }
+    },
 
-* 주의: 각 클러스터당 반드시 10개, 총 30개의 주제를 생성하세요.`;
+    // [나노바나나] 토픽 클러스터 생성
+    async generateTopicCluster(keyword: string, persona?: { jobTitle: string; toneAndManner: string }): Promise<{
+        pillarTitle: string;
+        satelliteTitles: string[];
+    }> {
+        try {
+            const model = genAI.getGenerativeModel({
+                model: "gemini-2.0-flash",
+                generationConfig: { responseMimeType: "application/json" }
+            });
+
+            const prompt = `Generate 1 Pillar and 9 Satellite blog titles for keyword "${keyword}".
+            Persona: ${persona?.jobTitle || 'Expert'}, Tone: ${persona?.toneAndManner || 'Professional'}.
+            JSON Format: { "pillarTitle": "", "satelliteTitles": [] }`;
+
+            const result = await model.generateContent(prompt);
+            const text = result.response.text();
+            // Clean up potentially markdown formatted JSON
+            const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const data = JSON.parse(jsonStr);
+            return {
+                pillarTitle: data.pillarTitle,
+                satelliteTitles: data.satelliteTitles.slice(0, 9)
+            };
+        } catch (error) {
+            console.error("Cluster Gen Error:", error);
+            throw error;
+        }
+    },
+
+    // [나노바나나] 슬롯 기반 콘텐츠 생성
+    async generateSlotContent(params: {
+        topicIndex: number;
+        pillarTitle: string;
+        currentTitle: string;
+        persona: { jobTitle: string; toneAndManner: string };
+        clinicInfo?: { name: string; address: string; phone: string };
+    }): Promise<{ title: string; body: string }> {
+        try {
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            const isPillar = params.topicIndex === 1;
+
+            const basePrompt = `당신은 '도담한의원' 원원장님으로서 블로그 글을 작성합니다.
+주제(제목): "${params.currentTitle}"
+
+[작성 지침]
+- 톤앤매너: 따뜻하고 논리적인 서술형 칼럼 스타일. 번호 나열(1, 2, 3...)은 절대 사용하지 마세요.
+- 가독성: 한 문단 2~3줄 내외.
+- 이미지 앵커: 각 소제목(##) 아래 내용이 끝나는 지점에 [이미지: (영문 프롬프트)]를 삽입하세요.
+- 영문 프롬프트: Photorealistic, high quality, Cinematic lighting, Soft focus background, Clean and professional atmosphere 필수 포함.
+- 마무리 구성: Jennie's Pick (MZ 위트), 병원 정보(도담한의원 031-988-1575), 해시태그 5~8개.
+
+${isPillar ? '필러 포스트: 포괄적이고 전문적인 가이드 작성.' : `서브 포스트: 필러 "${params.pillarTitle}"와 연결된 세부 주제.`}
+
+출력형식: 제목과 본문을 그대로 작성 (JSON 아님).`;
+
+            const result = await model.generateContent(basePrompt);
+            return {
+                title: params.currentTitle,
+                body: result.response.text().trim()
+            };
+        } catch (error) {
+            console.error("Slot Content Error:", error);
+            throw error;
+        }
+    },
+
+    // [나노바나나] 경쟁사 분석 기반 AI 코칭 생성
+    async generateCompetitorCoaching(comparisonData: {
+        keyword: string;
+        myContent: { wordCount: number; imageCount: number; hasVideo: boolean; keywordFrequency: number };
+        topAverage: { wordCount: number; imageCount: number; hasVideo: boolean; keywordFrequency: number; score: number };
+        myScore: number;
+    }): Promise<{
+        overallScore: number;
+        targetScore: number;
+        recommendations: Array<{
+            category: string;
+            issue: string;
+            action: string;
+            priority: 'critical' | 'high' | 'medium' | 'low';
+        }>;
+    }> {
+        try {
+            const model = genAI.getGenerativeModel({
+                model: "gemini-2.0-flash",
+                generationConfig: { responseMimeType: "application/json" }
+            });
+
+            const prompt = `당신은 네이버 블로그 SEO 전문가이자 AI 코칭 시스템입니다.
+
+상황:
+- 키워드: "${comparisonData.keyword}"
+- 내 점수: ${comparisonData.myScore}점 vs 상위권: ${comparisonData.topAverage.score}점
+- 내 콘텐츠: 글자수 ${comparisonData.myContent.wordCount}자, 이미지 ${comparisonData.myContent.imageCount}장, 영상 ${comparisonData.myContent.hasVideo ? 'O' : 'X'}, 키워드 ${comparisonData.myContent.keywordFrequency}회
+- 상위권: 글자수 ${comparisonData.topAverage.wordCount}자, 이미지 ${comparisonData.topAverage.imageCount}장, 영상 ${comparisonData.topAverage.hasVideo ? 'O' : 'X'}, 키워드 ${comparisonData.topAverage.keywordFrequency}회
+
+부족한 부분만 지적하여 구체적 행동 지침을 제공하세요.
+
+JSON 형식:
+{
+  "overallScore": ${comparisonData.myScore},
+  "targetScore": ${comparisonData.topAverage.score},
+  "recommendations": [
+    {"category": "분량|미디어|키워드", "issue": "문제점", "action": "구체적 지시", "priority": "critical|high|medium|low"}
+  ]
+}
+
+우선순위: critical(20점 차이), high(10-19), medium(5-9), low(소폭).
+최대 5개 항목만 출력하세요.`;
 
             const result = await model.generateContent(prompt);
             const data = JSON.parse(result.response.text());
             return data;
         } catch (error) {
-            console.error("Monthly Titles Generation Error:", error);
-            throw error;
+            console.error("Competitor Coaching Error:", error);
+            return {
+                overallScore: comparisonData.myScore,
+                targetScore: comparisonData.topAverage.score,
+                recommendations: [
+                    {
+                        category: "분량",
+                        issue: "상위권 대비 콘텐츠 분량이 부족합니다.",
+                        action: "본문 내용을 심화하여 글자 수를 늘려주세요.",
+                        priority: "high" as const
+                    }
+                ]
+            };
         }
     }
 };
+

@@ -143,56 +143,15 @@ const Step1: React.FC<StepProps> = ({ localData, setLocalData }) => {
                 />
             </div>
 
-            {/* 네이버 블로그 ID 등록 */}
-            <div className="space-y-2">
+            {/* 네이버 블로그 ID 등록 (제거됨 - 슬롯에서 관리) */}
+            {/* <div className="space-y-2 opacity-50 pointer-events-none hidden">
                 <label className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                    네이버 블로그 ID (선택)
+                    네이버 블로그 ID (Slot에서 관리됨)
                 </label>
-                <div className="space-y-2">
-                    {(localData.blogAccounts || [])?.map((id: string) => (
-                        <div key={id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
-                            <span className="text-sm font-medium text-white">@{id}</span>
-                            <button
-                                onClick={() => {
-                                    setLocalData({
-                                        ...localData,
-                                        blogAccounts: localData.blogAccounts.filter((acc: string) => acc !== id)
-                                    });
-                                }}
-                                className="text-gray-500 hover:text-red-500 transition-colors"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-                    ))}
-
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="네이버 아이디 추가"
-                            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-primary transition-all outline-none"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    const val = e.currentTarget.value.trim();
-                                    if (val && !localData.blogAccounts?.includes(val)) {
-                                        setLocalData({
-                                            ...localData,
-                                            blogAccounts: [...(localData.blogAccounts || []), val]
-                                        });
-                                        e.currentTarget.value = '';
-                                    }
-                                }
-                            }}
-                        />
-                        <div className="flex items-center px-4 bg-white/5 rounded-xl border border-white/10 text-xs text-gray-500">
-                            Enter로 추가
-                        </div>
-                    </div>
-                </div>
-                <p className="text-[10px] text-gray-500 mt-1">
-                    * 등록된 아이디는 대시보드에서 지수/성과 분석에 활용됩니다.
-                </p>
-            </div>
+            </div> */}
+            <p className="text-[10px] text-gray-500 mt-1">
+                * 등록된 아이디는 대시보드에서 지수/성과 분석에 활용됩니다.
+            </p>
         </motion.div>
     );
 };

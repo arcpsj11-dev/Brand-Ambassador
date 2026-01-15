@@ -73,6 +73,18 @@ export const Login: React.FC = () => {
                     >
                         로그인 시작하기 <ArrowRight size={18} />
                     </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setId('new_user');
+                            setPw('1234');
+                            alert('🎉 회원가입이 완료되었습니다! (테스트 모드: 아이디가 자동으로 입력됩니다)');
+                        }}
+                        className="w-full bg-white/5 text-gray-400 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 hover:text-white transition-all border border-white/5"
+                    >
+                        <User size={18} /> 회원가입 신청하기
+                    </button>
                 </form>
 
                 <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
@@ -90,6 +102,6 @@ export const Login: React.FC = () => {
                     </div>
                 </div>
             </motion.div>
-        </div>
+        </div >
     );
 };

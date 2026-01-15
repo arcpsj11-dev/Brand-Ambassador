@@ -94,12 +94,12 @@
 ---
 
 ## Phase 7: AI 엔진 V4 고도화 및 STEP 로직 수정
-- [/] **AI**: `geminiService` - 신뢰받는 의료 전문가 톤 (90:10) 및 학회 데이터 인용 로직 구현
-- [ ] **SEO**: 본문 서두 300자 내 키워드 밀도 최적화 로직 반영
-- [ ] **Logic**: `useStepStore` - STEP 3 승급 조건 완화 및 발행 건수 기반 자동 승급 로직 수정
-- [ ] **UI**: `TodayActionFlow` - 승급 로직 연동 확인
-- [ ] **Feature**: `ContentArchive` - '다시 생성(Regenerate)' 버튼 구현
-- [ ] **System**: `Git` - 작업물 깃허브 저장(Commit) 프로세스 수행
+- [x] **AI**: `geminiService` - 신뢰받는 의료 전문가 톤 (90:10) 및 학회 데이터 인용 로직 구현
+- [x] **SEO**: 본문 서두 300자 내 키워드 밀도 최적화 로직 반영
+- [x] **Logic**: `useStepStore` - STEP 3 승급 조건 완화 및 발행 건수 기반 자동 승급 로직 수정
+- [x] **UI**: `TodayActionFlow` - 승급 로직 연동 확인
+- [x] **Feature**: `ContentArchive` - '다시 생성(Regenerate)' 버튼 구현
+- [x] **System**: `Git` - 작업물 깃허브 저장(Commit) 프로세스 수행
 
 ---
 

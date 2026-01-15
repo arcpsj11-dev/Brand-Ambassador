@@ -1,22 +1,36 @@
 import React from 'react';
 import { useAuthStore } from './store/useAuthStore';
 import { useProfileStore } from './store/useProfileStore';
+import { migrateToSlotSystem } from './services/migrationService';
 import { Login } from './features/auth/Login';
 import { ProfileSetup } from './features/profile/ProfileSetup';
 import { OPGConverter } from './features/opg/OPGConverter';
 import { TodayAction } from './features/dashboard/TodayAction';
-import { ContentArchive } from './features/content/ContentArchive';
+import { SlotManager } from './features/slot/SlotManager';
+import { ContentArchive } from './features/archive/ContentArchive';
+import { SlotSelector } from './features/slot/SlotSelector';
 import { Step3UnlockOverlay } from './features/dashboard/Step3UnlockOverlay';
 import { BlogMetricCard } from './features/dashboard/BlogMetricCard';
-import { Sparkles, FileText, LogOut, LayoutDashboard, Database } from 'lucide-react';
+import { Sparkles, FileText, LogOut, LayoutDashboard, Database, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type AppTab = 'dashboard' | 'opg' | 'archive' | 'profile';
+type AppTab = 'dashboard' | 'slots' | 'opg' | 'archive' | 'profile';
 
 const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const { isProfileComplete } = useProfileStore();
   const [activeTab, setActiveTab] = React.useState<AppTab>('dashboard');
+
+  // 앱 로드 시 슬롯 시스템 마이그레이션 실행
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      migrateToSlotSystem();
+      // 마이그레이션 후 활성 슬롯이 없다면 첫 슬롯 지정
+      import('./store/useSlotStore').then(m => {
+        m.useSlotStore.getState().ensureActiveSlot();
+      });
+    }
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <Login />;
@@ -30,6 +44,7 @@ const App: React.FC = () => {
 
   const navItems = [
     { id: 'dashboard' as AppTab, label: '대시보드', icon: LayoutDashboard },
+    { id: 'slots' as AppTab, label: '블로그 슬롯', icon: LayoutGrid },
     { id: 'opg' as AppTab, label: '원내 홍보물', icon: FileText },
     { id: 'archive' as AppTab, label: '콘텐츠 아카이브', icon: Database },
     { id: 'profile' as AppTab, label: '프로파일 설정', icon: Sparkles },
@@ -102,9 +117,12 @@ const App: React.FC = () => {
             {activeTab === 'dashboard' && (
               <div className="space-y-8">
                 <header className="space-y-3">
-                  <h1 className="text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
-                    대시보드
-                  </h1>
+                  <div className="flex items-end justify-between">
+                    <h1 className="text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
+                      대시보드
+                    </h1>
+                    <SlotSelector />
+                  </div>
                   <p className="text-gray-500 font-medium">
                     안티그래비티 MVP 데모 - 새로 구현된 기능을 확인하세요
                   </p>
@@ -177,6 +195,7 @@ const App: React.FC = () => {
                 </div>
               </div>
             )}
+            {activeTab === 'slots' && <SlotManager />}
             {activeTab === 'opg' && <OPGConverter />}
             {activeTab === 'archive' && <ContentArchive />}
             {activeTab === 'profile' && (
