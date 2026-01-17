@@ -258,58 +258,64 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             )}
 
             {/* 3. FINAL CHECK STATE */}
+            {/* 3. FINAL CHECK STATE - Full Page Scroll Layout */}
             {flowState === 'FINAL_CHECK' && currentContent && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="fixed inset-0 z-[110] w-full h-[100dvh] flex flex-col bg-black/95 backdrop-blur-md overflow-hidden"
+                    className="fixed inset-0 z-[110] w-full h-full bg-black/95 backdrop-blur-md overflow-y-auto overflow-x-hidden custom-scrollbar"
                 >
-                    <div className="h-16 flex items-center justify-center border-b border-white/10 bg-black/40 shrink-0">
-                        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-brand-primary">
-                            <ShieldCheck size={14} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">
-                                최종 확인 및 복사
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-8 max-w-3xl mx-auto w-full space-y-8 custom-scrollbar relative pb-32">
-                        <div className="space-y-2">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Title</span>
-                            <h1 className="text-2xl font-bold leading-tight border-l-4 border-brand-primary pl-4">
-                                {currentContent.title}
-                            </h1>
-                        </div>
-
-                        <div className="space-y-2">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Body Content</span>
-                            <div className="prose prose-invert prose-lg max-w-none opacity-80 border-l border-white/10 pl-4">
-                                {currentContent.body.split('\n').map((line, i) => (
-                                    <p key={i} className="leading-relaxed whitespace-pre-wrap">{line}</p>
-                                ))}
+                    <div className="min-h-full flex flex-col max-w-3xl mx-auto relative">
+                        {/* Header - Sticky Top */}
+                        <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-center shrink-0">
+                            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-brand-primary">
+                                <ShieldCheck size={14} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                    최종 확인 및 복사
+                                </span>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="p-6 border-t border-white/10 bg-black/80 backdrop-blur shrink-0 space-y-4 text-center">
-                        <div className="flex items-center justify-center gap-2 text-yellow-500 text-xs font-bold mb-4">
-                            <AlertTriangle size={14} />
-                            <span>내용을 복사하여 블로그에 발행을 완료하세요.</span>
+                        {/* Content Body */}
+                        <div className="flex-1 p-6 md:p-8 space-y-8 pb-32">
+                            <div className="space-y-2">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Title</span>
+                                <h1 className="text-2xl font-bold leading-tight border-l-4 border-brand-primary pl-4 text-white">
+                                    {currentContent.title}
+                                </h1>
+                            </div>
+
+                            <div className="space-y-2">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Body Content</span>
+                                <div className="prose prose-invert prose-lg max-w-none opacity-90 border-l border-white/10 pl-4 select-text">
+                                    {currentContent.body.split('\n').map((line, i) => (
+                                        <p key={i} className="leading-relaxed whitespace-pre-wrap text-gray-200">{line}</p>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex justify-center gap-4">
-                            <button
-                                onClick={onClose}
-                                className="px-8 py-4 rounded-xl border border-white/10 text-gray-400 font-bold uppercase tracking-widest hover:bg-white/5 transition-all text-sm"
-                            >
-                                나중에 하기
-                            </button>
-                            <button
-                                onClick={handleNaverPublish}
-                                className="px-12 py-4 rounded-xl bg-brand-primary text-black font-black uppercase tracking-widest hover:bg-white hover:scale-105 hover:shadow-neon transition-all flex items-center gap-3"
-                            >
-                                <span>저장 및 복사</span>
-                                <ArrowRight size={18} />
-                            </button>
+
+                        {/* Footer - Fixed/Sticky Bottom or just placed at end */}
+                        <div className="sticky bottom-0 z-10 bg-black/90 backdrop-blur-xl border-t border-white/10 p-6 text-center space-y-4 shadow-2xl">
+                            <div className="flex items-center justify-center gap-2 text-yellow-500 text-xs font-bold mb-2">
+                                <AlertTriangle size={14} />
+                                <span>내용을 복사하여 블로그에 발행을 완료하세요.</span>
+                            </div>
+                            <div className="flex justify-center gap-4">
+                                <button
+                                    onClick={onClose}
+                                    className="px-8 py-4 rounded-xl border border-white/10 text-gray-400 font-bold uppercase tracking-widest hover:bg-white/5 transition-all text-sm"
+                                >
+                                    나중에 하기
+                                </button>
+                                <button
+                                    onClick={handleNaverPublish}
+                                    className="px-12 py-4 rounded-xl bg-brand-primary text-black font-black uppercase tracking-widest hover:bg-white hover:scale-105 hover:shadow-neon transition-all flex items-center gap-3"
+                                >
+                                    <span>저장 및 복사</span>
+                                    <ArrowRight size={18} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </motion.div>
