@@ -93,10 +93,7 @@ export const Login: React.FC = () => {
                             <ShieldCheck size={12} /> 테스트 계정 정보
                         </p>
                         <div className="flex justify-between">
-                            <span>관리자: admin / admin123</span>
                             <span>다이아: diamond / 1234</span>
-                        </div>
-                        <div className="flex justify-between">
                             <span>일반: user / user123</span>
                         </div>
                     </div>
