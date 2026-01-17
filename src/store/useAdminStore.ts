@@ -28,12 +28,12 @@ interface AdminState extends AdminSettings {
     setActiveOccupation: (id: string) => void;
     updateOccupationPrompt: (occupationId: string, type: keyof PromptSet, content: string) => void;
     addOccupation: (id: string, label: string) => void;
-    
+
     // Deprecated but kept for compatibility types if needed elsewhere (though we should migrate consumers)
     // targetPersona: string; 
-    
+
     updateUserTier: (userId: string, tier: 'START' | 'GROW' | 'SCALE') => void;
-    
+
     // Helper to get current active occupation
     getActiveOccupation: () => Occupation;
 }
@@ -43,7 +43,8 @@ const DEFAULT_PROMPTS_ORIENTAL: PromptSet = {
 1 Pillar + 9 Supporting per cluster, 3 clusters total. 
 [CRITICAL TITLE FORMULA]: Every title MUST follow this formula: "[증상/상황] + 왜/어떻게/무엇을 + 설명/정리/이해/관점"
 Tone: Professional yet catchy (MZ style).
-Result MUST be JSON with "clusters" array.`,
+Result MUST be JSON with "clusters" array.
+JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day": 1, "type": "pillar", "title": "..." } ] } ] }`,
 
     body: `당신은 김포 운양동 '도담한의원' 원장 페르소나입니다. 
 주제: "{{title}}"
@@ -79,7 +80,8 @@ const DEFAULT_PROMPTS_DOCTOR: PromptSet = {
 Focus on evidence-based medicine and clinical treatments.
 [CRITICAL TITLE FORMULA]: "[Disease/Symptom] + Diagnosis/Treatment + Explanation"
 Tone: Trustworthy, authoritative, yet accessible.
-Result MUST be JSON with "clusters" array.`,
+Result MUST be JSON with "clusters" array.
+JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day": 1, "type": "pillar", "title": "..." } ] } ] }`,
 
     body: `당신은 전문적인 '의사(전문의)' 원장 페르소나입니다. 
 주제: "{{title}}"
@@ -111,7 +113,7 @@ export const useAdminStore = create<AdminState>()(
         (set, get) => ({
             geminiApiKey: '',
             activeOccupationId: 'oriental_doctor',
-            
+
             occupations: {
                 'oriental_doctor': {
                     id: 'oriental_doctor',
@@ -133,9 +135,9 @@ export const useAdminStore = create<AdminState>()(
             ],
 
             setGeminiApiKey: (key) => set({ geminiApiKey: key }),
-            
+
             setActiveOccupation: (id) => set({ activeOccupationId: id }),
-            
+
             addOccupation: (id, label) => set((state) => ({
                 occupations: {
                     ...state.occupations,
@@ -163,7 +165,7 @@ export const useAdminStore = create<AdminState>()(
             updateUserTier: (userId, tier) => set((state) => ({
                 users: state.users.map(u => u.id === userId ? { ...u, tier } : u)
             })),
-            
+
             getActiveOccupation: () => {
                 const state = get();
                 return state.occupations[state.activeOccupationId] || state.occupations['oriental_doctor'];
@@ -171,7 +173,7 @@ export const useAdminStore = create<AdminState>()(
         }),
         {
             name: 'jenny-admin-storage-v2', // Version bump to reset or migrate state implies new key or handling migration logic manually. Use v2 for safety.
-            partialize: (state) => ({ 
+            partialize: (state) => ({
                 geminiApiKey: state.geminiApiKey,
                 activeOccupationId: state.activeOccupationId,
                 occupations: state.occupations,

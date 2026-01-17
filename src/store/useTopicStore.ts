@@ -50,6 +50,12 @@ export const useTopicStore = create<TopicStoreState>()(
                 const currentCluster = clusters[currentClusterIndex];
                 if (!currentCluster) return null;
 
+                // [FIX] Safety check for malformed AI data
+                if (!currentCluster.topics || !Array.isArray(currentCluster.topics)) {
+                    console.error("Malformed Cluster Data:", currentCluster);
+                    return null;
+                }
+
                 const topic = currentCluster.topics[currentTopicIndex];
                 if (!topic) return null;
 
