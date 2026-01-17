@@ -46,10 +46,13 @@ export interface ReasoningResponse {
 
 const getGenAI = () => {
     const adminKey = useAdminStore.getState().geminiApiKey;
-    if (!adminKey) {
+    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const finalKey = adminKey || envKey;
+
+    if (!finalKey) {
         throw new Error("API_KEY_MISSING");
     }
-    return new GoogleGenerativeAI(adminKey);
+    return new GoogleGenerativeAI(finalKey);
 };
 
 // [나노바나나] 의료법 및 포털 정책 준수 레이어 (절대 규칙)
