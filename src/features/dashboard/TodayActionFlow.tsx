@@ -273,7 +273,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 md:p-8 max-w-3xl mx-auto w-full no-select space-y-8 custom-scrollbar relative pb-32">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-8 max-w-3xl mx-auto w-full space-y-8 custom-scrollbar relative pb-32">
                         <div className="space-y-2">
                             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Title</span>
                             <h1 className="text-2xl font-bold leading-tight border-l-4 border-brand-primary pl-4">
