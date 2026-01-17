@@ -80,8 +80,8 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                             <Target size={14} /> Topic Strategy
                         </p>
                         <p className="text-sm text-gray-400 leading-relaxed font-medium">
-                            슬롯의 성격에 맞는 핵심 키워드를 입력하면, <br />
-                            AI가 <span className="text-white font-bold">1개의 필러(Pillar)</span>와 <span className="text-white font-bold">9개의 서브(Satellite)</span> 주제를 생성합니다.
+                            슬롯의 성격에 맞는 핵심 키워드를 입력해주세요. <br />
+                            나머지는 제가 알아서 제목을 찾아드리겠습니다.
                         </p>
                     </div>
 

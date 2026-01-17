@@ -127,7 +127,7 @@ export const geminiReasoningService = {
     }) {
         try {
             const genAI = getGenAI();
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
             const adminState = useAdminStore.getState();
             const persona = adminState.targetPersona;
             const bodyPrompt = adminState.prompts.body;
@@ -153,7 +153,7 @@ export const geminiReasoningService = {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
+                model: "gemini-2.5-flash",
                 generationConfig: { responseMimeType: "application/json" }
             });
 
@@ -187,7 +187,7 @@ export const geminiReasoningService = {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
+                model: "gemini-2.5-flash",
                 generationConfig: { responseMimeType: "application/json" }
             });
 
@@ -214,7 +214,7 @@ export const geminiReasoningService = {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
+                model: "gemini-2.5-flash",
                 generationConfig: { responseMimeType: "application/json" }
             });
 
@@ -249,7 +249,7 @@ export const geminiReasoningService = {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
+                model: "gemini-2.5-flash",
                 generationConfig: { responseMimeType: "application/json" }
             });
 
@@ -284,7 +284,7 @@ export const geminiReasoningService = {
     }): Promise<{ title: string; body: string }> {
         try {
             const genAI = getGenAI();
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
             const adminState = useAdminStore.getState();
             const bodyPromptTemplate = adminState.prompts.body;
             const targetPersona = adminState.targetPersona;
@@ -352,7 +352,7 @@ export const geminiReasoningService = {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
+                model: "gemini-2.5-flash",
                 generationConfig: { responseMimeType: "application/json" }
             });
 
