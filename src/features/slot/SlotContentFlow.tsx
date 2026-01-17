@@ -195,7 +195,7 @@ export const SlotContentFlow: React.FC<SlotContentFlowProps> = ({ slotId, onComp
                     animate={{ opacity: 1 }}
                     className="flex-1 flex flex-col p-8 overflow-hidden relative"
                 >
-                    <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col space-y-6">
+                    <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col space-y-6">
                         <div className="text-center">
                             <h2 className="text-3xl font-black italic uppercase tracking-tighter text-brand-primary">
                                 Final Check

@@ -14,10 +14,19 @@ interface UserInfo {
     currentStep: 1 | 2 | 3;
 }
 
+interface RegisteredUser {
+    id: string;
+    pw: string;
+    tier: MembershipTier;
+    role: UserRole;
+}
+
 interface AuthState {
     user: UserInfo | null;
     isAuthenticated: boolean;
+    registeredUsers: RegisteredUser[];
     login: (id: string, pw: string) => boolean;
+    signup: (id: string, pw: string) => boolean;
     logout: () => void;
     updateTier: (tier: MembershipTier) => void;
 }
@@ -27,69 +36,54 @@ export const useAuthStore = create<AuthState>()(
         (set, get) => ({
             user: null,
             isAuthenticated: false,
+            registeredUsers: [
+                { id: 'admin', pw: 'admin123', tier: 'SCALE', role: 'admin' },
+                { id: 'user', pw: 'user123', tier: 'START', role: 'user' },
+                { id: 'grow', pw: '1234', tier: 'GROW', role: 'user' },
+                { id: 'scale', pw: '1234', tier: 'SCALE', role: 'user' },
+                { id: 'diamond', pw: '1234', tier: 'SCALE', role: 'user' },
+            ],
             login: (id, pw) => {
-                // Protocol v1.0 기반 초기 유저 정보 설정
-                if (id === 'admin' && pw === 'admin123') {
+                const { registeredUsers } = get();
+                const foundUser = registeredUsers.find(u => u.id === id && u.pw === pw);
+
+                if (foundUser) {
                     set({
                         isAuthenticated: true,
                         user: {
-                            id: 'admin',
-                            role: 'admin',
-                            tier: 'SCALE',
-                            accountStatus: 'TRUSTED',
-                            remainingSearches: 999,
-                            currentStep: 3
-                        },
-                    });
-                    return true;
-                } else if (id === 'user' && pw === 'user123') {
-                    set({
-                        isAuthenticated: true,
-                        user: {
-                            id: 'user',
-                            role: 'user',
-                            tier: 'START',
-                            accountStatus: 'NORMAL',
-                            remainingSearches: 5,
-                            currentStep: 1
-                        },
-                    });
-                    return true;
-                } else if (id === 'grow' && pw === '1234') {
-                    set({
-                        isAuthenticated: true,
-                        user: {
-                            id: 'grow',
-                            role: 'user',
-                            tier: 'GROW',
-                            accountStatus: 'NORMAL',
-                            remainingSearches: 20,
-                            currentStep: 1 // 가입 시점엔 무조건 1부터
-                        },
-                    });
-                    return true;
-                } else if (id === 'scale' && pw === '1234') {
-                    set({
-                        isAuthenticated: true,
-                        user: {
-                            id: 'scale',
-                            role: 'user',
-                            tier: 'SCALE',
-                            accountStatus: 'NORMAL',
-                            remainingSearches: 50,
-                            currentStep: 1 // SCALE이어도 적응 기간 동안은 1
+                            id: foundUser.id,
+                            role: foundUser.role,
+                            tier: foundUser.tier,
+                            accountStatus: foundUser.role === 'admin' ? 'TRUSTED' : 'NORMAL',
+                            remainingSearches: foundUser.tier === 'SCALE' ? 999 : (foundUser.tier === 'GROW' ? 20 : 5),
+                            currentStep: foundUser.role === 'admin' ? 3 : 1
                         },
                     });
                     return true;
                 }
                 return false;
             },
+            signup: (id, pw) => {
+                const { registeredUsers } = get();
+                if (registeredUsers.some(u => u.id === id)) {
+                    return false; // 이미 존재하는 아이디
+                }
+
+                const newUser: RegisteredUser = {
+                    id,
+                    pw,
+                    tier: 'START',
+                    role: 'user'
+                };
+
+                set({ registeredUsers: [...registeredUsers, newUser] });
+                return true;
+            },
             logout: () => set({ user: null, isAuthenticated: false }),
             updateTier: (tier) => {
                 const { user } = get();
                 if (!user) return;
 
-                // 요금제 다운그레이드 시 STEP Cap 강제 적용 로직
                 let newStep = user.currentStep;
                 if (tier === 'START') newStep = 1;
                 else if (tier === 'GROW' && newStep > 2) newStep = 2;

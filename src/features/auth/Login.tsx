@@ -6,14 +6,32 @@ import { motion } from 'framer-motion';
 export const Login: React.FC = () => {
     const [id, setId] = useState('');
     const [pw, setPw] = useState('');
+    const [isSignup, setIsSignup] = useState(false);
     const [error, setError] = useState('');
     const login = useAuthStore((state) => state.login);
+    const signup = useAuthStore((state) => state.signup);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const success = login(id, pw);
-        if (!success) {
-            setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+        setError('');
+
+        if (isSignup) {
+            if (id.length < 2 || pw.length < 4) {
+                setError('아이디는 2자 이상, 비밀번호는 4자 이상 입력해주세요.');
+                return;
+            }
+            const success = signup(id, pw);
+            if (success) {
+                alert('🎉 회원가입이 완료되었습니다! 이제 로그인해 주세요.');
+                setIsSignup(false);
+            } else {
+                setError('이미 존재하는 아이디입니다.');
+            }
+        } else {
+            const success = login(id, pw);
+            if (!success) {
+                setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+            }
         }
     };
 
@@ -33,13 +51,13 @@ export const Login: React.FC = () => {
                         <Sparkles className="text-black" size={32} />
                     </div>
                     <h1 className="text-3xl font-black tracking-tight mb-2">JENNY MARKETER</h1>
-                    <p className="text-gray-500 text-sm">MZ세대 AI 마케팅 비서 제니에 로그인하세요</p>
+                    <p className="text-gray-500 text-sm">{isSignup ? '제니 마케터의 새로운 멤버가 되어보세요' : 'MZ세대 AI 마케팅 비서 제니에 로그인하세요'}</p>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                            <User size={12} /> User ID
+                            <User size={12} /> {isSignup ? 'Create ID' : 'User ID'}
                         </label>
                         <input
                             type="text"
@@ -53,7 +71,7 @@ export const Login: React.FC = () => {
 
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                            <Key size={12} /> Password
+                            <Key size={12} /> {isSignup ? 'Create Password' : 'Password'}
                         </label>
                         <input
                             type="password"
@@ -71,19 +89,18 @@ export const Login: React.FC = () => {
                         type="submit"
                         className="w-full bg-brand-primary text-black font-black py-4 rounded-xl flex items-center justify-center gap-2 hover:shadow-neon transition-all"
                     >
-                        로그인 시작하기 <ArrowRight size={18} />
+                        {isSignup ? '가입 완료하기' : '로그인 시작하기'} <ArrowRight size={18} />
                     </button>
 
                     <button
                         type="button"
                         onClick={() => {
-                            setId('new_user');
-                            setPw('1234');
-                            alert('🎉 회원가입이 완료되었습니다! (테스트 모드: 아이디가 자동으로 입력됩니다)');
+                            setIsSignup(!isSignup);
+                            setError('');
                         }}
                         className="w-full bg-white/5 text-gray-400 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 hover:text-white transition-all border border-white/5"
                     >
-                        <User size={18} /> 회원가입 신청하기
+                        <User size={18} /> {isSignup ? '기존 계정으로 로그인' : '회원가입 신청하기'}
                     </button>
                 </form>
 
