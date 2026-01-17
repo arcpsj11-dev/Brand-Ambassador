@@ -109,7 +109,16 @@ export const MarketingCanvas: React.FC = () => {
 
             // [SYNC] Execution Store 동기화 (30일치 데이터)
             if (titlesData.clusters) {
-                setClusters(titlesData.clusters);
+                // TopicStore가 기대하는 형식(Topic[])으로 변환
+                const formattedClusters = titlesData.clusters.map((cluster: any, idx: number) => ({
+                    id: `cluster-${Date.now()}-${idx}`,
+                    category: cluster.pillar?.title || `Cluster ${idx + 1}`,
+                    topics: [
+                        { ...cluster.pillar, type: 'pillar', status: 'ready' },
+                        ...(cluster.satellites || []).map((t: any) => ({ ...t, type: 'supporting', status: 'ready' }))
+                    ]
+                }));
+                setClusters(formattedClusters);
             }
 
             const chat = useChatStore.getState();
