@@ -29,7 +29,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     const { setActionStatus, addContent, updateStatus, completeTodayAction, completedCount, regenerationTopic, setRegenerationTopic } = useContentStore();
     const { checkAndUpgrade } = useStepStore();
     const { user } = useAuthStore();
-    const { selectedBlogId, keyKeywords } = useProfileStore();
+    const { keyKeywords } = useProfileStore();
     const { clusters, setClusters, getNextTopic, markAsPublished } = useTopicStore();
     const { updateDayStatus } = usePlannerStore();
     const brand = useBrandStore();
@@ -140,11 +140,11 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     // 네이버 글쓰기 바로가기 (발행 프로세스)
     const handleNaverPublish = async () => {
         if (!currentContent) return;
-        const targetBlogId = selectedBlogId;
-        if (!targetBlogId) {
-            alert("네이버 블로그 아이디를 입력하거나 선택해주세요.");
-            return;
-        }
+        if (!currentContent) return;
+
+        // [수정] 네이버 아이디 체크 로직 제거 (사용자 요청)
+        // const targetBlogId = selectedBlogId;
+        // if (!targetBlogId) { ... }
 
         // 1. 클립보드 복사
         const copyText = `${currentContent.title}\n\n${currentContent.body}`;
@@ -176,7 +176,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     };
 
     return (
-        <div className="fixed inset-0 z-[100] bg-black text-white flex flex-col items-center justify-center overflow-hidden">
+        <div className="fixed inset-0 z-[100] bg-black text-white flex flex-col items-center justify-center h-[100dvh] overflow-hidden">
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .no-select {
