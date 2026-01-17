@@ -8,7 +8,6 @@ import {
     ExternalLink,
     Lock,
     Pencil,
-    Trash2,
     AlertTriangle,
     RefreshCw
 } from 'lucide-react';
@@ -22,7 +21,7 @@ import { useAuthStore } from '../../store/useAuthStore';
  * 시스템에 의해 생성된 모든 콘텐츠의 기록 보관소
  */
 export const ContentArchive: React.FC = () => {
-    const { contents, deleteContent, clearAllContents, completedCount, setRegenerationTopic } = useContentStore();
+    const { contents, completedCount, setRegenerationTopic } = useContentStore();
     const { currentStep, canAccess } = useStepStore();
     const { user } = useAuthStore();
     const [selectedEditorId, setSelectedEditorId] = useState<string | null>(null);
@@ -50,18 +49,10 @@ export const ContentArchive: React.FC = () => {
         setSelectedEditorId(id);
     };
 
-    const handleDelete = (e: React.MouseEvent, id: string) => {
-        e.stopPropagation();
-        if (window.confirm('정말 이 항목을 삭제하시겠습니까? (복구 불가)')) {
-            deleteContent(id);
-        }
-    };
-
-    const handleClearAll = () => {
-        if (window.confirm('🚨 경고: 모든 아카이브 데이터와 진행도를 초기화하시겠습니까?')) {
-            clearAllContents();
-        }
-    };
+    /* 삭제 기능 제거
+    const handleDelete = (e: React.MouseEvent, id: string) => { ... }
+    const handleClearAll = () => { ... }
+    */
 
     const handleRegenerate = (e: React.MouseEvent, title: string) => {
         e.stopPropagation();
@@ -121,33 +112,8 @@ export const ContentArchive: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* OPG 진입 버튼 (GROW 이상) */}
-                        <button
-                            onClick={() => {
-                                const auth = canAccess('accessOPG', plan);
-                                if (!auth.granted) {
-                                    alert(auth.reason === 'PLAN' ? '🟨 GROW 플랜 이상에서 사용 가능한 기능입니다.' : '🔒 STEP 2 이상의 신뢰도가 필요합니다.');
-                                    return;
-                                }
-                                alert('OPG 모듈로 이동합니다.');
-                            }}
-                            className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all ${canAccess('accessOPG', plan).granted
-                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                                : 'bg-white/5 text-gray-600 border border-white/10'
-                                }`}
-                        >
-                            {canAccess('accessOPG', plan).granted ? <RefreshCw size={14} /> : <Lock size={14} />}
-                            원내 홍보물 생성 (OPG)
-                        </button>
 
-                        {isAdmin && (
-                            <button
-                                onClick={handleClearAll}
-                                className="px-5 py-2.5 rounded-xl bg-red-600 text-white shadow-lg shadow-red-600/20 text-xs font-black uppercase tracking-widest hover:bg-red-500 hover:-translate-y-0.5 transition-all flex items-center gap-2 border border-red-500/50"
-                            >
-                                <Trash2 size={14} /> 전체 아카이브 삭제 (ADMIN)
-                            </button>
-                        )}
+                        {/* Delete All 버튼 제거 */}
                     </div>
                 </div>
             </header>
@@ -237,14 +203,7 @@ export const ContentArchive: React.FC = () => {
                                     </div>
                                 )}
 
-                                {isAdmin && (
-                                    <button
-                                        onClick={(e) => handleDelete(e, content.id)}
-                                        className="w-10 h-10 rounded-full border border-red-500/20 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                )}
+                                {/* 개별 삭제 버튼 제거 */}
                             </div>
                         </motion.div>
                     ))

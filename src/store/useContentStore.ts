@@ -47,7 +47,7 @@ interface ContentState {
     regenerationTopic: string | null; // 다시 생성할 주제
 
     // 콘텐츠 생성
-    addContent: (content: Omit<Content, 'id' | 'createdAt' | 'updatedAt'>) => void;
+    addContent: (content: Omit<Content, 'id' | 'createdAt' | 'updatedAt'>) => string;
 
     // 오늘의 액션 상태 변경
     setActionStatus: (status: ActionStatus) => void;
@@ -59,9 +59,10 @@ interface ContentState {
     // 삭제 함수 제거, 대신 아카이브
     archiveContent: (id: string) => void;
 
-    // 삭제 함수 (관리자 전용)
+    /* 삭제 기능 비활성화 (영구 보관)
     deleteContent: (id: string) => void;
     clearAllContents: () => void;
+    */
 
     // 상태 변경
     updateStatus: (id: string, status: ContentStatus) => void;
@@ -85,9 +86,10 @@ export const useContentStore = create<ContentState>()(
             regenerationTopic: null,
 
             addContent: (content) => {
+                const id = `content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                 const newContent: Content = {
                     ...content,
-                    id: `content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    id,
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     logs: [],
@@ -95,6 +97,7 @@ export const useContentStore = create<ContentState>()(
                 set((state) => ({
                     contents: [...state.contents, newContent],
                 }));
+                return id;
             },
 
             setActionStatus: (status) => set({ actionStatus: status }),
@@ -139,6 +142,7 @@ export const useContentStore = create<ContentState>()(
                 }));
             },
 
+            /* 삭제 기능 비활성화 (영구 보관)
             deleteContent: (id) => {
                 set((state) => ({
                     contents: state.contents.filter((content) => content.id !== id),
@@ -148,6 +152,7 @@ export const useContentStore = create<ContentState>()(
             clearAllContents: () => {
                 set({ contents: [], completedCount: 0, lastActionDate: null, actionStatus: 'IDLE' });
             },
+            */
 
             schedulePublish: (id, date) => {
                 set((state) => ({

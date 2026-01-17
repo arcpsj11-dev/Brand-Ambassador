@@ -1,0 +1,50 @@
+﻿ M brain/4eb720c5-0da0-4b26-87dd-af387a7937a8/task.md
+ M build_log.txt
+ M build_log_utf8.txt
+ M src/App.tsx
+ M src/components/JennyChat.tsx
+ M src/features/admin/AdminDashboard.tsx
+ M src/features/content/ContentArchive.tsx
+ M src/features/content/ContentKitchen.tsx
+ M src/features/content/MarketingCanvas.tsx
+ M src/features/dashboard/TodayActionFlow.tsx
+ D src/features/opg/OPGConverter.tsx
+ D src/features/opg/opg-templates.ts
+ M src/features/slot/SlotContentFlow.tsx
+ M src/services/geminiService.ts
+ D src/services/mediaGenerationService.ts
+ M src/store/useContentStore.ts
+ M src/store/useProfileStore.ts
+ M src/store/useStepStore.ts
+ M src/store/useUIStore.ts
+?? allorigins.jpg
+?? build_errors.txt
+?? build_full_log.txt
+?? cb.jpg
+?? corsproxy.jpg
+?? free_banana.jpg
+?? gen_free.jpg
+?? gen_test.json
+?? git_status.txt
+?? leg_false.jpg
+?? legacy_apple.jpg
+?? legacy_banana.jpg
+?? lexica.json
+?? new_apple.jpg
+?? new_banana.jpg
+?? nologo.jpg
+?? proxy_ref.png
+?? proxy_test.jpg
+?? referer.jpg
+?? small.jpg
+?? src/features/admin/ExperimentManager.tsx
+?? src/features/dashboard/DashboardDiagnosisCard.tsx
+?? src/features/dashboard/DiagnosisInputWidget.tsx
+?? src/features/diagnosis/
+?? src/services/blogDiagnosisService.ts
+?? src/store/useAdminStore.ts
+?? src/store/useBlogDiagnosisStore.ts
+?? src/store/useExperimentStore.ts
+?? turbo_banana.jpg
+?? wsrv_http.jpg
+?? wsrv_test.jpg

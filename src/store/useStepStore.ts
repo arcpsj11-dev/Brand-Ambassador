@@ -13,7 +13,6 @@ export type FeatureKey =
     | 'editSlug'
     | 'manualSchedule'
     | 'internalDirectKeyword'
-    | 'accessOPG'
     | 'accessVeo';
 
 interface PermissionRequirement {
@@ -32,7 +31,6 @@ const PERMISSION_MAP: Record<FeatureKey, PermissionRequirement> = {
     editSlug: { minPlan: 'SCALE', minStep: 3 },
     manualSchedule: { minPlan: 'SCALE', minStep: 3 },
     internalDirectKeyword: { minPlan: 'SCALE', minStep: 3 },
-    accessOPG: { minPlan: 'GROW', minStep: 2 },
     accessVeo: { minPlan: 'SCALE', minStep: 3 },
 };
 

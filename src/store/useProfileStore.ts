@@ -35,6 +35,7 @@ interface ProfileState {
     addBlogAccount: (naverId: string) => void;
     removeBlogAccount: (naverId: string) => void;
     selectBlogAccount: (naverId: string) => void;
+    setSelectedBlogId: (blogId: string) => void;
     resetProfile: () => void;
 }
 
@@ -80,6 +81,7 @@ export const useProfileStore = create<ProfileState>()(
             })),
 
             selectBlogAccount: (naverId) => set({ selectedBlogId: naverId }),
+            setSelectedBlogId: (blogId: string) => set({ selectedBlogId: blogId }),
 
             resetProfile: () => set(initialState),
         }),

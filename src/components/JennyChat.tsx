@@ -96,22 +96,24 @@ export const JennyChat: React.FC = () => {
         if (isOpen) {
             const tabNames: Record<string, string> = {
                 dashboard: '통계 대시보드',
-                vault: '키워드 보관소',
-                content: ui.contentMode === 'canvas' ? '마케팅 캔버스' : '콘텐츠 팩토리(주방)',
-                settings: '브랜드 설정',
-                admin: '관리자 센터'
+                slots: '슬롯 관리자',
+                archive: '콘텐츠 아카이브',
+                diagnosis: '블로그 진단',
+                admin: '관리자 센터',
+                profile: '프로필 설정'
             };
 
-            let ment = `원장님, 지금 **${tabNames[ui.activeTab]}** 페이지를 보고 계시네요! 😉 필요한 게 있으시면 말씀만 하세요. 제가 직접 수정해 드릴 수도 있답니다!`;
+            const currentTabName = tabNames[ui.activeTab] || '메인';
+            let ment = `원장님, 지금 **${currentTabName}** 페이지를 보고 계시네요! 😉 필요한 게 있으시면 말씀만 하세요. 제가 직접 수정해 드릴 수도 있답니다!`;
 
-            if (ui.activeTab === 'content' && ui.contentMode === 'kitchen') {
+            if (ui.activeTab === 'slots' && ui.contentMode === 'kitchen') {
                 ment = "원장님, 이제 허리 환자들 다 끌어모을 '독한 글' 하나 제대로 만들어봐요! 😎 상식을 확 뒤엎는 오프닝부터 제니가 직접 세팅해 드릴게요! 🔥";
             }
 
             // 중복 메시지 방지 (간단하게 체크)
-            if (messages[messages.length - 1]?.content !== ment) {
-                addMessage({ role: 'assistant', content: ment });
-            }
+            if (messages.length > 0 && messages[messages.length - 1].content === ment) return;
+
+            addMessage({ role: 'assistant', content: ment });
         }
     }, [ui.activeTab, ui.contentMode, isOpen]);
 

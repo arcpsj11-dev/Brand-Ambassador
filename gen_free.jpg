@@ -1,0 +1,1 @@
+{"success":false,"error":{"message":"You need to authenticate by providing a session cookie or Authorization header (Bearer token).","code":"UNAUTHORIZED","timestamp":"2026-01-16T09:16:50.568Z"},"status":401}

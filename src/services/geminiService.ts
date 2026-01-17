@@ -1,4 +1,34 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { useExperimentStore } from '../store/useExperimentStore';
+import type { StepType } from '../store/useExperimentStore';
+import { useAdminStore } from '../store/useAdminStore';
+
+// Helper: A/B 테스트 활성 프롬프트 가져오기
+const getActiveVariantPrompt = (step: StepType): { prompt: string; variantId: string; experimentId: string } | null => {
+    try {
+        const { getActiveExperiment, incrementVariantUsage } = useExperimentStore.getState();
+        const experiment = getActiveExperiment(step);
+
+        if (experiment && experiment.variants.length > 0) {
+            const activeVariants = experiment.variants.filter(v => v.isActive);
+            if (activeVariants.length === 0) return null;
+
+            const randomIndex = Math.floor(Math.random() * activeVariants.length);
+            const selectedVariant = activeVariants[randomIndex];
+
+            incrementVariantUsage(experiment.id, selectedVariant.id);
+
+            return {
+                prompt: selectedVariant.promptContent,
+                variantId: selectedVariant.id,
+                experimentId: experiment.id
+            };
+        }
+    } catch (e) {
+        console.warn("Experiment Store Access Failed:", e);
+    }
+    return null;
+};
 
 export interface ReasoningStep {
     id: string;
@@ -14,8 +44,25 @@ export interface ReasoningResponse {
     recommendation: string;
 }
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY);
+const getGenAI = () => {
+    const adminKey = useAdminStore.getState().geminiApiKey;
+    if (!adminKey) {
+        throw new Error("API_KEY_MISSING");
+    }
+    return new GoogleGenerativeAI(adminKey);
+};
+
+// [나노바나나] 의료법 및 포털 정책 준수 레이어 (절대 규칙)
+const COMPLIANCE_LAYER = `
+[절대 준수 출력 제약 조건]
+- 본 콘텐츠는 후기나 광고가 아닌 '정보 제공형 콘텐츠'여야 합니다.
+- '내돈내산', '효과 보장', '성능 확실', '치료 결과 단정' 등의 표현을 절대 사용하지 마세요.
+- 병원명, 전화번호, 정확한 상세 주소는 본문 중간에 직접 기재하지 않습니다. (마무리 영역에만 허용)
+- 모든 치료 효과는 '도움이 될 수 있다', '회복을 돕는 목적', '기대할 수 있다' 등 완곡한 표현을 사용하세요.
+- 의료법 및 네이버 검색 정책을 위반하는 과장되거나 확정적인 표현은 엄격히 금지합니다.
+- 글 구조는 A-READ 방식을 유지하되, 이미지 위치는 [이미지: 설명] 형식을 따릅니다.
+- 글 말미에는 반드시 '다음 글에서 다룰 주제'를 예고하는 문단을 포함하세요.
+`;
 
 export const geminiReasoningService = {
     // [나노바나나] 지능형 인텐트 분석
@@ -79,36 +126,18 @@ export const geminiReasoningService = {
         blogIndex?: number
     }) {
         try {
+            const genAI = getGenAI();
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            const adminState = useAdminStore.getState();
+            const persona = adminState.targetPersona;
+            const bodyPrompt = adminState.prompts.body;
 
-            const systemPrompt = `당신은 '도담한의원'의 수석 마케터이자 전문 의료 칼럼니스트 '제니(Jenny)'입니다.
+            const systemPrompt = bodyPrompt
+                .replace(/{{title}}/g, input)
+                .replace(/{{persona}}/g, persona);
 
-[1. 글의 정체성 및 톤앤매너]
-- 역할: 의료 전문가(90%) + 세련된 마케터(10%).
-- 톤앤매너: 도담한의원 원장님이 환자에게 직접 상담하듯 따뜻하고 논리적인 말투.
-- 가독성: 모바일 최적화 (한 문단 2~3줄 내외). 핵심 아이콘(🚨, ✅, 📍)만 최소 활용.
+            const prompt = `${systemPrompt} \n${COMPLIANCE_LAYER} \nClinic Info: ${context.clinicName} / ${context.address} / ${context.phoneNumber}`;
 
-[2. SEO 전략]
-- 필수 키워드: '김포 운양동 한의원', '교통사고 후유증', '도담한의원', '추나요법', '약침치료'.
-- 서두 300자 내 키워드 배치 필수.
-
-[3. 본문 작성 공식: A-READ V5]
-- [A] 구체적 상황 제시, [R] 한의학적 해부학 소견, [E] 학회지/임상 데이터 인용, [A] 번호 나열 없는 서술형 솔루션, [D] 치유 회복 축복.
-
-[4. 글의 흐름 및 시각화 가이드]
-- 서술형 체제: 번호 나열(1, 2, 3...) 절대 금지. 전문가 칼럼 스타일로 작성.
-- 이미지 앵커: 각 소제목(##) 아래 내용이 끝나는 지점에 [이미지: (여기에 들어갈 이미지의 상세 영문 프롬프트)]를 반드시 생성.
-- 영문 프롬프트 규칙: Photorealistic, high quality, Cinematic lighting, Soft focus background, Clean and professional atmosphere 포함.
-
-[5. 마무리 구성]
-- Jennie's Pick: MZ세대 위트 팩트체크 한 문장 추가.
-- 병원 정보: 도담한의원(031-988-1575), 운양동 광장프라자 311호.
-- 해시태그: #김포운양동한의원 #도담한의원 등 5~8개 한 줄 나열.
-
----
-Clinic info: ${context.clinicName} / ${context.address} / ${context.phoneNumber}`;
-
-            const prompt = `${systemPrompt} \nUser Request: "${input}"`;
             const result = await model.generateContentStream(prompt);
             for await (const chunk of result.stream) {
                 yield chunk.text();
@@ -122,6 +151,7 @@ Clinic info: ${context.clinicName} / ${context.address} / ${context.phoneNumber}
     // [나노바나나] 키워드 전략 분석
     async analyzeKeywords(input: string, context: { city: string }): Promise<ReasoningResponse> {
         try {
+            const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash",
                 generationConfig: { responseMimeType: "application/json" }
@@ -155,14 +185,19 @@ Clinic info: ${context.clinicName} / ${context.address} / ${context.phoneNumber}
     // [나노바나나] 30일 마케팅 타이틀 벌크 생성
     async generateMonthlyTitles(topic: string): Promise<any> {
         try {
+            const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash",
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            const prompt = `Generate 30 blog titles for medical clustering strategy based on "${topic}".
-            1 Pillar + 9 Supporting per cluster, 3 clusters total. Tone: Professional yet catchy (MZ style).
-            Result MUST be JSON with "clusters" array.`;
+            const adminState = useAdminStore.getState();
+            const titlePromptTemplate = adminState.prompts.title;
+            const persona = adminState.targetPersona;
+
+            const prompt = titlePromptTemplate
+                .replace(/{{topic}}/g, topic)
+                .replace(/{{persona}}/g, persona);
 
             const result = await model.generateContent(prompt);
             const text = result.response.text();
@@ -174,25 +209,32 @@ Clinic info: ${context.clinicName} / ${context.address} / ${context.phoneNumber}
         }
     },
 
-    // [나노바나나] 이미지 프롬프트 추출/생성
-    async generateImagePrompts(contentBody: string): Promise<string[]> {
+    // [나노바나나] 이미지 프롬프트 및 ALT 추출/생성
+    async generateImagePrompts(contentBody: string): Promise<Array<{ prompt: string, alt: string }>> {
         try {
+            const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash",
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            const prompt = `Extract or generate high-quality image prompts from the content below.
-            Rules:
-            1. Language: English.
-            2. Style: Photorealistic, high quality, Cinematic lighting, Soft focus background, Clean and professional atmosphere.
-            3. Extract from [이미지: (prompt)] tags if they exist.
-            Format: JSON { "prompts": [] }
-            Content: ${contentBody.substring(0, 3000)}`;
+            const adminState = useAdminStore.getState();
+            const imagePromptTemplate = adminState.prompts.image;
+
+            const prompt = `${imagePromptTemplate} \n\n본문: ${contentBody.substring(0, 4000)}`;
 
             const result = await model.generateContent(prompt);
             const data = JSON.parse(result.response.text());
-            return data.prompts || ["Clinic room photorealistic, high quality"];
+
+            if (data.images && data.images.length > 0) {
+                return data.images;
+            }
+
+            // Fallback if no images found
+            return [{
+                prompt: "Professional clinic room, natural light, soft colors, realistic but friendly, warm professional photography",
+                alt: "도담한의원 진료실 전경"
+            }];
         } catch (error) {
             console.error("Image Prompt Error:", error);
             return [];
@@ -205,12 +247,15 @@ Clinic info: ${context.clinicName} / ${context.address} / ${context.phoneNumber}
         satelliteTitles: string[];
     }> {
         try {
+            const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash",
                 generationConfig: { responseMimeType: "application/json" }
             });
 
             const prompt = `Generate 1 Pillar and 9 Satellite blog titles for keyword "${keyword}".
+            [CRITICAL TITLE FORMULA]: Every title MUST follow this formula: "[증상/상황] + 왜/어떻게/무엇을 + 설명/정리/이해/관점"
+            Example: "운양동 교통사고 목통증, 왜 밤마다 심해질까? (설명)"
             Persona: ${persona?.jobTitle || 'Expert'}, Tone: ${persona?.toneAndManner || 'Professional'}.
             JSON Format: { "pillarTitle": "", "satelliteTitles": [] }`;
 
@@ -238,24 +283,46 @@ Clinic info: ${context.clinicName} / ${context.address} / ${context.phoneNumber}
         clinicInfo?: { name: string; address: string; phone: string };
     }): Promise<{ title: string; body: string }> {
         try {
+            const genAI = getGenAI();
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            const adminState = useAdminStore.getState();
+            const bodyPromptTemplate = adminState.prompts.body;
+            const targetPersona = adminState.targetPersona;
+
             const isPillar = params.topicIndex === 1;
 
-            const basePrompt = `당신은 '도담한의원' 원원장님으로서 블로그 글을 작성합니다.
-주제(제목): "${params.currentTitle}"
+            let finalPrompt = bodyPromptTemplate
+                .replace(/{{title}}/g, params.currentTitle)
+                .replace(/{{pillarTitle}}/g, params.pillarTitle)
+                .replace(/{{persona}}/g, targetPersona || params.persona.jobTitle)
+                .replace(/{{tone}}/g, params.persona.toneAndManner);
 
-[작성 지침]
-- 톤앤매너: 따뜻하고 논리적인 서술형 칼럼 스타일. 번호 나열(1, 2, 3...)은 절대 사용하지 마세요.
-- 가독성: 한 문단 2~3줄 내외.
-- 이미지 앵커: 각 소제목(##) 아래 내용이 끝나는 지점에 [이미지: (영문 프롬프트)]를 삽입하세요.
-- 영문 프롬프트: Photorealistic, high quality, Cinematic lighting, Soft focus background, Clean and professional atmosphere 필수 포함.
-- 마무리 구성: Jennie's Pick (MZ 위트), 병원 정보(도담한의원 031-988-1575), 해시태그 5~8개.
+            finalPrompt += `\n\n${isPillar ? '필러 포스트: 주제를 총괄하는 전문적인 기둥 콘텐츠.' : `서브 포스트: "${params.pillarTitle}"의 특정 내용을 심화한 콘텐츠.`}`;
 
-${isPillar ? '필러 포스트: 포괄적이고 전문적인 가이드 작성.' : `서브 포스트: 필러 "${params.pillarTitle}"와 연결된 세부 주제.`}
+            // A/B Test Injection (STEP4_BODY)
+            // Note: STEP4_BODY is assumed to cover the main generation logic here.
+            const variant = getActiveVariantPrompt('STEP4_BODY');
+            if (variant) {
+                // If variant exists, override the prompt.
+                // We use simple placeholder replacement for context injection.
+                // If the user's prompt is a full rewrite, they must include placeholders e.g. {{title}}
+                // MVP: If no {{title}} is found in variant, we append context at the top.
+                console.log(`[A/B Experiment] ${variant.experimentId} / Variant ${variant.variantId} Applied`);
 
-출력형식: 제목과 본문을 그대로 작성 (JSON 아님).`;
+                finalPrompt = variant.prompt
+                    .replace(/{{title}}/g, params.currentTitle)
+                    .replace(/{{pillarTitle}}/g, params.pillarTitle)
+                    .replace(/{{persona}}/g, params.persona.jobTitle)
+                    .replace(/{{tone}}/g, params.persona.toneAndManner);
 
-            const result = await model.generateContent(basePrompt);
+                // Fallback: If replacement didn't happen (no placeholders), prepend context
+                if (!finalPrompt.includes(params.currentTitle)) {
+                    finalPrompt = `Subject: ${params.currentTitle}\n\n` + finalPrompt;
+                }
+            }
+
+            finalPrompt += `\n\n${COMPLIANCE_LAYER}`;
+            const result = await model.generateContent(finalPrompt);
             return {
                 title: params.currentTitle,
                 body: result.response.text().trim()
@@ -283,6 +350,7 @@ ${isPillar ? '필러 포스트: 포괄적이고 전문적인 가이드 작성.' 
         }>;
     }> {
         try {
+            const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash",
                 generationConfig: { responseMimeType: "application/json" }

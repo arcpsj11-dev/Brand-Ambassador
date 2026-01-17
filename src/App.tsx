@@ -1,25 +1,26 @@
 import React from 'react';
 import { useAuthStore } from './store/useAuthStore';
 import { useProfileStore } from './store/useProfileStore';
+import { useUIStore } from './store/useUIStore';
+import type { AppTab } from './store/useUIStore';
 import { migrateToSlotSystem } from './services/migrationService';
 import { Login } from './features/auth/Login';
 import { ProfileSetup } from './features/profile/ProfileSetup';
-import { OPGConverter } from './features/opg/OPGConverter';
 import { TodayAction } from './features/dashboard/TodayAction';
 import { SlotManager } from './features/slot/SlotManager';
 import { ContentArchive } from './features/archive/ContentArchive';
 import { SlotSelector } from './features/slot/SlotSelector';
 import { Step3UnlockOverlay } from './features/dashboard/Step3UnlockOverlay';
-import { BlogMetricCard } from './features/dashboard/BlogMetricCard';
-import { Sparkles, FileText, LogOut, LayoutDashboard, Database, LayoutGrid } from 'lucide-react';
+import { BlogHealthCheck } from './features/diagnosis/BlogHealthCheck';
+import { DashboardDiagnosisCard } from './features/dashboard/DashboardDiagnosisCard';
+import { AdminDashboard } from './features/admin/AdminDashboard';
+import { Sparkles, LogOut, LayoutDashboard, Database, LayoutGrid, Activity, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-type AppTab = 'dashboard' | 'slots' | 'opg' | 'archive' | 'profile';
 
 const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const { isProfileComplete } = useProfileStore();
-  const [activeTab, setActiveTab] = React.useState<AppTab>('dashboard');
+  const { activeTab, setActiveTab } = useUIStore();
 
   // 앱 로드 시 슬롯 시스템 마이그레이션 실행
   React.useEffect(() => {
@@ -45,10 +46,14 @@ const App: React.FC = () => {
   const navItems = [
     { id: 'dashboard' as AppTab, label: '대시보드', icon: LayoutDashboard },
     { id: 'slots' as AppTab, label: '블로그 슬롯', icon: LayoutGrid },
-    { id: 'opg' as AppTab, label: '원내 홍보물', icon: FileText },
+    { id: 'diagnosis' as AppTab, label: '블로그 진단', icon: Activity },
     { id: 'archive' as AppTab, label: '콘텐츠 아카이브', icon: Database },
     { id: 'profile' as AppTab, label: '프로파일 설정', icon: Sparkles },
   ];
+
+  if (user?.role === 'admin') {
+    navItems.push({ id: 'admin' as AppTab, label: '관리자 페이지', icon: ShieldCheck });
+  }
 
   return (
     <div className="min-h-screen flex bg-background text-white selection:bg-brand-primary/30">
@@ -130,6 +135,8 @@ const App: React.FC = () => {
 
                 <TodayAction />
 
+                <DashboardDiagnosisCard />
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                   <div className="space-y-6 flex flex-col">
                     <div className="glass-card p-6 space-y-3 flex-1">
@@ -140,16 +147,8 @@ const App: React.FC = () => {
                       <p className="text-sm text-gray-500">초기 설정이 완료되었습니다</p>
                     </div>
 
-                    <div className="glass-card p-6 space-y-3 flex-1">
-                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                        <FileText className="text-purple-500" size={24} />
-                      </div>
-                      <h3 className="font-black text-lg">OPG 모듈</h3>
-                      <p className="text-sm text-gray-500">원내 홍보물 변환 기능</p>
-                    </div>
                   </div>
 
-                  <BlogMetricCard />
                 </div>
 
                 <div className="glass-card p-8 space-y-4">
@@ -182,27 +181,23 @@ const App: React.FC = () => {
                         <p className="text-xs text-gray-500">의료법 위반 자동 검증</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm">OPG 변환 모듈</h4>
-                        <p className="text-xs text-gray-500">블로그 → PDF/이미지</p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
             )}
             {activeTab === 'slots' && <SlotManager />}
-            {activeTab === 'opg' && <OPGConverter />}
+            {activeTab === 'diagnosis' && (
+              <div className="max-w-6xl mx-auto space-y-8">
+                <BlogHealthCheck />
+              </div>
+            )}
             {activeTab === 'archive' && <ContentArchive />}
             {activeTab === 'profile' && (
               <div className="max-w-4xl mx-auto">
                 <ProfileSetup />
               </div>
             )}
+            {activeTab === 'admin' && <AdminDashboard />}
           </motion.div>
         </AnimatePresence>
       </main>

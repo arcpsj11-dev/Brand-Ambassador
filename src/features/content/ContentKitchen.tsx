@@ -16,7 +16,8 @@ export const ContentKitchen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     const brand = useBrandStore();
     const chat = useChatStore();
     const contentStore = useContentStore();
-    const { currentStep, canEditTitle } = useStepStore();
+    const { canAccess } = useStepStore();
+    const canEditTitle = () => canAccess('editTitleFull', 'GROW').granted;
 
     const [content, setContent] = useState('');
     const [title, setTitle] = useState(activeDraft?.topic || '');
@@ -319,6 +320,7 @@ export const ContentKitchen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                                             riskCheckPassed: true,
                                             riskCheckResults: riskCheckResult,
                                             scheduledPublishAt: date,
+                                            logs: []
                                         });
                                         chat.addMessage({
                                             role: 'assistant',

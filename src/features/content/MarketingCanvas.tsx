@@ -91,7 +91,7 @@ export const MarketingCanvas: React.FC = () => {
         if (score >= 70) strat = 'PASONA';
 
         try {
-            const titles = await geminiReasoningService.generateMonthlyTitles(topic, persona, strat);
+            const titles = await geminiReasoningService.generateMonthlyTitles(topic);
             const planWithStatus = titles.map((t: any) => ({
                 ...t,
                 status: 'ready' as const

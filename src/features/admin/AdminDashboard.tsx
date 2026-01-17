@@ -1,98 +1,260 @@
-import React from 'react';
-import { Users, Search, Diamond, TrendingUp, BarChart3, PieChart, Activity } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+    Settings,
+    Users,
+    Wand2,
+    Key,
+    Save,
+    RefreshCw,
+    ShieldCheck,
+    ChevronRight,
+    User
+} from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAdminStore, type TargetPersonaType } from '../../store/useAdminStore';
 
 export const AdminDashboard: React.FC = () => {
-    const stats = [
-        { label: '전체 사용자', value: '1,284명', icon: Users, color: 'text-blue-400' },
-        { label: '누적 탐사 건수', value: '42,931건', icon: Search, color: 'text-brand-primary' },
-        { label: '다이아 등급 비중', value: '12%', icon: Diamond, color: 'text-cyan-400' },
-        { label: '월 매출 성장률', value: '+24.5%', icon: TrendingUp, color: 'text-green-400' },
-    ];
+    const {
+        geminiApiKey, setGeminiApiKey,
+        targetPersona, setTargetPersona,
+        prompts, updatePrompt,
+        users, updateUserTier
+    } = useAdminStore();
+
+    const [activeTab, setActiveTab] = useState<'prompts' | 'users' | 'settings'>('prompts');
+    const [localPrompts, setLocalPrompts] = useState(prompts);
+    const [localApiKey, setLocalApiKey] = useState(geminiApiKey);
+
+    const handleSavePrompts = () => {
+        updatePrompt('title', localPrompts.title);
+        updatePrompt('body', localPrompts.body);
+        updatePrompt('image', localPrompts.image);
+        alert('프롬프트 설정이 저장되었습니다.');
+    };
+
+    const handleSaveSettings = () => {
+        setGeminiApiKey(localApiKey);
+        alert('API 설정이 저장되었습니다.');
+    };
+
+    const personas: TargetPersonaType[] = ['한의사', '의사', '변호사', '세무사', '치과의사'];
 
     return (
-        <div className="space-y-10 pb-20">
-            <section>
-                <h2 className="text-3xl font-black mb-2 flex items-center gap-3">
-                    <Activity className="text-brand-primary" size={32} /> 관리자 관제 센터
-                </h2>
-                <p className="text-gray-500">제니 마케터 전체 시스템의 이용 현황을 실시간으로 모니터링합니다.</p>
-            </section>
+        <div className="flex h-screen bg-[#0A0A0B] text-white">
+            {/* Sidebar */}
+            <div className="w-64 border-r border-white/5 bg-black p-6 flex flex-col gap-8">
+                <div className="flex items-center gap-3 px-2">
+                    <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
+                        <ShieldCheck size={20} className="text-black" />
+                    </div>
+                    <span className="font-black tracking-tighter text-xl italic uppercase">Admin Panel</span>
+                </div>
 
-            {/* Stats Grid */}
-            <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {stats.map((stat, i) => (
-                    <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="glass-card p-6 border-white/5 bg-white/[0.02]"
+                <nav className="flex flex-col gap-2">
+                    <button
+                        onClick={() => setActiveTab('prompts')}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'prompts' ? 'bg-brand-primary text-black font-bold' : 'text-gray-400 hover:bg-white/5'}`}
                     >
-                        <div className="flex justify-between items-start mb-4">
-                            <div className={`p-3 rounded-xl bg-white/5 ${stat.color}`}>
-                                <stat.icon size={20} />
-                            </div>
-                        </div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{stat.label}</p>
-                        <h3 className="text-2xl font-black mt-1">{stat.value}</h3>
-                    </motion.div>
-                ))}
-            </section>
+                        <Wand2 size={18} />
+                        <span>프롬프트 제어</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('users')}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'users' ? 'bg-brand-primary text-black font-bold' : 'text-gray-400 hover:bg-white/5'}`}
+                    >
+                        <Users size={18} />
+                        <span>회원 등급 조정</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('settings')}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-brand-primary text-black font-bold' : 'text-gray-400 hover:bg-white/5'}`}
+                    >
+                        <Settings size={18} />
+                        <span>글로벌 설정</span>
+                    </button>
+                </nav>
+            </div>
 
-            {/* Visual Charts Simulation */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="glass-card p-8 min-h-[400px] flex flex-col">
-                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                        <BarChart3 size={18} className="text-brand-primary" /> 지역별 이용 분석
-                    </h3>
-                    <div className="flex-1 flex items-end gap-4 pb-4">
-                        {[60, 85, 45, 95, 70, 30].map((h, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-3">
-                                <motion.div
-                                    initial={{ height: 0 }}
-                                    animate={{ height: `${h}%` }}
-                                    className="w-full bg-brand-primary/20 border-t-2 border-brand-primary rounded-t-lg relative group"
+            {/* Main Content */}
+            <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+                <div className="max-w-4xl mx-auto space-y-12">
+
+                    {/* Header */}
+                    <div className="space-y-2">
+                        <h1 className="text-4xl font-black italic uppercase tracking-tighter">
+                            {activeTab === 'prompts' && 'Prompt Control'}
+                            {activeTab === 'users' && 'User Management'}
+                            {activeTab === 'settings' && 'Global Settings'}
+                        </h1>
+                        <p className="text-gray-500 font-medium">
+                            {activeTab === 'prompts' && 'AI 생성 로직의 핵심 프롬프트를 실시간으로 제어합니다.'}
+                            {activeTab === 'users' && '회원의 권한 및 멤버십 등급을 수동으로 조정합니다.'}
+                            {activeTab === 'settings' && '시스템 전반에 적용되는 API 키 및 기본 타겟을 설정합니다.'}
+                        </p>
+                    </div>
+
+                    {/* Prompts Tab */}
+                    {activeTab === 'prompts' && (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                            <div className="grid gap-6">
+                                <div className="space-y-3">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                        <ChevronRight size={14} className="text-brand-primary" />
+                                        Monthly Titles Prompt (30일 주제 생성)
+                                    </label>
+                                    <textarea
+                                        value={localPrompts.title}
+                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev, title: e.target.value }))}
+                                        className="w-full h-48 bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm focus:border-brand-primary outline-none transition-all resize-none"
+                                        placeholder="{{topic}} 플레이스홀더를 포함하세요."
+                                    />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                        <ChevronRight size={14} className="text-brand-primary" />
+                                        Main Content Prompt (본문 생성)
+                                    </label>
+                                    <textarea
+                                        value={localPrompts.body}
+                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev, body: e.target.value }))}
+                                        className="w-full h-64 bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm focus:border-brand-primary outline-none transition-all resize-none"
+                                        placeholder="{{title}}, {{persona}}, {{tone}} 플레이스홀더를 포함하세요."
+                                    />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                        <ChevronRight size={14} className="text-brand-primary" />
+                                        Image Analysis Prompt (이미지 프롬프트 추출)
+                                    </label>
+                                    <textarea
+                                        value={localPrompts.image}
+                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev, image: e.target.value }))}
+                                        className="w-full h-48 bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm focus:border-brand-primary outline-none transition-all resize-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleSavePrompts}
+                                className="flex items-center gap-3 px-8 py-4 bg-brand-primary text-black font-black uppercase tracking-widest rounded-xl hover:shadow-neon transition-all"
+                            >
+                                <Save size={20} />
+                                <span>프롬프트 설정 저장</span>
+                            </button>
+                        </motion.div>
+                    )}
+
+                    {/* Users Tab */}
+                    {activeTab === 'users' && (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden text-sm">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-white/5 bg-white/5 text-gray-400 font-bold uppercase tracking-widest">
+                                            <th className="px-8 py-4 text-left">회원 아이디</th>
+                                            <th className="px-8 py-4 text-left">역할</th>
+                                            <th className="px-8 py-4 text-left">멤버십 등급</th>
+                                            <th className="px-8 py-4 text-right">조정</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {users.map((user) => (
+                                            <tr key={user.id} className="hover:bg-white/5 transition-all group">
+                                                <td className="px-8 py-6 font-bold flex items-center gap-3">
+                                                    <User size={18} className="text-brand-primary opacity-50" />
+                                                    {user.id}
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${user.role === 'admin' ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30' : 'bg-white/10 text-gray-400'}`}>
+                                                        {user.role}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <span className={`font-black tracking-tighter italic ${user.tier === 'SCALE' ? 'text-brand-primary' : user.tier === 'GROW' ? 'text-purple-400' : 'text-gray-400'}`}>
+                                                        {user.tier}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-6 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        {(['START', 'GROW', 'SCALE'] as const).map((t) => (
+                                                            <button
+                                                                key={t}
+                                                                onClick={() => updateUserTier(user.id, t)}
+                                                                className={`px-3 py-1.5 rounded-lg font-bold text-[10px] transition-all ${user.tier === t ? 'bg-brand-primary text-black shadow-neon' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`}
+                                                            >
+                                                                {t}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Settings Tab */}
+                    {activeTab === 'settings' && (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+                            {/* API Key Section */}
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 text-brand-primary">
+                                    <Key size={20} />
+                                    <span className="font-bold text-sm uppercase tracking-widest">Global Gemini API Configuration</span>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gemini API Key</label>
+                                    <input
+                                        type="password"
+                                        value={localApiKey}
+                                        onChange={(e) => setLocalApiKey(e.target.value)}
+                                        placeholder="API 키를 입력하면 모든 사용자의 요청에 우선 적용됩니다."
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
+                                    />
+                                    <p className="text-[10px] text-gray-600 font-medium">관리자가 입력한 키는 로컬 보안 환경 내에서만 관리되며 서버로 직접 전달되지 않습니다.</p>
+                                </div>
+
+                                <button
+                                    onClick={handleSaveSettings}
+                                    className="flex items-center gap-3 px-8 py-4 bg-brand-primary text-black font-black uppercase tracking-widest rounded-xl hover:shadow-neon transition-all"
                                 >
-                                    <div className="absolute top-[-30px] left-1/2 -translate-x-1/2 bg-brand-primary text-black text-[10px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {h}%
-                                    </div>
-                                </motion.div>
-                                <span className="text-[10px] text-gray-600 font-bold">지역 {i + 1}</span>
+                                    <Save size={20} />
+                                    <span>시스템 설정 저장</span>
+                                </button>
                             </div>
-                        ))}
-                    </div>
-                </div>
 
-                <div className="glass-card p-8 min-h-[400px] flex flex-col">
-                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                        <PieChart size={18} className="text-brand-accent" /> 멤버십 등급 분포
-                    </h3>
-                    <div className="flex-1 flex items-center justify-center relative">
-                        <div className="w-48 h-48 rounded-full border-[15px] border-white/5 relative">
-                            <div className="absolute inset-0 rounded-full border-[15px] border-brand-primary border-t-transparent border-l-transparent rotate-[45deg]" />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-2xl font-black">Diamond</span>
-                                <span className="text-[10px] text-gray-500 font-bold uppercase">Leading Tier</span>
+                            {/* Target Persona Section */}
+                            <div className="space-y-6 pt-12 border-t border-white/5">
+                                <div className="flex items-center gap-3 text-gray-400">
+                                    <RefreshCw size={20} />
+                                    <span className="font-bold text-sm uppercase tracking-widest">Target Persona Management</span>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                                    {personas.map((p) => (
+                                        <button
+                                            key={p}
+                                            onClick={() => setTargetPersona(p)}
+                                            className={`py-4 rounded-xl border font-black uppercase tracking-tighter transition-all ${targetPersona === p ? 'bg-brand-primary text-black border-brand-primary shadow-neon scale-105' : 'bg-black text-gray-500 border-white/10 hover:border-white/20'}`}
+                                        >
+                                            {p}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-center text-gray-600 font-bold uppercase tracking-widest">
+                                    선택된 페르소나는 프롬프트의 <span className="text-brand-primary">{"{{persona}}"}</span> 태그에 실시간 주입됩니다.
+                                </p>
                             </div>
-                        </div>
-                        <div className="absolute right-0 space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-3 h-3 bg-brand-primary rounded-full" />
-                                <span className="text-xs text-gray-400">Diamond (12%)</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-3 h-3 bg-white/20 rounded-full" />
-                                <span className="text-xs text-gray-400">Silver (35%)</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-3 h-3 bg-white/5 rounded-full" />
-                                <span className="text-xs text-gray-400">Free (53%)</span>
-                            </div>
-                        </div>
-                    </div>
+                        </motion.div>
+                    )}
+
                 </div>
-            </section>
+            </div>
         </div>
     );
 };

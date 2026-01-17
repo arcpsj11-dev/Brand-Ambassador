@@ -13,6 +13,11 @@
   - [x] User Profile 스키마
   - [x] Content Status 정의
   - [x] STEP & Permission 모델
+- [x] Debugging Black Screen Error
+    - [x] Identify root cause of black screen (runtime crash in DashboardDiagnosisCard)
+    - [x] Fix null reference errors in DashboardDiagnosisCard
+    - [x] Restore full App.tsx layout and Step3 overlay
+    - [x] Verify application mounts correctly
 - [x] 시스템 아키텍처 설계
   - [x] RiskFilterEngine 구조
   - [x] STEP 권한 제어 시스템
@@ -127,3 +132,48 @@
 - [x] Protocol v1.0 Plan x STEP Matrix 구현 완료
 - [x] OPG (Online to Print Generator) 모듈 구축 및 권한 연동 완료
 - [x] 전 시스템 Permission Engine 통합 및 검증 완료
+- [x] 블로그 본문 글 생성 프롬프트 고도화 (A-READ 구조 + SEO)
+- [x] 이미지 프롬프트 생성 로직 최적화 ([대상, 행동, 표정, 배경] 추출 및 스타일 고정)
+- [x] 이미지 ALT 태그 보존 및 UI 반영
+- [x] 대시보드 진단 카드 '오늘의 처방' 누락 문제 해결
+
+---
+
+- [x] Phase 8: 콘텐츠 품질 및 이미지 생성 시스템 고도화
+  - [x] **Content Gen**: A-READ 구조 강화 및 의료법 준수 안전어 필터 고도화
+  - [x] **Image Prompt**: [대상, 행동, 표정, 배경] 속성 추출 및 스타일 가이드라인(Warm Professional) 고정
+  - [x] **UI**: 프롬프트별 개별 이미지 생성 버튼('요술봉') 추가
+  - [x] **SEO**: 이미지 ALT 태그 데이터 보존 및 발행 프로세스 연동
+  - [x] **Bug Fix**: `useBlogDiagnosisStore` 인터페이스 불일치로 인한 진단 팁 누락 해결
+
+---
+
+- [x] Phase 9: 사용자 경험 및 API 신뢰성 강화
+  - [x] **UI/UX**: 'START' 요금제 이미지 생성 제한 완화 (1장 → 3장)
+  - [x] **UI**: 실시간 'Gemini API Connected' 상태 표시기 추가
+  - [x] **Stability**: 개별 이미지 생성 시 로딩 상태 처리 및 중복 스테이트 정리
+  - [x] **Extraction**: 이미지 태그([이미지번호: ...]) 파싱 로직 정교화 (다중 이미지 추출 보장)
+  - [x] **Automation**: 프롬프트 추출 후 이미지 일괄 생성 자동화 (사용자 클릭 최소화)
+  - [x] **Optimization**: 이미지 생성 요청 순차 처리(Throttling)를 통한 Rate Limit 충돌 방지
+  - [x] **Guaranteed Count**: 프롬프트 부족 시 자동 변형(Variation) 생성을 통한 3장 보장 로직 추가
+
+---
+
+## Phase 10: Deep Dive Debugging (Image Generation)
+- [x] **Debug UI**: 화면 우측 하단에 내부 상태(Tier, Limit, Prompt Count)를 표시하는 오버레이 주입
+- [x] **Forced Override**: 'START' 티어의 이미지 제한을 강제로 3으로 고정하여 로직 테스트
+- [x] **Verification**: 실제 사용자가 디버그 정보를 보고 상황을 전파할 수 있도록 조치
+
+---
+
+## Phase 11: Rendering Stability & UX Fix
+- [x] **Fixed Slots**: `TodayActionFlow` / `SlotContentFlow` 렌더링 로직을 `Array.from` 기반 고정 슬롯으로 변경
+- [x] **Loading Refinement**: 슬롯 번호(1/3, 2/3, 3/3) 시각화 및 로딩 인디케이터 개선
+
+---
+
+## Phase 12: Rate Limit Stability & API Restoration (V7 Rescue)
+- [x] **Endpoint Recovery**: `gen.pollinations.ai` (Timeout) -> `pollinations.ai/p/` (Stable)로 원복
+- [x] **Model Fallback**: Public Endpoint의 Flux 리밋 회피를 위해 전 계정 `turbo` 모델 강제 적용 (Stable)
+- [x] **Extension Fix**: `.jpg` 확장자를 명시하여 브라우저 호환성 및 Content negotiation 개선
+- [x] **True Cooldown**: 생성 간 대기 시간을 5초로 연장하여 서버 처리 시간 보장
