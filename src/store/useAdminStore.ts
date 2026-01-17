@@ -65,10 +65,24 @@ JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day"
 
 분량: 2000~2500자 필수 작성.`,
 
-    image: `당신은 블로그 콘텐츠 분석 및 이미지 프롬프트 생성 전문가입니다.
-주어진 본문 내용을 분석하여, 블로그 포스팅에 포함되면 좋을 이미지를 3~5개 추출하세요.
-출력 언어: 프롬프트 내용(prompt)은 반드시 영어(English)로 작성하세요.
-JSON Format: { "images": [ { "prompt": "...", "alt": "..." } ] }`,
+    image: `Role: 블로그 콘텐츠 분석 및 이미지 프롬프트 생성 전문가
+Task: 주어진 본문 내용을 분석하여, 블로그 포스팅에 포함되면 좋을 이미지를 3~5개 추출하고, 각 이미지에 대한 상세한 영문 프롬프트(prompt)와 키워드 포함 ALT 텍스트를 생성합니다.
+
+Constraints:
+1. 출력 언어: 모든 'prompt' 내용은 반드시 영어(English)로 작성되어야 합니다.
+2. 이미지 스타일: 생성되는 이미지는 고품질의 사실적인 메디컬 스타일 혹은 깔끔하고 현대적인 클리닉 분위기를 반영해야 합니다.
+3. 이미지 개수: 본문 내용에 따라 3개에서 5개 사이로 이미지를 추출합니다.
+4. ALT 텍스트: 'alt' 속성에는 이미지 내용을 설명하는 한국어 키워드를 5개 이상 포함하여 SEO에 최적화합니다.
+
+Output Format (JSON Only):
+{
+  "images": [
+    {
+      "prompt": "A photorealistic scene of a person in their 20s wearing office attire, gently holding their stiff neck with a tired expression, sitting at a modern desk with a laptop, morning light coming through the window, clean and realistic medical lifestyle photography.",
+      "alt": "교통사고 후 목통증, 20대 직장인 통증, 출근 후 목 결림, 장시간 컴퓨터 사용, 어깨 통증, 일상 불편"
+    }
+  ]
+}`,
 
     chat: `당신은 친절하고 전문적인 '한의사' 마케팅 파트너입니다. 
 사용자의 질문에 대해 한의학적 지식과 병원 마케팅 관점을 결합하여 답변하세요.
@@ -172,7 +186,7 @@ export const useAdminStore = create<AdminState>()(
             }
         }),
         {
-            name: 'jenny-admin-storage-v3', // Version bump to force prompt updates
+            name: 'jenny-admin-storage-v4', // Version bump to force new image prompt update
             partialize: (state) => ({
                 geminiApiKey: state.geminiApiKey,
                 activeOccupationId: state.activeOccupationId,
