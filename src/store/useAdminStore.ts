@@ -198,9 +198,12 @@ export const useAdminStore = create<AdminState>()(
             }
         }),
         {
-            name: 'jenny-admin-storage-v4', // Version bump to force new image prompt update
+            name: 'jenny-admin-storage-v5', // Bump version to force re-hydration with new fields
             partialize: (state) => ({
                 geminiApiKey: state.geminiApiKey,
+                nanoBananaApiKey: state.nanoBananaApiKey,
+                dallEApiKey: state.dallEApiKey,
+                activeImageProvider: state.activeImageProvider,
                 activeOccupationId: state.activeOccupationId,
                 occupations: state.occupations,
                 users: state.users
