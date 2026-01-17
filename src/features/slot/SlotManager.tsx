@@ -160,22 +160,7 @@ export const SlotManager: React.FC = () => {
                         </div>
 
                         <div className="flex gap-2">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!slot.currentCluster.pillarTitle) {
-                                        alert('먼저 토픽 클러스터를 생성해주세요!');
-                                        setEditingSlot(slot);
-                                        setActiveTab('strategy');
-                                        setIsEditing(true);
-                                        return;
-                                    }
-                                    setContentFlowSlotId(slot.slotId);
-                                }}
-                                className="flex-1 py-2 rounded-lg bg-brand-primary text-black font-black uppercase text-[10px] tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2"
-                            >
-                                <Sparkles size={12} /> Start Writing
-                            </button>
+
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();

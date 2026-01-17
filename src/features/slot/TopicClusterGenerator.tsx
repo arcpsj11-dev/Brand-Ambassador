@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useSlotStore } from '../../store/useSlotStore';
 import { geminiReasoningService } from '../../services/geminiService';
+import { useTopicStore } from '../../store/useTopicStore'; // [NEW]
 
 interface TopicClusterGeneratorProps {
     slotId: string;
@@ -18,6 +19,7 @@ interface TopicClusterGeneratorProps {
 
 export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ slotId, onComplete }) => {
     const { slots, updateSlot } = useSlotStore();
+    const { setClusters } = useTopicStore(); // [NEW]
     const slot = slots.find(s => s.slotId === slotId);
 
     const [keyword, setKeyword] = useState('');
@@ -61,6 +63,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
     const handleApply = () => {
         if (!previewCluster) return;
 
+        // 1. Update Slot Store (Progress Tracking)
         updateSlot(slotId, {
             currentCluster: {
                 pillarTitle: previewCluster.pillarTitle,
@@ -69,8 +72,31 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
             }
         });
 
+        // 2. [SYNC] Update Topic Store (Dashboard Execution)
+        const formattedClusters = [{
+            id: `cluster-${Date.now()}`,
+            category: previewCluster.pillarTitle,
+            topics: [
+                {
+                    day: 1,
+                    type: 'pillar' as const,
+                    title: previewCluster.pillarTitle,
+                    description: 'Main Pillar Content',
+                    isPublished: false
+                },
+                ...previewCluster.satelliteTitles.map((title, idx) => ({
+                    day: idx + 2,
+                    type: 'supporting' as const,
+                    title: title,
+                    description: `Supporting Content #${idx + 1}`,
+                    isPublished: false
+                }))
+            ]
+        }];
+        setClusters(formattedClusters);
+
         if (onComplete) onComplete();
-        alert('토픽 클러스터가 성공적으로 적용되었습니다.');
+        alert('토픽 클러스터가 성공적으로 적용되었습니다.\n대시보드에서 글쓰기를 시작할 수 있습니다.');
         setPreviewCluster(null);
         setKeyword('');
     };
