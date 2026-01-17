@@ -1,34 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Settings,
     Users,
     Wand2,
     Key,
     Save,
-    RefreshCw,
     ShieldCheck,
-    ChevronRight,
-    User
+    User,
+    MessageSquare,
+    Image as ImageIcon,
+    FileText,
+    Type
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useAdminStore, type TargetPersonaType } from '../../store/useAdminStore';
+import { useAdminStore } from '../../store/useAdminStore';
+import { OccupationSelector } from './OccupationSelector';
 
 export const AdminDashboard: React.FC = () => {
     const {
         geminiApiKey, setGeminiApiKey,
-        targetPersona, setTargetPersona,
-        prompts, updatePrompt,
+        activeOccupationId, occupations,
+        updateOccupationPrompt,
         users, updateUserTier
     } = useAdminStore();
 
     const [activeTab, setActiveTab] = useState<'prompts' | 'users' | 'settings'>('prompts');
-    const [localPrompts, setLocalPrompts] = useState(prompts);
+    const [localPrompts, setLocalPrompts] = useState(occupations[activeOccupationId]?.prompts);
     const [localApiKey, setLocalApiKey] = useState(geminiApiKey);
 
+    // Sync local prompts when active occupation changes
+    useEffect(() => {
+        if (occupations[activeOccupationId]) {
+            setLocalPrompts(occupations[activeOccupationId].prompts);
+        }
+    }, [activeOccupationId, occupations]);
+
     const handleSavePrompts = () => {
-        updatePrompt('title', localPrompts.title);
-        updatePrompt('body', localPrompts.body);
-        updatePrompt('image', localPrompts.image);
+        if (!localPrompts) return;
+        updateOccupationPrompt(activeOccupationId, 'title', localPrompts.title);
+        updateOccupationPrompt(activeOccupationId, 'body', localPrompts.body);
+        updateOccupationPrompt(activeOccupationId, 'image', localPrompts.image);
+        updateOccupationPrompt(activeOccupationId, 'chat', localPrompts.chat);
         alert('프롬프트 설정이 저장되었습니다.');
     };
 
@@ -36,8 +48,6 @@ export const AdminDashboard: React.FC = () => {
         setGeminiApiKey(localApiKey);
         alert('API 설정이 저장되었습니다.');
     };
-
-    const personas: TargetPersonaType[] = ['한의사', '의사', '변호사', '세무사', '치과의사'];
 
     return (
         <div className="flex h-screen bg-[#0A0A0B] text-white">
@@ -77,72 +87,96 @@ export const AdminDashboard: React.FC = () => {
 
             {/* Main Content */}
             <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-                <div className="max-w-4xl mx-auto space-y-12">
+                <div className="max-w-5xl mx-auto space-y-12">
 
                     {/* Header */}
-                    <div className="space-y-2">
-                        <h1 className="text-4xl font-black italic uppercase tracking-tighter">
-                            {activeTab === 'prompts' && 'Prompt Control'}
-                            {activeTab === 'users' && 'User Management'}
-                            {activeTab === 'settings' && 'Global Settings'}
-                        </h1>
-                        <p className="text-gray-500 font-medium">
-                            {activeTab === 'prompts' && 'AI 생성 로직의 핵심 프롬프트를 실시간으로 제어합니다.'}
-                            {activeTab === 'users' && '회원의 권한 및 멤버십 등급을 수동으로 조정합니다.'}
-                            {activeTab === 'settings' && '시스템 전반에 적용되는 API 키 및 기본 타겟을 설정합니다.'}
-                        </p>
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                            <h1 className="text-4xl font-black italic uppercase tracking-tighter">
+                                {activeTab === 'prompts' && 'Prompt Control'}
+                                {activeTab === 'users' && 'User Management'}
+                                {activeTab === 'settings' && 'Global Settings'}
+                            </h1>
+                            <p className="text-gray-500 font-medium">
+                                {activeTab === 'prompts' && '직업별 AI 생성 로직의 핵심 프롬프트를 실시간으로 제어합니다.'}
+                                {activeTab === 'users' && '회원의 권한 및 멤버십 등급을 수동으로 조정합니다.'}
+                                {activeTab === 'settings' && '시스템 전반에 적용되는 API 키 및 기본 타겟을 설정합니다.'}
+                            </p>
+                        </div>
+
+                        {/* Occupation Selector in Header for Prompt Tab */}
+                        {activeTab === 'prompts' && <OccupationSelector />}
                     </div>
 
                     {/* Prompts Tab */}
-                    {activeTab === 'prompts' && (
+                    {activeTab === 'prompts' && localPrompts && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-                            <div className="grid gap-6">
+
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                {/* Title Prompt */}
                                 <div className="space-y-3">
                                     <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                                        <ChevronRight size={14} className="text-brand-primary" />
-                                        Monthly Titles Prompt (30일 주제 생성)
+                                        <Type size={14} className="text-brand-primary" />
+                                        Monthly Titles (30일 주제)
                                     </label>
                                     <textarea
                                         value={localPrompts.title}
-                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev, title: e.target.value }))}
+                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev!, title: e.target.value }))}
                                         className="w-full h-48 bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm focus:border-brand-primary outline-none transition-all resize-none"
                                         placeholder="{{topic}} 플레이스홀더를 포함하세요."
                                     />
                                 </div>
 
+                                {/* Image Prompt */}
                                 <div className="space-y-3">
                                     <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                                        <ChevronRight size={14} className="text-brand-primary" />
-                                        Main Content Prompt (본문 생성)
-                                    </label>
-                                    <textarea
-                                        value={localPrompts.body}
-                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev, body: e.target.value }))}
-                                        className="w-full h-64 bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm focus:border-brand-primary outline-none transition-all resize-none"
-                                        placeholder="{{title}}, {{persona}}, {{tone}} 플레이스홀더를 포함하세요."
-                                    />
-                                </div>
-
-                                <div className="space-y-3">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                                        <ChevronRight size={14} className="text-brand-primary" />
-                                        Image Analysis Prompt (이미지 프롬프트 추출)
+                                        <ImageIcon size={14} className="text-brand-primary" />
+                                        Image Analysis (이미지 추출)
                                     </label>
                                     <textarea
                                         value={localPrompts.image}
-                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev, image: e.target.value }))}
+                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev!, image: e.target.value }))}
                                         className="w-full h-48 bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm focus:border-brand-primary outline-none transition-all resize-none"
+                                    />
+                                </div>
+
+                                {/* Chat Prompt */}
+                                <div className="space-y-3">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                        <MessageSquare size={14} className="text-brand-primary" />
+                                        Chat Persona (채팅 페르소나)
+                                    </label>
+                                    <textarea
+                                        value={localPrompts.chat}
+                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev!, chat: e.target.value }))}
+                                        className="w-full h-48 bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm focus:border-brand-primary outline-none transition-all resize-none"
+                                    />
+                                </div>
+
+                                {/* Body Prompt (Full Width) */}
+                                <div className="space-y-3 xl:col-span-2">
+                                    <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                        <FileText size={14} className="text-brand-primary" />
+                                        Main Content (본문 생성)
+                                    </label>
+                                    <textarea
+                                        value={localPrompts.body}
+                                        onChange={(e) => setLocalPrompts(prev => ({ ...prev!, body: e.target.value }))}
+                                        className="w-full h-96 bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm focus:border-brand-primary outline-none transition-all resize-none"
+                                        placeholder="{{title}}, {{persona}}, {{tone}} 플레이스홀더를 포함하세요."
                                     />
                                 </div>
                             </div>
 
-                            <button
-                                onClick={handleSavePrompts}
-                                className="flex items-center gap-3 px-8 py-4 bg-brand-primary text-black font-black uppercase tracking-widest rounded-xl hover:shadow-neon transition-all"
-                            >
-                                <Save size={20} />
-                                <span>프롬프트 설정 저장</span>
-                            </button>
+                            <div className="flex justify-end pt-4 border-t border-white/5">
+                                <button
+                                    onClick={handleSavePrompts}
+                                    className="flex items-center gap-3 px-8 py-4 bg-brand-primary text-black font-black uppercase tracking-widest rounded-xl hover:shadow-neon transition-all"
+                                >
+                                    <Save size={20} />
+                                    <span>프롬프트 설정 저장</span>
+                                </button>
+                            </div>
                         </motion.div>
                     )}
 
@@ -226,29 +260,6 @@ export const AdminDashboard: React.FC = () => {
                                     <Save size={20} />
                                     <span>시스템 설정 저장</span>
                                 </button>
-                            </div>
-
-                            {/* Target Persona Section */}
-                            <div className="space-y-6 pt-12 border-t border-white/5">
-                                <div className="flex items-center gap-3 text-gray-400">
-                                    <RefreshCw size={20} />
-                                    <span className="font-bold text-sm uppercase tracking-widest">Target Persona Management</span>
-                                </div>
-
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                                    {personas.map((p) => (
-                                        <button
-                                            key={p}
-                                            onClick={() => setTargetPersona(p)}
-                                            className={`py-4 rounded-xl border font-black uppercase tracking-tighter transition-all ${targetPersona === p ? 'bg-brand-primary text-black border-brand-primary shadow-neon scale-105' : 'bg-black text-gray-500 border-white/10 hover:border-white/20'}`}
-                                        >
-                                            {p}
-                                        </button>
-                                    ))}
-                                </div>
-                                <p className="text-xs text-center text-gray-600 font-bold uppercase tracking-widest">
-                                    선택된 페르소나는 프롬프트의 <span className="text-brand-primary">{"{{persona}}"}</span> 태그에 실시간 주입됩니다.
-                                </p>
                             </div>
                         </motion.div>
                     )}

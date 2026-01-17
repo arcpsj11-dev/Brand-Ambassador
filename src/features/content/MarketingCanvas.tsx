@@ -3,6 +3,7 @@ import { Lock, ChevronRight, Zap, Banana, Loader2 } from 'lucide-react';
 import { geminiReasoningService } from '../../services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlannerStore } from '../../store/usePlannerStore';
+import { useTopicStore } from '../../store/useTopicStore';
 import { useBrandStore } from '../../store/useBrandStore';
 import { useChatStore } from '../../store/useChatStore';
 import { useUIStore } from '../../store/useUIStore';
@@ -74,6 +75,7 @@ export const MarketingCanvas: React.FC = () => {
     const brand = useBrandStore();
     const ui = useUIStore();
     const { monthlyPlan, isScouted, persona, topic, setMonthlyPlan, setPersona, setTopic, setActiveDraft } = usePlannerStore();
+    const { setClusters } = useTopicStore();
     const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
 
     // [나노바나나] 지수 기반 전략 생성 엔진 (AI 리얼 생성)
@@ -106,6 +108,11 @@ export const MarketingCanvas: React.FC = () => {
                 status: 'ready' as const
             }));
             setMonthlyPlan(planWithStatus);
+
+            // [SYNC] Execution Store 동기화 (30일치 데이터)
+            if (titlesData.clusters) {
+                setClusters(titlesData.clusters);
+            }
 
             const chat = useChatStore.getState();
             chat.addMessage({

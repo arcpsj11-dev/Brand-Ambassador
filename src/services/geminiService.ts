@@ -136,8 +136,9 @@ export const geminiReasoningService = {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
             const adminState = useAdminStore.getState();
-            const persona = adminState.targetPersona;
-            const bodyPrompt = adminState.prompts.body;
+            const activeOccupation = adminState.getActiveOccupation();
+            const persona = activeOccupation.label;
+            const bodyPrompt = activeOccupation.prompts.body;
 
             const systemPrompt = bodyPrompt
                 .replace(/{{title}}/g, input)
@@ -199,8 +200,9 @@ export const geminiReasoningService = {
             });
 
             const adminState = useAdminStore.getState();
-            const titlePromptTemplate = adminState.prompts.title;
-            const persona = adminState.targetPersona;
+            const activeOccupation = adminState.getActiveOccupation();
+            const titlePromptTemplate = activeOccupation.prompts.title;
+            const persona = activeOccupation.label;
 
             const prompt = titlePromptTemplate
                 .replace(/{{topic}}/g, topic)
@@ -226,7 +228,8 @@ export const geminiReasoningService = {
             });
 
             const adminState = useAdminStore.getState();
-            const imagePromptTemplate = adminState.prompts.image;
+            const activeOccupation = adminState.getActiveOccupation();
+            const imagePromptTemplate = activeOccupation.prompts.image;
 
             const prompt = `${imagePromptTemplate} \n\n본문: ${contentBody.substring(0, 4000)}`;
 
@@ -293,8 +296,9 @@ export const geminiReasoningService = {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
             const adminState = useAdminStore.getState();
-            const bodyPromptTemplate = adminState.prompts.body;
-            const targetPersona = adminState.targetPersona;
+            const activeOccupation = adminState.getActiveOccupation();
+            const bodyPromptTemplate = activeOccupation.prompts.body;
+            const targetPersona = activeOccupation.label;
 
             const isPillar = params.topicIndex === 1;
 

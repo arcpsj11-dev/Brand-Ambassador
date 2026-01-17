@@ -4,7 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useContentStore } from '../../store/useContentStore';
 import { useBrandStore } from '../../store/useBrandStore';
 import { useStepStore } from '../../store/useStepStore';
+import { usePlannerStore } from '../../store/usePlannerStore';
 import { geminiReasoningService } from '../../services/geminiService';
+import { OccupationSelector } from '../admin/OccupationSelector';
 
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
@@ -29,6 +31,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     const { user } = useAuthStore();
     const { selectedBlogId, keyKeywords } = useProfileStore();
     const { clusters, setClusters, getNextTopic, markAsPublished } = useTopicStore();
+    const { updateDayStatus } = usePlannerStore();
     const brand = useBrandStore();
 
     const [flowState, setFlowState] = useState<FlowState>('ENTRY');
@@ -124,7 +127,8 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             if (errorMessage === "API_KEY_MISSING") {
                 alert("관리자 설정에서 Gemini API Key를 먼저 설정해주세요.");
             } else {
-                alert("시스템 점검 중입니다. 잠시 후 자동으로 다시 진행됩니다.");
+                // [DEBUG] 실제 에러 메시지 노출 (사용자 요청)
+                alert(`오류가 발생했습니다: ${errorMessage}\n\n잠시 후 다시 시도해주세요.`);
             }
             onClose();
         }
@@ -154,6 +158,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
         }
         completeTodayAction();
         markAsPublished(currentContent.day);
+        updateDayStatus(currentContent.day, 'done'); // [SYNC] 마케팅 캔버스 상태 업데이트
         setActionStatus('COMPLETED');
         setFlowState('END');
 
@@ -185,8 +190,11 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-md w-full p-8 text-center space-y-8 glass-card border-brand-primary/20 bg-black/40"
+                    className="max-w-md w-full p-8 text-center space-y-8 glass-card border-brand-primary/20 bg-black/40 relative"
                 >
+                    <div className="absolute top-4 right-4 z-50">
+                        <OccupationSelector variant="minimal" />
+                    </div>
                     <div className="space-y-4">
                         <h1 className="text-3xl font-black italic uppercase tracking-tighter">오늘의 액션을 시작합니다</h1>
                         <p className="text-gray-400 font-medium leading-relaxed">
@@ -251,7 +259,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="w-full h-full flex flex-col bg-black/50 backdrop-blur-md"
+                    className="w-full h-full flex flex-col bg-black/95 backdrop-blur-md overflow-hidden"
                 >
                     <div className="h-16 flex items-center justify-center border-b border-white/10 bg-black/40 shrink-0">
                         <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-brand-primary">
@@ -262,7 +270,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-8 max-w-3xl mx-auto w-full no-select space-y-8 custom-scrollbar relative">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-8 max-w-3xl mx-auto w-full no-select space-y-8 custom-scrollbar relative pb-32">
                         <div className="space-y-2">
                             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Title</span>
                             <h1 className="text-2xl font-bold leading-tight border-l-4 border-brand-primary pl-4">
@@ -296,7 +304,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                                 onClick={handleNaverPublish}
                                 className="px-12 py-4 rounded-xl bg-brand-primary text-black font-black uppercase tracking-widest hover:bg-white hover:scale-105 hover:shadow-neon transition-all flex items-center gap-3"
                             >
-                                <span>전체 글 복사</span>
+                                <span>저장 및 복사</span>
                                 <ArrowRight size={18} />
                             </button>
                         </div>
