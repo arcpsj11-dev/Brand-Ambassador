@@ -16,6 +16,9 @@ export interface Occupation {
 
 interface AdminSettings {
     geminiApiKey: string;
+    nanoBananaApiKey: string;
+    dallEApiKey: string;
+    activeImageProvider: 'nano' | 'dalle';
     activeOccupationId: string;
     occupations: Record<string, Occupation>;
 
@@ -25,6 +28,9 @@ interface AdminSettings {
 
 interface AdminState extends AdminSettings {
     setGeminiApiKey: (key: string) => void;
+    setNanoBananaApiKey: (key: string) => void;
+    setDallEApiKey: (key: string) => void;
+    setActiveImageProvider: (provider: 'nano' | 'dalle') => void;
     setActiveOccupation: (id: string) => void;
     updateOccupationPrompt: (occupationId: string, type: keyof PromptSet, content: string) => void;
     addOccupation: (id: string, label: string) => void;
@@ -126,6 +132,9 @@ export const useAdminStore = create<AdminState>()(
     persist(
         (set, get) => ({
             geminiApiKey: '',
+            nanoBananaApiKey: '',
+            dallEApiKey: '',
+            activeImageProvider: 'dalle', // Default to DALL-E as it's more standard
             activeOccupationId: 'oriental_doctor',
 
             occupations: {
@@ -149,6 +158,9 @@ export const useAdminStore = create<AdminState>()(
             ],
 
             setGeminiApiKey: (key) => set({ geminiApiKey: key }),
+            setNanoBananaApiKey: (key) => set({ nanoBananaApiKey: key }),
+            setDallEApiKey: (key) => set({ dallEApiKey: key }),
+            setActiveImageProvider: (provider) => set({ activeImageProvider: provider }),
 
             setActiveOccupation: (id) => set({ activeOccupationId: id }),
 
