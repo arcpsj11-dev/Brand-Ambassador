@@ -137,7 +137,9 @@ export const TodayAction: React.FC = () => {
                         </div>
                         <div>
                             <div className="text-[9px] font-black text-gray-500 uppercase leading-none mb-1">Current Progress</div>
-                            <div className="text-sm font-black italic">{activeSlot?.currentCluster.currentIndex || 0} / 10</div>
+                            <div className="text-sm font-black italic">
+                                {activeSlot?.currentCluster.currentIndex || 0} / {activeSlot ? (1 + (activeSlot.currentCluster.satelliteTitles?.length || 9)) : 10}
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
