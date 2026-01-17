@@ -124,7 +124,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                         </button>
                     </div>
 
-                    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
                         {/* Pillar Topic */}
                         <div className="p-4 rounded-xl bg-brand-primary/10 border border-brand-primary/30 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 bg-brand-primary text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter">Pillar Post</div>
