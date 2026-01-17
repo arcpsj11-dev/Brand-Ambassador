@@ -74,7 +74,7 @@ const MarketingCard: React.FC<{ plan: any; onClick: () => void }> = ({ plan, onC
 export const MarketingCanvas: React.FC = () => {
     const brand = useBrandStore();
     const ui = useUIStore();
-    const { monthlyPlan, isScouted, persona, topic, setMonthlyPlan, setPersona, setTopic, setActiveDraft } = usePlannerStore();
+    const { monthlyPlan, isScouted, persona, topic, setMonthlyPlan, setPersona, setTopic } = usePlannerStore();
     const { setClusters } = useTopicStore();
     const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
 
@@ -196,8 +196,11 @@ export const MarketingCanvas: React.FC = () => {
                             key={plan.day}
                             plan={plan}
                             onClick={() => {
-                                setActiveDraft(plan);
-                                ui.setContentMode('kitchen');
+                                // [Unifiy Flow] 대시보드로 이동하여 글쓰기 시작
+                                import('../../store/useContentStore').then(({ useContentStore }) => {
+                                    useContentStore.getState().setRegenerationTopic(plan.topic);
+                                    ui.setActiveTab('dashboard');
+                                });
                             }}
                         />
                     ))}

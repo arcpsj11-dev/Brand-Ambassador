@@ -90,7 +90,7 @@ export const TodayAction: React.FC = () => {
                             {!activeSlot
                                 ? '상단의 슬롯 선택기에서 글을 작성할 블로그를 선택한 후 시작할 수 있습니다.'
                                 : regenerationTopic
-                                    ? `아카이브에서 요청하신 '${regenerationTopic}' 주제를 새로운 V4 엔진으로 다시 생성합니다.`
+                                    ? `선택하신 '${regenerationTopic}' 주제로 AI 글쓰기를 시작합니다.`
                                     : isLocked
                                         ? '오늘의 할당량을 완료했습니다. 내일 오전 9시에 새로운 액션이 열립니다.'
                                         : isResuming
