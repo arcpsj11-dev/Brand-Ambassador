@@ -262,7 +262,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="w-full h-full flex flex-col bg-black/95 backdrop-blur-md overflow-hidden"
+                    className="fixed inset-0 z-[110] w-full h-[100dvh] flex flex-col bg-black/95 backdrop-blur-md overflow-hidden"
                 >
                     <div className="h-16 flex items-center justify-center border-b border-white/10 bg-black/40 shrink-0">
                         <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-brand-primary">
