@@ -64,16 +64,19 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
         if (!previewClusters || previewClusters.length === 0) return;
 
         // 1. Update Slot Store (Set first cluster as active context)
-        // Note: SlotStore structure is currently limited to 1 cluster.
-        // We use the first generated cluster for the specific slot view.
-        const firstCluster = previewClusters[0];
-        const firstPillar = firstCluster.topics.find((t: any) => t.type === 'pillar')?.title || '';
-        const firstSatellites = firstCluster.topics.filter((t: any) => t.type === 'supporting').map((t: any) => t.title);
+        // Flatten all 30 topics for progress tracking (1 Pillar + 29 "Satellites")
+        // We use the very first pillar as the main title, and everything else as satellites regardless of their actual type in the cluster
+        const allTopics = previewClusters.flatMap((cluster: any) =>
+            cluster.topics.map((t: any) => t.title)
+        );
+
+        const mainPillar = allTopics[0] || '';
+        const otherTopics = allTopics.slice(1);
 
         updateSlot(slotId, {
             currentCluster: {
-                pillarTitle: firstPillar,
-                satelliteTitles: firstSatellites,
+                pillarTitle: mainPillar,
+                satelliteTitles: otherTopics,
                 currentIndex: 1
             }
         });

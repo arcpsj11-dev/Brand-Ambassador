@@ -155,8 +155,11 @@ export const useSlotStore = create<SlotState>()(
 
                         let nextIndex = slot.currentCluster.currentIndex + 1;
 
-                        // 10번까지 진행 후 1번으로 리셋
-                        if (nextIndex > 10) {
+                        // Dynamic limit based on actual content length (1 pillar + satellites)
+                        const maxIndex = 1 + (slot.currentCluster.satelliteTitles?.length || 9);
+
+                        // Reset after completion
+                        if (nextIndex > maxIndex) {
                             nextIndex = 1;
                         }
 

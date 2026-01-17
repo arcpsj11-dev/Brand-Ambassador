@@ -156,7 +156,7 @@ export const SlotManager: React.FC = () => {
                         </div>
                         <div className="flex justify-between mt-2 text-[10px] font-black uppercase text-gray-500 tracking-widest">
                             <span>Progress</span>
-                            <span>{slot.currentCluster.currentIndex} / 10</span>
+                            <span>{slot.currentCluster.currentIndex} / {1 + (slot.currentCluster.satelliteTitles?.length || 9)}</span>
                         </div>
 
                         <div className="flex gap-2">
