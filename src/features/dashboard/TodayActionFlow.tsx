@@ -118,9 +118,10 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
 
             setFlowState('FINAL_CHECK');
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            if (error.message === "API_KEY_MISSING") {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            if (errorMessage === "API_KEY_MISSING") {
                 alert("관리자 설정에서 Gemini API Key를 먼저 설정해주세요.");
             } else {
                 alert("시스템 점검 중입니다. 잠시 후 자동으로 다시 진행됩니다.");

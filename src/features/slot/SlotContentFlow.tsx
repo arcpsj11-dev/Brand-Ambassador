@@ -62,9 +62,10 @@ export const SlotContentFlow: React.FC<SlotContentFlowProps> = ({ slotId, onComp
             });
             setCurrentContent(result);
             setFlowState('FINAL_CHECK');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Content generation error:', error);
-            if (error.message === "API_KEY_MISSING") {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            if (errorMessage === "API_KEY_MISSING") {
                 alert("관리자 설정에서 Gemini API Key를 먼저 설정해주세요.");
             } else {
                 alert('콘텐츠 생성 중 오류가 발생했습니다.');

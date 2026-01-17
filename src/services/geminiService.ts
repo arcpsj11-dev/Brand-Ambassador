@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useExperimentStore } from '../store/useExperimentStore';
 import type { StepType } from '../store/useExperimentStore';
 import { useAdminStore } from '../store/useAdminStore';
+import type { TopicCluster } from '../store/useTopicStore';
 
 // Helper: A/B 테스트 활성 프롬프트 가져오기
 const getActiveVariantPrompt = (step: StepType): { prompt: string; variantId: string; experimentId: string } | null => {
@@ -44,6 +45,10 @@ export interface ReasoningResponse {
     recommendation: string;
 }
 
+export interface MonthlyTitleResponse {
+    clusters: TopicCluster[];
+}
+
 const getGenAI = () => {
     const adminKey = useAdminStore.getState().geminiApiKey;
     const envKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -78,7 +83,7 @@ export const geminiReasoningService = {
     },
 
     // [나노바나나] 중앙 제어 액션 생성 엔진
-    async generateAction(input: string, context: { brand: any, planner: any }): Promise<{ type: string, payload: any, response: string }> {
+    async generateAction(input: string, context: { brand: Record<string, unknown>, planner: Record<string, unknown> }): Promise<{ type: string, payload: Record<string, unknown>, response: string }> {
         const lower = input.toLowerCase();
 
         if (lower.includes('전화번호') || lower.includes('번호')) {
@@ -186,7 +191,7 @@ export const geminiReasoningService = {
     },
 
     // [나노바나나] 30일 마케팅 타이틀 벌크 생성
-    async generateMonthlyTitles(topic: string): Promise<any> {
+    async generateMonthlyTitles(topic: string): Promise<MonthlyTitleResponse> {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({

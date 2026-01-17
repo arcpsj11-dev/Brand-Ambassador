@@ -45,12 +45,13 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                 pillarTitle: data.pillarTitle,
                 satelliteTitles: data.satelliteTitles
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            if (error.message === "API_KEY_MISSING") {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            if (errorMessage === "API_KEY_MISSING") {
                 alert("관리자 설정에서 Gemini API Key를 먼저 설정해주세요.");
             } else {
-                alert(`주제 생성 중 오류가 발생했습니다: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                alert(`주제 생성 중 오류가 발생했습니다: ${errorMessage}`);
             }
         } finally {
             setIsGenerating(false);
