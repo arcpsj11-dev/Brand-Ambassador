@@ -79,7 +79,10 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
 
                 // 2. 다음 주제 가져오기
                 const nextData = getNextTopic();
-                if (!nextData) throw new Error("분석된 주제가 없습니다.");
+                if (!nextData) {
+                    setClusters([]); // [RESET] 잘못된 데이터일 수 있으므로 초기화
+                    throw new Error("분석된 주제가 없습니다. (데이터 형식 오류)");
+                }
 
                 targetTopic = nextData.topic.title;
                 targetType = nextData.topic.type;

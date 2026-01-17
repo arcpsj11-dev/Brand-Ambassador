@@ -172,7 +172,7 @@ export const useAdminStore = create<AdminState>()(
             }
         }),
         {
-            name: 'jenny-admin-storage-v2', // Version bump to reset or migrate state implies new key or handling migration logic manually. Use v2 for safety.
+            name: 'jenny-admin-storage-v3', // Version bump to force prompt updates
             partialize: (state) => ({
                 geminiApiKey: state.geminiApiKey,
                 activeOccupationId: state.activeOccupationId,
