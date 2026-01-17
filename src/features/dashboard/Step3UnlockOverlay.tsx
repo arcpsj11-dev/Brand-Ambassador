@@ -13,6 +13,17 @@ export const Step3UnlockOverlay: React.FC = () => {
         setSeenStep3Celebrate(true);
     };
 
+    // Floating Particles Simulation (Pre-calculated for purity)
+    const particles = React.useMemo(() => {
+        return [...Array(20)].map(() => ({
+            x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+            y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1000),
+            moveY: Math.random() * -100,
+            duration: 3 + Math.random() * 5,
+            delay: Math.random() * 5
+        }));
+    }, []);
+
     return (
         <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center p-6 overflow-hidden">
             {/* Background Glows */}
@@ -86,22 +97,22 @@ export const Step3UnlockOverlay: React.FC = () => {
             </motion.div>
 
             {/* Floating Particles Simulation */}
-            {[...Array(20)].map((_, i) => (
+            {particles.map((p, i) => (
                 <motion.div
                     key={i}
                     initial={{
-                        x: Math.random() * window.innerWidth,
-                        y: Math.random() * window.innerHeight,
+                        x: p.x,
+                        y: p.y,
                         opacity: 0
                     }}
                     animate={{
-                        y: [null, Math.random() * -100],
+                        y: [null, p.moveY],
                         opacity: [0, 1, 0]
                     }}
                     transition={{
-                        duration: 3 + Math.random() * 5,
+                        duration: p.duration,
                         repeat: Infinity,
-                        delay: Math.random() * 5
+                        delay: p.delay
                     }}
                     className="absolute w-1 h-1 bg-brand-primary/30 rounded-full"
                 />

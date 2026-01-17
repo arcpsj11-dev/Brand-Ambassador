@@ -181,7 +181,7 @@ export const JennyChat: React.FC = () => {
             if (actionResult.type === 'UPDATE_BRAND') {
                 brand.setBrand(actionResult.payload);
             } else if (actionResult.type === 'UPDATE_PLANNER') {
-                const { day, topic } = actionResult.payload;
+                const { day, topic } = actionResult.payload as { day: number, topic: string };
                 const newPlan = planner.monthlyPlan.map(p => p.day === day ? { ...p, topic, status: 'ready' as const } : p);
                 planner.setMonthlyPlan(newPlan);
             }

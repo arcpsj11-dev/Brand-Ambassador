@@ -91,8 +91,17 @@ export const MarketingCanvas: React.FC = () => {
         if (score >= 70) strat = 'PASONA';
 
         try {
-            const titles = await geminiReasoningService.generateMonthlyTitles(topic);
-            const planWithStatus = titles.map((t: any) => ({
+            const titlesData = await geminiReasoningService.generateMonthlyTitles(topic);
+            const allTopics: any[] = [];
+
+            if (titlesData.clusters && Array.isArray(titlesData.clusters)) {
+                titlesData.clusters.forEach((cluster: any) => {
+                    if (cluster.pillar) allTopics.push(cluster.pillar);
+                    if (cluster.satellites) allTopics.push(...cluster.satellites);
+                });
+            }
+
+            const planWithStatus = allTopics.map((t: any) => ({
                 ...t,
                 status: 'ready' as const
             }));

@@ -3,7 +3,6 @@ import { useExperimentStore } from '../store/useExperimentStore';
 import type { StepType } from '../store/useExperimentStore';
 import { useAdminStore } from '../store/useAdminStore';
 import type { TopicCluster } from '../store/useTopicStore';
-
 // Helper: A/B 테스트 활성 프롬프트 가져오기
 const getActiveVariantPrompt = (step: StepType): { prompt: string; variantId: string; experimentId: string } | null => {
     try {
@@ -83,7 +82,7 @@ export const geminiReasoningService = {
     },
 
     // [나노바나나] 중앙 제어 액션 생성 엔진
-    async generateAction(input: string, context: { brand: Record<string, unknown>, planner: Record<string, unknown> }): Promise<{ type: string, payload: Record<string, unknown>, response: string }> {
+    async generateAction(input: string, context: { brand: any, planner: any }): Promise<{ type: string, payload: Record<string, any>, response: string }> {
         const lower = input.toLowerCase();
 
         if (lower.includes('전화번호') || lower.includes('번호')) {

@@ -19,11 +19,8 @@ export const BlogMetricCard: React.FC = () => {
 
     const currentBlogId = activeSlot?.naverBlogId;
 
-    useEffect(() => {
-        if (currentAnalysis) {
-            setShowAnalysis(true);
-        }
-    }, [currentAnalysis]);
+    // currentAnalysis가 있으면 자동으로 분석 창이 열리도록 함
+    const isAnalysisSectionVisible = showAnalysis || !!currentAnalysis;
 
     useEffect(() => {
         if (currentBlogId) {
@@ -234,7 +231,7 @@ export const BlogMetricCard: React.FC = () => {
                     )}
 
                     {/* 분석 결과 */}
-                    {showAnalysis && coaching && currentAnalysis && (
+                    {isAnalysisSectionVisible && coaching && currentAnalysis && (
                         <div className="space-y-3">
                             {/* 점수 비교 */}
                             <div className="bg-black/30 rounded-lg p-3 border border-white/10">

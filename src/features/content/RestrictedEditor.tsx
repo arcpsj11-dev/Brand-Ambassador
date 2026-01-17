@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ShieldCheck,
@@ -45,29 +45,23 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
     const bodyAuth = canAccess('editBodyPartial', plan);
 
     // State
-    const [title, setTitle] = useState('');
-    const [prevTitle, setPrevTitle] = useState('');
-    const [segments, setSegments] = useState<BodySegment[]>([]);
+    // State Initialized directly from content to avoid effect-based setState
+    const [title, setTitle] = useState(content?.title || '');
+    const [prevTitle, setPrevTitle] = useState(content?.title || '');
+    const [segments, setSegments] = useState<BodySegment[]>(() => {
+        if (!content) return [];
+        const paragraphs = content.body.split('\n\n').filter(p => p.trim() !== '');
+        return paragraphs.map((p, i) => ({
+            id: `seg-${i}`,
+            text: p,
+            prevText: p,
+            isEditable: isAdmin || (bodyAuth.granted && i >= 2),
+        }));
+    });
+
     const [isSaving, setIsSaving] = useState(false);
     const [toast, setToast] = useState<{ type: 'success' | 'warning' | 'info'; message: string } | null>(null);
     const [showHelp, setShowHelp] = useState(false);
-
-    // Initial Load
-    useEffect(() => {
-        if (content) {
-            setTitle(content.title);
-            setPrevTitle(content.title);
-
-            const paragraphs = content.body.split('\n\n').filter(p => p.trim() !== '');
-            const newSegments = paragraphs.map((p, i) => ({
-                id: `seg-${i}`,
-                text: p,
-                prevText: p,
-                isEditable: isAdmin || (bodyAuth.granted && i >= 2),
-            }));
-            setSegments(newSegments);
-        }
-    }, [content, isAdmin, bodyAuth.granted]);
 
     const showToast = (type: 'success' | 'warning' | 'info', message: string) => {
         setToast({ type, message });

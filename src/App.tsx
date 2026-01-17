@@ -16,6 +16,7 @@ import { DashboardDiagnosisCard } from './features/dashboard/DashboardDiagnosisC
 import { AdminDashboard } from './features/admin/AdminDashboard';
 import { Sparkles, LogOut, LayoutDashboard, Database, LayoutGrid, Activity, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSlotStore } from './store/useSlotStore';
 
 const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -27,9 +28,7 @@ const App: React.FC = () => {
     if (isAuthenticated) {
       migrateToSlotSystem();
       // 마이그레이션 후 활성 슬롯이 없다면 첫 슬롯 지정
-      import('./store/useSlotStore').then(m => {
-        m.useSlotStore.getState().ensureActiveSlot();
-      });
+      useSlotStore.getState().ensureActiveSlot();
     }
   }, [isAuthenticated]);
 

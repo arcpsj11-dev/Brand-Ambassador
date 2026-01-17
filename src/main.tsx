@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+// Styling handled via index.html link to bypass Vite build crash
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
