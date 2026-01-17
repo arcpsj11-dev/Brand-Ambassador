@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useStepStore } from '../../store/useStepStore';
 import { TodayActionFlow } from './TodayActionFlow';
 import { useSlotStore } from '../../store/useSlotStore';
+import { useTopicStore } from '../../store/useTopicStore';
 
 /**
  * 오늘의 액션 카드 컴포넌트
@@ -13,12 +14,15 @@ import { useSlotStore } from '../../store/useSlotStore';
  */
 export const TodayAction: React.FC = () => {
     const { actionStatus, setActionStatus, completedCount, regenerationTopic } = useContentStore();
+    const { getNextTopic } = useTopicStore();
     const { slots, activeSlotId } = useSlotStore();
     const { syncUpgrade } = useStepStore();
     const { user } = useAuthStore();
     const [showFlow, setShowFlow] = useState(false);
 
     const activeSlot = slots.find(s => s.slotId === activeSlotId);
+    const nextTopicData = getNextTopic();
+    const targetTopicTitle = nextTopicData?.topic.title;
 
     // STEP 동기화: 기존 포스팅 개수가 이미 기준치를 넘었을 경우 자동으로 승급
     useEffect(() => {
@@ -83,18 +87,29 @@ export const TodayAction: React.FC = () => {
                             </span>
                             {!isLocked && <div className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />}
                         </div>
-                        <h3 className="font-black text-lg mb-1">
-                            {regenerationTopic ? `[${regenerationTopic}] 재생성` : isLocked ? '오늘의 액션 완료' : isResuming ? '진행 중인 작업 계속하기' : isAdmin && hasCompletedToday ? '오늘의 액션 (관리자 재실행)' : activeSlot ? `${activeSlot.slotName} 콘텐츠 발행하기` : '슬롯을 선택해주세요'}
+                        <h3 className="font-black text-lg mb-1 line-clamp-1">
+                            {regenerationTopic
+                                ? `[${regenerationTopic}] 재생성`
+                                : isLocked
+                                    ? '오늘의 액션 완료'
+                                    : targetTopicTitle
+                                        ? targetTopicTitle
+                                        : isAdmin && hasCompletedToday
+                                            ? '오늘의 액션 (관리자 재실행)'
+                                            : activeSlot
+                                                ? `${activeSlot.slotName} 콘텐츠 발행하기`
+                                                : '슬롯을 선택해주세요'
+                            }
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 line-clamp-1">
                             {!activeSlot
                                 ? '상단의 슬롯 선택기에서 글을 작성할 블로그를 선택한 후 시작할 수 있습니다.'
                                 : regenerationTopic
                                     ? `선택하신 '${regenerationTopic}' 주제로 AI 글쓰기를 시작합니다.`
                                     : isLocked
                                         ? '오늘의 할당량을 완료했습니다. 내일 오전 9시에 새로운 액션이 열립니다.'
-                                        : isResuming
-                                            ? '“원장님, 오늘의 글은 이미 생성 중입니다. 시스템이 이어서 처리하겠습니다.”'
+                                        : targetTopicTitle
+                                            ? `다음 플랜: ${targetTopicTitle}`
                                             : isAdmin && hasCompletedToday
                                                 ? '관리자 권한으로 일일 제한을 무시하고 새로운 액션을 실행할 수 있습니다.'
                                                 : 'A-READ 구조 기반의 맞춤형 콘텐츠 생성을 시작합니다.'}

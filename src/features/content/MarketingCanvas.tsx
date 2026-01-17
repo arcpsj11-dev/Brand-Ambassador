@@ -6,7 +6,6 @@ import { usePlannerStore } from '../../store/usePlannerStore';
 import { useTopicStore } from '../../store/useTopicStore';
 import { useBrandStore } from '../../store/useBrandStore';
 import { useChatStore } from '../../store/useChatStore';
-import { useUIStore } from '../../store/useUIStore';
 
 // [나노바나나] 마케팅 카드 컴포넌트
 const MarketingCard: React.FC<{ plan: any; onClick: () => void }> = ({ plan, onClick }) => {
@@ -73,7 +72,6 @@ const MarketingCard: React.FC<{ plan: any; onClick: () => void }> = ({ plan, onC
 
 export const MarketingCanvas: React.FC = () => {
     const brand = useBrandStore();
-    const ui = useUIStore();
     const { monthlyPlan, isScouted, persona, topic, setMonthlyPlan, setPersona, setTopic } = usePlannerStore();
     const { setClusters } = useTopicStore();
     const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
@@ -195,13 +193,7 @@ export const MarketingCanvas: React.FC = () => {
                         <MarketingCard
                             key={plan.day}
                             plan={plan}
-                            onClick={() => {
-                                // [Unifiy Flow] 대시보드로 이동하여 글쓰기 시작
-                                import('../../store/useContentStore').then(({ useContentStore }) => {
-                                    useContentStore.getState().setRegenerationTopic(plan.topic);
-                                    ui.setActiveTab('dashboard');
-                                });
-                            }}
+                            onClick={() => { }} // [Modified] Read-only as per unified workflow
                         />
                     ))}
                 </div>
@@ -229,8 +221,6 @@ export const MarketingCanvas: React.FC = () => {
                     )}
                 </AnimatePresence>
             </div>
-
-            {/* 팝업 모달 제거됨: 즉시 이동 로직으로 대체 */}
         </div>
     );
 };
