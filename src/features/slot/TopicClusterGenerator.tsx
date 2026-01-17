@@ -24,7 +24,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
 
     const [keyword, setKeyword] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [previewCluster, setPreviewCluster] = useState<{ pillarTitle: string, satelliteTitles: string[] } | null>(null);
+    const [previewClusters, setPreviewClusters] = useState<any[] | null>(null);
 
     if (!slot) return null;
 
@@ -43,10 +43,10 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                     toneAndManner: slot.personaSetting.toneAndManner
                 }
             );
-            setPreviewCluster({
-                pillarTitle: data.pillarTitle,
-                satelliteTitles: data.satelliteTitles
-            });
+            // data.clusters is the array (TopicCluster[])
+            if (data.clusters) {
+                setPreviewClusters(data.clusters);
+            }
         } catch (error: unknown) {
             console.error(error);
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -61,49 +61,36 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
     };
 
     const handleApply = () => {
-        if (!previewCluster) return;
+        if (!previewClusters || previewClusters.length === 0) return;
 
-        // 1. Update Slot Store (Progress Tracking)
+        // 1. Update Slot Store (Set first cluster as active context)
+        // Note: SlotStore structure is currently limited to 1 cluster.
+        // We use the first generated cluster for the specific slot view.
+        const firstCluster = previewClusters[0];
+        const firstPillar = firstCluster.topics.find((t: any) => t.type === 'pillar')?.title || '';
+        const firstSatellites = firstCluster.topics.filter((t: any) => t.type === 'supporting').map((t: any) => t.title);
+
         updateSlot(slotId, {
             currentCluster: {
-                pillarTitle: previewCluster.pillarTitle,
-                satelliteTitles: previewCluster.satelliteTitles,
-                currentIndex: 1 // 리셋
+                pillarTitle: firstPillar,
+                satelliteTitles: firstSatellites,
+                currentIndex: 1
             }
         });
 
-        // 2. [SYNC] Update Topic Store (Dashboard Execution)
-        const formattedClusters = [{
-            id: `cluster-${Date.now()}`,
-            category: previewCluster.pillarTitle,
-            topics: [
-                {
-                    day: 1,
-                    type: 'pillar' as const,
-                    title: previewCluster.pillarTitle,
-                    description: 'Main Pillar Content',
-                    isPublished: false
-                },
-                ...previewCluster.satelliteTitles.map((title, idx) => ({
-                    day: idx + 2,
-                    type: 'supporting' as const,
-                    title: title,
-                    description: `Supporting Content #${idx + 1}`,
-                    isPublished: false
-                }))
-            ]
-        }];
-        setClusters(formattedClusters);
+        // 2. [SYNC] Update Topic Store (Full 30-day Plan / All Clusters)
+        // This ensures the Dashboard executes through ALL generated topics.
+        setClusters(previewClusters);
 
         if (onComplete) onComplete();
-        alert('토픽 클러스터가 성공적으로 적용되었습니다.\n대시보드에서 글쓰기를 시작할 수 있습니다.');
-        setPreviewCluster(null);
+        alert(`성공적으로 30일치 플랜(${previewClusters.length}개 클러스터)이 생성되었습니다.\n대시보드에서 순차적으로 글쓰기를 시작하세요!`);
+        setPreviewClusters(null);
         setKeyword('');
     };
 
     return (
         <div className="space-y-6">
-            {!previewCluster ? (
+            {!previewClusters ? (
                 <div className="space-y-4">
                     <div className="p-4 rounded-2xl bg-brand-primary/5 border border-brand-primary/10">
                         <p className="text-xs text-brand-primary font-black uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -141,49 +128,57 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                 >
                     <div className="flex items-center justify-between">
                         <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                            <Sparkles size={14} className="text-brand-primary" /> Generated Cluster Map
+                            <Sparkles size={14} className="text-brand-primary" /> Generated 30-Day Plan
                         </h4>
                         <button
-                            onClick={() => setPreviewCluster(null)}
+                            onClick={() => setPreviewClusters(null)}
                             className="text-[10px] font-bold text-gray-500 hover:text-white uppercase"
                         >
                             Reset
                         </button>
                     </div>
 
-                    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-                        {/* Pillar Topic */}
-                        <div className="p-4 rounded-xl bg-brand-primary/10 border border-brand-primary/30 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 bg-brand-primary text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter">Pillar Post</div>
-                            <div className="flex items-start gap-3">
-                                <span className="text-brand-primary font-mono font-black">01</span>
-                                <p className="text-sm font-black text-white">{previewCluster.pillarTitle}</p>
-                            </div>
-                        </div>
+                    <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                        {previewClusters.map((cluster: any, cIdx: number) => {
+                            const pillar = cluster.topics.find((t: any) => t.type === 'pillar');
+                            const satellites = cluster.topics.filter((t: any) => t.type === 'supporting');
 
-                        {/* Satellite Topics */}
-                        {previewCluster.satelliteTitles.map((title, idx) => (
-                            <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all">
-                                <div className="flex items-start gap-3">
-                                    <span className="text-gray-600 font-mono font-bold">{String(idx + 2).padStart(2, '0')}</span>
-                                    <p className="text-sm font-bold text-gray-300">{title}</p>
+                            return (
+                                <div key={cIdx} className="space-y-2">
+                                    <div className="p-4 rounded-xl bg-brand-primary/10 border border-brand-primary/30 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 bg-brand-primary text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter">Cluster {cIdx + 1} Pillar</div>
+                                        <div className="flex items-start gap-3">
+                                            <Layers size={16} className="text-brand-primary shrink-0 mt-0.5" />
+                                            <p className="text-sm font-black text-white">{pillar?.title || cluster.category}</p>
+                                        </div>
+                                    </div>
+                                    <div className="pl-4 border-l-2 border-white/5 space-y-2">
+                                        {satellites.map((sat: any, sIdx: number) => (
+                                            <div key={sIdx} className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all">
+                                                <div className="flex items-start gap-3">
+                                                    <span className="text-gray-600 font-mono font-bold text-xs">{String(sIdx + 1).padStart(2, '0')}</span>
+                                                    <p className="text-xs font-bold text-gray-300">{sat.title}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     <button
                         onClick={handleApply}
                         className="w-full py-4 rounded-xl bg-brand-primary text-black font-black uppercase tracking-widest shadow-neon hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
                     >
-                        <span>Apply This Cluster</span>
+                        <span>Apply Full Plan (30 Days)</span>
                         <ArrowRight size={18} />
                     </button>
                 </motion.div>
             )}
 
             {/* Empty State / Current Strategy */}
-            {!previewCluster && slot.currentCluster.pillarTitle && (
+            {!previewClusters && slot.currentCluster.pillarTitle && (
                 <div className="pt-4 border-t border-white/5">
                     <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3">Currently Active Strategy</p>
                     <div className="p-3 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between group">

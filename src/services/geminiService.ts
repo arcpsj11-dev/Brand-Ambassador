@@ -252,10 +252,7 @@ export const geminiReasoningService = {
     },
 
     // [나노바나나] 토픽 클러스터 생성 (Admin Title Prompt 동기화)
-    async generateTopicCluster(keyword: string, persona?: { jobTitle: string; toneAndManner: string }): Promise<{
-        pillarTitle: string;
-        satelliteTitles: string[];
-    }> {
+    async generateTopicCluster(keyword: string, persona?: { jobTitle: string; toneAndManner: string }): Promise<MonthlyTitleResponse> {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
@@ -281,24 +278,7 @@ export const geminiReasoningService = {
             const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
             const data = JSON.parse(jsonStr) as MonthlyTitleResponse;
 
-            // Monthly Title Prompt는 { clusters: [...] } 형태를 반환함.
-            // TopicClusterGenerator는 단일 클러스터를 기대하므로 첫 번째 클러스터를 추출.
-            if (data.clusters && data.clusters.length > 0) {
-                const firstCluster = data.clusters[0];
-                const pillar = firstCluster.topics.find(t => t.type === 'pillar');
-                const satellites = firstCluster.topics.filter(t => t.type === 'supporting');
-
-                return {
-                    pillarTitle: pillar?.title || `${keyword} 전략 가이드`,
-                    satelliteTitles: satellites.map(s => s.title)
-                };
-            }
-
-            // Fallback (혹시 프롬프트가 예전 포맷이거나 실패할 경우)
-            return {
-                pillarTitle: `${keyword} 중심 전략 (Fallback)`,
-                satelliteTitles: [`${keyword} 관련 주제 1`, `${keyword} 관련 주제 2`]
-            };
+            return data; // Return full response (clusters array)
         } catch (error) {
             console.error("Cluster Gen Error (Synced):", error);
             throw error;
