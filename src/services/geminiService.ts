@@ -251,7 +251,7 @@ export const geminiReasoningService = {
         }
     },
 
-    // [나노바나나] 토픽 클러스터 생성
+    // [나노바나나] 토픽 클러스터 생성 (Admin Title Prompt 동기화)
     async generateTopicCluster(keyword: string, persona?: { jobTitle: string; toneAndManner: string }): Promise<{
         pillarTitle: string;
         satelliteTitles: string[];
@@ -263,23 +263,44 @@ export const geminiReasoningService = {
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            const prompt = `Generate 1 Pillar and 9 Satellite blog titles for keyword "${keyword}".
-            [CRITICAL TITLE FORMULA]: Every title MUST follow this formula: "[증상/상황] + 왜/어떻게/무엇을 + 설명/정리/이해/관점"
-            Example: "운양동 교통사고 목통증, 왜 밤마다 심해질까? (설명)"
-            Persona: ${persona?.jobTitle || 'Expert'}, Tone: ${persona?.toneAndManner || 'Professional'}.
-            JSON Format: { "pillarTitle": "", "satelliteTitles": [] }`;
+            // Admin Store에서 'Monthly Titles' 프롬프트 가져오기
+            const adminState = useAdminStore.getState();
+            const activeOccupation = adminState.getActiveOccupation();
+            const titlePromptTemplate = activeOccupation.prompts.title;
+            const targetPersona = persona?.jobTitle || activeOccupation.label;
+
+            // 프롬프트 바인딩 (Monthly Titles와 동일한 로직)
+            const prompt = titlePromptTemplate
+                .replace(/{{topic}}/g, keyword)
+                .replace(/{{persona}}/g, targetPersona);
+
+            // console.log("Using Synced Admin Prompt for Cluster:", prompt);
 
             const result = await model.generateContent(prompt);
             const text = result.response.text();
-            // Clean up potentially markdown formatted JSON
             const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const data = JSON.parse(jsonStr);
+            const data = JSON.parse(jsonStr) as MonthlyTitleResponse;
+
+            // Monthly Title Prompt는 { clusters: [...] } 형태를 반환함.
+            // TopicClusterGenerator는 단일 클러스터를 기대하므로 첫 번째 클러스터를 추출.
+            if (data.clusters && data.clusters.length > 0) {
+                const firstCluster = data.clusters[0];
+                const pillar = firstCluster.topics.find(t => t.type === 'pillar');
+                const satellites = firstCluster.topics.filter(t => t.type === 'supporting');
+
+                return {
+                    pillarTitle: pillar?.title || `${keyword} 전략 가이드`,
+                    satelliteTitles: satellites.map(s => s.title)
+                };
+            }
+
+            // Fallback (혹시 프롬프트가 예전 포맷이거나 실패할 경우)
             return {
-                pillarTitle: data.pillarTitle,
-                satelliteTitles: data.satelliteTitles.slice(0, 9)
+                pillarTitle: `${keyword} 중심 전략 (Fallback)`,
+                satelliteTitles: [`${keyword} 관련 주제 1`, `${keyword} 관련 주제 2`]
             };
         } catch (error) {
-            console.error("Cluster Gen Error:", error);
+            console.error("Cluster Gen Error (Synced):", error);
             throw error;
         }
     },
