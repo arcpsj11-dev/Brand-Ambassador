@@ -29,6 +29,10 @@ export interface Content {
     scheduledPublishAt?: Date;
     riskCheckPassed: boolean;
     riskCheckResults?: RiskCheckResult;
+    imagePrompts?: Array<{
+        prompt: string;
+        alt: string;
+    }>;
     logs: Array<{
         original: string;
         modified: string;

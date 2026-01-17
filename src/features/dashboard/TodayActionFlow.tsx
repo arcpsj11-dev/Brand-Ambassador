@@ -35,7 +35,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     const brand = useBrandStore();
 
     const [flowState, setFlowState] = useState<FlowState>('ENTRY');
-    const [currentContent, setCurrentContent] = useState<{ title: string; body: string; type: string; pillarTitle?: string; day: number } | null>(null);
+    const [currentContent, setCurrentContent] = useState<{ title: string; body: string; type: string; pillarTitle?: string; day: number; imagePrompts?: Array<{ prompt: string; alt: string }> } | null>(null);
     const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
     const [showUpgradeNotif, setShowUpgradeNotif] = useState(false);
     const [currentContentId, setCurrentContentId] = useState<string | null>(null);
@@ -102,12 +102,16 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                 fullBody += chunk;
             }
 
+            // 4. [NEW] 이미지 프롬프트 생성 (병렬 처리 가능하지만, 본문 내용 기반이므로 순차 처리)
+            const imagePrompts = await geminiReasoningService.generateImagePrompts(fullBody);
+
             const newContentData = {
                 title: targetTopic,
                 body: fullBody,
                 type: targetType,
                 pillarTitle,
-                day: currentDay
+                day: currentDay,
+                imagePrompts // 저장용
             };
 
             setCurrentContent(newContentData);
@@ -116,8 +120,9 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             const id = addContent({
                 title: newContentData.title,
                 body: newContentData.body,
-                status: 'DRAFT', // 처음에는 DRAFT로 저장
+                status: 'DRAFT',
                 riskCheckPassed: true,
+                imagePrompts: imagePrompts, // [NEW] 이미지 프롬프트 저장
                 logs: []
             });
             setCurrentContentId(id);
@@ -293,6 +298,36 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                                     ))}
                                 </div>
                             </div>
+
+                            {/* [NEW] Image Prompts Section */}
+                            {currentContent.imagePrompts && currentContent.imagePrompts.length > 0 && (
+                                <div className="space-y-4 pt-8 border-t border-white/10">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-brand-primary uppercase tracking-widest">AI Suggested Images</span>
+                                        <div className="h-px flex-1 bg-brand-primary/20"></div>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {currentContent.imagePrompts.map((img, idx) => (
+                                            <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+                                                <div className="flex justify-between items-start">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Image {idx + 1}</span>
+                                                    <button
+                                                        onClick={() => navigator.clipboard.writeText(img.prompt)}
+                                                        className="text-[10px] text-brand-primary hover:text-white transition-colors"
+                                                    >
+                                                        Copy Prompt
+                                                    </button>
+                                                </div>
+                                                <p className="text-sm text-gray-300 font-medium select-all">{img.prompt}</p>
+                                                <div className="flex items-center gap-2 text-xs text-gray-500 bg-black/20 p-2 rounded-lg">
+                                                    <span className="font-bold">ALT:</span>
+                                                    <span>{img.alt}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer - Fixed/Sticky Bottom or just placed at end */}
