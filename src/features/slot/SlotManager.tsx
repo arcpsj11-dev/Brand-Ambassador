@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSlotStore, type BlogSlot, type UserTier } from '../../store/useSlotStore';
+import { useSlotStore, type BlogSlot } from '../../store/useSlotStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useAdminStore } from '../../store/useAdminStore';
 import {
@@ -28,12 +28,7 @@ export const SlotManager: React.FC = () => {
     const [contentFlowSlotId, setContentFlowSlotId] = useState<string | null>(null);
 
     const userTier = user?.tier || 'START';
-    const tierMap: Record<string, UserTier> = {
-        'START': 'BASIC',
-        'GROW': 'PRO',
-        'SCALE': 'ULTRA'
-    };
-    const tier = tierMap[userTier] || 'BASIC';
+    const tier = userTier;
     const maxSlots = getMaxSlots(tier);
 
     const handleCreateNew = () => {

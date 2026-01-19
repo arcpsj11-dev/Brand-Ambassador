@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { type MembershipTier } from './useAuthStore';
 import { persist } from 'zustand/middleware';
 
 // 페르소나 설정 인터페이스
@@ -30,8 +31,8 @@ export interface BlogSlot {
     lastActionDate?: string; // YYYY-MM-DD
 }
 
-// 사용자 등급 타입
-export type UserTier = 'BASIC' | 'PRO' | 'ULTRA';
+// 사용자 등급 타입 (Align with useAuthStore)
+export type UserTier = MembershipTier;
 
 // 슬롯 스토어 상태 인터페이스
 interface SlotState {
@@ -60,11 +61,11 @@ interface SlotState {
     ensureActiveSlot: () => void;
 }
 
-// 등급별 슬롯 제한 맵
+// 등급별 슬롯 제한 맵 (Fallback defaults)
 const TIER_SLOT_LIMITS: Record<UserTier, number> = {
-    BASIC: 1,
-    PRO: 3,
-    ULTRA: 5
+    START: 1,
+    GROW: 3,
+    SCALE: 5
 };
 
 export const useSlotStore = create<SlotState>()(
@@ -73,22 +74,9 @@ export const useSlotStore = create<SlotState>()(
             slots: [],
             activeSlotId: null,
 
-            // 등급별 최대 슬롯 개수 반환 (Use Admin Store Config)
+            // 등급별 최대 슬롯 개수 반환
             getMaxSlots: (tier: UserTier) => {
-                try {
-                    // Access store state directly after ensuring module is loaded
-                    // Note: If circular dependency exists, this might be undefined during module eval,
-                    // but usually safe inside function call.
-                    const adminStore = require('../store/useAdminStore');
-                    // Using require simply to avoid top-level cyclic import issues if they exist
-                    if (adminStore && adminStore.useAdminStore) {
-                        const config = adminStore.useAdminStore.getState().tierConfigs[tier];
-                        return config ? config.maxSlots : 1;
-                    }
-                    return TIER_SLOT_LIMITS[tier] || 1;
-                } catch (e) {
-                    return TIER_SLOT_LIMITS[tier] || 1;
-                }
+                return TIER_SLOT_LIMITS[tier] || 1;
             },
 
             // 슬롯 생성 가능 여부 확인
