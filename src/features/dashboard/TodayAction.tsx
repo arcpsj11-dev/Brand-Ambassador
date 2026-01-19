@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useStepStore } from '../../store/useStepStore';
 import { TodayActionFlow } from './TodayActionFlow';
 import { useSlotStore } from '../../store/useSlotStore';
-import { useTopicStore } from '../../store/useTopicStore';
+// import { useTopicStore } from '../../store/useTopicStore';
 
 /**
  * 오늘의 액션 카드 컴포넌트
@@ -14,15 +14,24 @@ import { useTopicStore } from '../../store/useTopicStore';
  */
 export const TodayAction: React.FC = () => {
     const { actionStatus, setActionStatus, completedCount, regenerationTopic } = useContentStore();
-    const { getNextTopic } = useTopicStore();
+    // const { getNextTopic } = useTopicStore(); // Removed dependency
     const { slots, activeSlotId } = useSlotStore();
     const { syncUpgrade } = useStepStore();
     const { user } = useAuthStore();
     const [showFlow, setShowFlow] = useState(false);
 
     const activeSlot = slots.find(s => s.slotId === activeSlotId);
-    const nextTopicData = getNextTopic();
-    const targetTopicTitle = nextTopicData?.topic.title;
+
+    // Calculate Next Topic Title directly from active slot
+    let targetTopicTitle = '';
+    if (activeSlot) {
+        const { currentIndex, pillarTitle, satelliteTitles } = activeSlot.currentCluster;
+        if (currentIndex === 1) {
+            targetTopicTitle = pillarTitle;
+        } else if (currentIndex > 1 && satelliteTitles && satelliteTitles.length >= (currentIndex - 1)) {
+            targetTopicTitle = satelliteTitles[currentIndex - 2];
+        }
+    }
 
     // STEP 동기화: 기존 포스팅 개수가 이미 기준치를 넘었을 경우 자동으로 승급
     useEffect(() => {

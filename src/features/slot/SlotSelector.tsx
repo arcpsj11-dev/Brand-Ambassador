@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSlotStore, type BlogSlot } from '../../store/useSlotStore';
-import { ChevronDown, Plus, LayoutGrid, Check } from 'lucide-react';
+import { ChevronDown, LayoutGrid, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const SlotSelector: React.FC = () => {
@@ -16,8 +16,8 @@ export const SlotSelector: React.FC = () => {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all ${activeSlot
-                        ? 'bg-brand-primary/10 border-brand-primary/30 hover:bg-brand-primary/20'
-                        : 'bg-red-500/10 border-red-500/30 animate-pulse'
+                    ? 'bg-brand-primary/10 border-brand-primary/30 hover:bg-brand-primary/20'
+                    : 'bg-red-500/10 border-red-500/30 animate-pulse'
                     }`}
             >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeSlot ? 'bg-brand-primary/20 text-brand-primary' : 'bg-red-500/20 text-red-500'
@@ -71,19 +71,11 @@ export const SlotSelector: React.FC = () => {
                                     </button>
                                 ))}
 
-                                <div className="border-t border-white/5 mt-1 pt-1">
-                                    <button
-                                        className="w-full flex items-center gap-3 p-3 rounded-xl text-gray-400 hover:bg-white/5 transition-all text-sm font-medium"
-                                        onClick={() => {
-                                            // SlotManager 모달 열기 로직 등이 필요할 수 있음
-                                            alert('슬롯 관리자에서 새 슬롯을 추가할 수 있습니다.');
-                                            setIsOpen(false);
-                                        }}
-                                    >
-                                        <Plus size={16} />
-                                        새 슬롯 추가하기
-                                    </button>
-                                </div>
+                                {slots.length === 0 && (
+                                    <div className="border-t border-white/5 mt-1 pt-1 p-3 text-center text-xs text-gray-500">
+                                        No more slots available.
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </>

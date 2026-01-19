@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useProfileStore, type ContentTone } from '../../store/useProfileStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Check, Building2, User, MessageSquare, Plus, X } from 'lucide-react';
+import { ChevronRight, Check, Building2, User, MessageSquare, Plus, X, Image as ImageIcon } from 'lucide-react';
 
-type SetupStep = 1 | 2 | 3;
+type SetupStep = 1 | 2 | 3 | 4;
 
 // --- Sub-components moved outside to fix the "focus loss" bug ---
 
@@ -16,26 +16,6 @@ interface StepProps {
 const Step1: React.FC<StepProps> = ({ localData, setLocalData }) => {
     const [customSubject, setCustomSubject] = useState('');
 
-    const subjectOptions = [
-        '내과', '침구과', '한방부인과', '한방소아과', '한방재활의학과',
-        '사상체질과', '한방신경정신과', '한방안이비인후피부과'
-    ];
-
-    const toggleSubject = (subject: string) => {
-        const isSelected = localData.subjects.includes(subject);
-        if (isSelected) {
-            setLocalData({
-                ...localData,
-                subjects: localData.subjects.filter((s: string) => s !== subject),
-            });
-        } else {
-            setLocalData({
-                ...localData,
-                subjects: [...localData.subjects, subject],
-            });
-        }
-    };
-
     const addCustomSubject = () => {
         if (customSubject.trim() && !localData.subjects.includes(customSubject.trim())) {
             setLocalData({
@@ -44,6 +24,13 @@ const Step1: React.FC<StepProps> = ({ localData, setLocalData }) => {
             });
             setCustomSubject('');
         }
+    };
+
+    const removeSubject = (subjectToRemove: string) => {
+        setLocalData({
+            ...localData,
+            subjects: localData.subjects.filter((s: string) => s !== subjectToRemove),
+        });
     };
 
     return (
@@ -70,50 +57,34 @@ const Step1: React.FC<StepProps> = ({ localData, setLocalData }) => {
                 <label className="text-sm font-bold text-gray-400 uppercase tracking-widest">
                     진료과목 <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                    {subjectOptions.map((subject) => {
-                        const isSelected = localData.subjects.includes(subject);
-                        return (
-                            <button
-                                key={subject}
-                                onClick={() => toggleSubject(subject)}
-                                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${isSelected
-                                    ? 'bg-brand-primary text-black'
-                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                                    }`}
-                            >
-                                {subject}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* 커스텀 과목 입력 */}
                 <div className="flex gap-2">
                     <input
                         type="text"
                         value={customSubject}
                         onChange={(e) => setCustomSubject(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && addCustomSubject()}
-                        placeholder="직접 입력 (예: 성장클리닉)"
-                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:border-brand-primary transition-all outline-none"
+                        placeholder="진료 과목을 입력하고 Enter를 누르세요 (예: 교통사고, 다이어트)"
+                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-primary transition-all outline-none"
                     />
                     <button
                         onClick={addCustomSubject}
-                        className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
+                        className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
                     >
                         <Plus size={14} /> 추가
                     </button>
                 </div>
 
-                {/* 선택된 커스텀 과목들 표시 (목록에 없는 것들) */}
+                {/* 선택된 과목들 표시 */}
                 <div className="flex flex-wrap gap-2">
-                    {localData.subjects.filter((s: string) => !subjectOptions.includes(s)).map((subject: string) => (
-                        <span key={subject} className="px-3 py-1 bg-brand-primary/20 text-brand-primary rounded-full text-[10px] font-bold flex items-center gap-1">
+                    {localData.subjects.map((subject: string) => (
+                        <span key={subject} className="px-3 py-1.5 bg-brand-primary/20 text-brand-primary rounded-lg text-xs font-bold flex items-center gap-2 border border-brand-primary/20">
                             {subject}
-                            <X size={12} className="cursor-pointer hover:text-white" onClick={() => toggleSubject(subject)} />
+                            <X size={14} className="cursor-pointer hover:text-white" onClick={() => removeSubject(subject)} />
                         </span>
                     ))}
+                    {localData.subjects.length === 0 && (
+                        <span className="text-xs text-gray-600 px-2 py-1">등록된 진료과목이 없습니다.</span>
+                    )}
                 </div>
             </div>
 
@@ -142,16 +113,6 @@ const Step1: React.FC<StepProps> = ({ localData, setLocalData }) => {
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-primary transition-all outline-none"
                 />
             </div>
-
-            {/* 네이버 블로그 ID 등록 (제거됨 - 슬롯에서 관리) */}
-            {/* <div className="space-y-2 opacity-50 pointer-events-none hidden">
-                <label className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                    네이버 블로그 ID (Slot에서 관리됨)
-                </label>
-            </div> */}
-            <p className="text-[10px] text-gray-500 mt-1">
-                * 등록된 아이디는 대시보드에서 지수/성과 분석에 활용됩니다.
-            </p>
         </motion.div>
     );
 };
@@ -252,30 +213,83 @@ const Step3: React.FC<StepProps> = ({ localData, setLocalData }) => {
                 </div>
             </div>
 
-            <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                        type="checkbox"
-                        checked={localData.allowAggressiveExpression}
-                        onChange={(e) => setLocalData({ ...localData, allowAggressiveExpression: e.target.checked })}
-                        className="w-5 h-5 accent-brand-primary"
-                    />
-                    <span className="text-sm">공격적 표현 허용 (의료법 한계 내)</span>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                        type="checkbox"
-                        checked={localData.allowReviewMention}
-                        onChange={(e) => setLocalData({ ...localData, allowReviewMention: e.target.checked })}
-                        className="w-5 h-5 accent-brand-primary"
-                    />
-                    <span className="text-sm">후기·사례 언급 허용</span>
-                </label>
+            <div className="p-4 bg-white/5 rounded-xl border border-white/5 text-gray-500 text-xs leading-relaxed">
+                * 콘텐츠 톤은 글의 전반적인 분위기를 결정합니다. <br />
+                * 공격적 표현 및 후기 언급 옵션은 보다 자연스러운 글 생성을 위해 자동으로 최적화됩니다.
             </div>
         </motion.div>
     );
 };
+
+// STEP 4: 병원 원내 사진
+const Step4: React.FC<StepProps> = ({ localData, setLocalData }) => {
+    const photoCategories = [
+        { id: 'entrance', label: '현관 (입구)' },
+        { id: 'desk', label: '데스크' },
+        { id: 'director_room', label: '원장실' },
+        { id: 'treatment_room', label: '치료실' },
+        { id: 'consultation', label: '상담하는 모습' },
+        { id: 'treatment_scene', label: '진료하는 모습' },
+        { id: 'acupuncture', label: '침치료하는 모습' },
+        { id: 'chuna', label: '추나하는 모습' },
+    ];
+
+    const handleFileChange = (id: string, file: File | null) => {
+        if (file) {
+            // Note: In a real app, upload to server here.
+            // For now, we simulate storage by using the file name
+            setLocalData({
+                ...localData,
+                clinicPhotos: {
+                    ...localData.clinicPhotos,
+                    [id]: file.name
+                }
+            });
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+        >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {photoCategories.map((cat) => (
+                    <div key={cat.id} className="space-y-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                            {cat.label}
+                            {localData.clinicPhotos?.[cat.id] && <span className="text-brand-primary text-[10px] flex items-center gap-1"><Check size={10} /> Saved</span>}
+                        </label>
+                        <div className={`relative group transition-all rounded-xl border ${localData.clinicPhotos?.[cat.id] ? 'border-brand-primary/50 bg-brand-primary/5' : 'border-white/10 bg-white/5'}`}>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleFileChange(cat.id, e.target.files?.[0] || null)}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />
+                            <div className="p-4 flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${localData.clinicPhotos?.[cat.id] ? 'bg-brand-primary text-black' : 'bg-white/10 text-gray-500'}`}>
+                                    <ImageIcon size={20} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className={`text-sm font-bold truncate ${localData.clinicPhotos?.[cat.id] ? 'text-white' : 'text-gray-500'}`}>
+                                        {localData.clinicPhotos?.[cat.id] || '사진 업로드...'}
+                                    </div>
+                                    <div className="text-[10px] text-gray-600">클릭하여 파일 선택</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <p className="text-[10px] text-gray-500 mt-2 text-center">
+                * 업로드된 사진은 콘텐츠 생성 시 해당 주제('병원 내부', '치료 과정' 등)가 나올 때 자동으로 삽입됩니다.
+            </p>
+        </motion.div>
+    );
+}
 
 export const ProfileSetup: React.FC = () => {
     const [currentSetupStep, setCurrentSetupStep] = useState<SetupStep>(1);
@@ -291,9 +305,8 @@ export const ProfileSetup: React.FC = () => {
         mainTopic: profile.mainTopic,
         avoidTopics: profile.avoidTopics,
         contentTone: profile.contentTone,
-        allowAggressiveExpression: profile.allowAggressiveExpression,
-        allowReviewMention: profile.allowReviewMention,
-        blogAccounts: profile.blogAccounts || [], // Initialize with profile or empty array
+        // Removed deprecated fields from local usage but kept in store just in case
+        clinicPhotos: profile.clinicPhotos || {},
     });
 
     const [isSaved, setIsSaved] = useState(false);
@@ -309,20 +322,23 @@ export const ProfileSetup: React.FC = () => {
         if (currentSetupStep === 3) {
             return !!localData.contentTone;
         }
+        if (currentSetupStep === 4) {
+            return true; // Optional step
+        }
         return false;
     };
 
     // 다음 단계
     const handleNext = () => {
-        if (currentSetupStep < 3) {
-            setCurrentSetupStep((currentSetupStep + 1) as SetupStep);
+        if (currentSetupStep < 4) {
+            setCurrentSetupStep((prev) => (prev + 1) as SetupStep);
         }
     };
 
     // 이전 단계
     const handlePrev = () => {
         if (currentSetupStep > 1) {
-            setCurrentSetupStep((currentSetupStep - 1) as SetupStep);
+            setCurrentSetupStep((prev) => (prev - 1) as SetupStep);
         }
     };
 
@@ -331,10 +347,6 @@ export const ProfileSetup: React.FC = () => {
         if (!isStepValid()) return;
 
         profile.setProfile(localData);
-        if (localData.blogAccounts?.length > 0) {
-            // 사이드 이펙트로 첫 번째 계정 자동 선택
-            profile.selectBlogAccount(localData.blogAccounts[0]);
-        }
         profile.setProfileComplete(true);
         setIsSaved(true);
 
@@ -346,6 +358,7 @@ export const ProfileSetup: React.FC = () => {
         { num: 1, label: '병원 정보', icon: Building2 },
         { num: 2, label: '원장 포지션', icon: User },
         { num: 3, label: '콘텐츠 방향', icon: MessageSquare },
+        { num: 4, label: '원내 사진', icon: ImageIcon },
     ];
 
     return (
@@ -432,6 +445,9 @@ export const ProfileSetup: React.FC = () => {
                             {currentSetupStep === 3 && (
                                 <Step3 key="step3" localData={localData} setLocalData={setLocalData} />
                             )}
+                            {currentSetupStep === 4 && (
+                                <Step4 key="step4" localData={localData} setLocalData={setLocalData} />
+                            )}
                         </AnimatePresence>
                     </div>
 
@@ -452,7 +468,7 @@ export const ProfileSetup: React.FC = () => {
                                 이전
                             </button>
                         )}
-                        {currentSetupStep < 3 ? (
+                        {currentSetupStep < 4 ? (
                             <button
                                 onClick={handleNext}
                                 disabled={!isStepValid()}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSlotStore, type BlogSlot, type UserTier } from '../../store/useSlotStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useAdminStore } from '../../store/useAdminStore';
 import {
     Plus,
     Settings2,
@@ -14,16 +15,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TopicClusterGenerator } from './TopicClusterGenerator';
 import { SlotContentFlow } from './SlotContentFlow';
 
-const PERSONA_TEMPLATES = [
-    { id: 'medic', label: '한의사', job: '한의사', tone: '신뢰감 있고 전문적인' },
-    { id: 'it', label: 'IT 전문가', job: 'IT 전략가', tone: '스마트하고 분석적인' },
-    { id: 'diet', label: '다이어트 코치', job: '건강 관리 코치', tone: 'MZ세대 스타일의 트렌디한' },
-    { id: 'parenting', label: '육아 전문가', job: '육아 상담가', tone: '친절하고 공감하는' }
-];
+// PERSONA_TEMPLATES removed in favor of dynamic admin store occupations
 
 export const SlotManager: React.FC = () => {
     const { slots, activeSlotId, setActiveSlot, createSlot, updateSlot, deleteSlot, canCreateSlot, getMaxSlots } = useSlotStore();
     const { user } = useAuthStore();
+    const { occupations } = useAdminStore();
+    const occupationList = Object.values(occupations);
     const [isEditing, setIsEditing] = useState(false);
     const [editingSlot, setEditingSlot] = useState<Partial<BlogSlot> | null>(null);
     const [activeTab, setActiveTab] = useState<'basic' | 'strategy'>('basic');
@@ -46,6 +44,7 @@ export const SlotManager: React.FC = () => {
         setEditingSlot({
             slotName: '',
             naverBlogId: '',
+            occupationId: 'doctor', // Default
             personaSetting: {
                 jobTitle: '한의사',
                 toneAndManner: '신뢰감 있는',
@@ -258,26 +257,29 @@ export const SlotManager: React.FC = () => {
                                         </div>
 
                                         <div>
-                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Persona Template</label>
+                                            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Occupation (Prompt Strategy)</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {PERSONA_TEMPLATES.map((tmpl) => (
+                                                {occupationList.map((occ) => (
                                                     <button
-                                                        key={tmpl.id}
-                                                        onClick={() => setEditingSlot({
-                                                            ...editingSlot,
-                                                            personaSetting: {
-                                                                jobTitle: tmpl.job,
-                                                                toneAndManner: tmpl.tone,
-                                                                expertise: []
-                                                            }
-                                                        })}
-                                                        className={`p-3 rounded-xl border transition-all text-left ${editingSlot?.personaSetting?.jobTitle === tmpl.job
+                                                        key={occ.id}
+                                                        onClick={() => {
+                                                            setEditingSlot({
+                                                                ...editingSlot,
+                                                                occupationId: occ.id,
+                                                                personaSetting: {
+                                                                    jobTitle: occ.label,
+                                                                    toneAndManner: '신뢰감 있는', // Default tone or derived
+                                                                    expertise: []
+                                                                }
+                                                            });
+                                                        }}
+                                                        className={`p-3 rounded-xl border transition-all text-left ${editingSlot?.occupationId === occ.id
                                                             ? 'bg-brand-primary/10 border-brand-primary/30 text-brand-primary'
                                                             : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
                                                             }`}
                                                     >
-                                                        <div className="text-sm font-bold">{tmpl.label}</div>
-                                                        <div className="text-[9px] opacity-60 leading-tight mt-1">{tmpl.tone}</div>
+                                                        <div className="text-sm font-bold">{occ.label}</div>
+                                                        <div className="text-[9px] opacity-60 leading-tight mt-1">Prompt Applied</div>
                                                     </button>
                                                 ))}
                                             </div>
@@ -299,10 +301,22 @@ export const SlotManager: React.FC = () => {
                                         </div>
                                     </>
                                 ) : (
-                                    <TopicClusterGenerator
-                                        slotId={editingSlot?.slotId || ''}
-                                        onComplete={() => { setIsEditing(false); setActiveTab('basic'); }}
-                                    />
+                                    <>
+                                        {editingSlot?.occupationId && (
+                                            <div className="mb-4 p-3 bg-brand-primary/10 border border-brand-primary/20 rounded-xl flex items-center gap-2">
+                                                <div className="w-5 h-5 rounded-full bg-brand-primary flex items-center justify-center text-black">
+                                                    <CheckCircle2 size={12} />
+                                                </div>
+                                                <p className="text-xs text-brand-primary font-bold">
+                                                    선택한 직업({occupationList.find(o => o.id === editingSlot.occupationId)?.label || editingSlot.occupationId})에 맞는 프롬프트가 적용되었습니다.
+                                                </p>
+                                            </div>
+                                        )}
+                                        <TopicClusterGenerator
+                                            slotId={editingSlot?.slotId || ''}
+                                            onComplete={() => { setIsEditing(false); setActiveTab('basic'); }}
+                                        />
+                                    </>
                                 )}
                             </div>
                         </motion.div>

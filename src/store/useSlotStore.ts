@@ -20,6 +20,7 @@ export interface BlogSlot {
     slotId: string;
     slotName: string;           // 사용자 지정 이름
     naverBlogId: string;
+    occupationId: string;
 
     personaSetting: PersonaSetting;
     currentCluster: CurrentCluster;
@@ -90,6 +91,7 @@ export const useSlotStore = create<SlotState>()(
                     slotId: `slot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     slotName: config.slotName || '새 블로그',
                     naverBlogId: config.naverBlogId || '',
+                    occupationId: config.occupationId || 'doctor', // Default
                     personaSetting: config.personaSetting || {
                         jobTitle: '전문가',
                         toneAndManner: '신뢰감 있는',

@@ -57,6 +57,20 @@ export const OccupationSelector: React.FC<OccupationSelectorProps> = ({ classNam
     }
 
     // Default Luxurious Variant
+    const [newOccupationLabel, setNewOccupationLabel] = useState("");
+    const { addOccupation } = useAdminStore();
+
+    const handleAddOccupation = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (newOccupationLabel.trim()) {
+            const id = newOccupationLabel.trim().toLowerCase().replace(/\s+/g, '_');
+            addOccupation(id, newOccupationLabel.trim());
+            setNewOccupationLabel("");
+            setActiveOccupation(id);
+            setIsOpen(false);
+        }
+    };
+
     return (
         <div className={`relative z-50 ${className}`}>
             <button
@@ -81,7 +95,7 @@ export const OccupationSelector: React.FC<OccupationSelectorProps> = ({ classNam
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute left-0 top-full mt-2 w-56 bg-[#1a1a1c] border border-white/10 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden"
+                        className="absolute right-0 top-full mt-2 w-64 bg-[#1a1a1c] border border-white/10 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden"
                     >
                         <div className="p-2 space-y-1">
                             {occupationList.map((occ) => (
@@ -89,14 +103,34 @@ export const OccupationSelector: React.FC<OccupationSelectorProps> = ({ classNam
                                     key={occ.id}
                                     onClick={() => handleSelect(occ.id)}
                                     className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all ${activeOccupationId === occ.id
-                                            ? 'bg-brand-primary text-black font-bold shadow-neon'
-                                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        ? 'bg-brand-primary text-black font-bold shadow-neon'
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                         }`}
                                 >
                                     <span className="text-sm">{occ.label}</span>
                                     {activeOccupationId === occ.id && <div className="w-2 h-2 rounded-full bg-black animate-pulse" />}
                                 </button>
                             ))}
+                        </div>
+
+                        {/* Add New Occupation */}
+                        <div className="p-3 border-t border-white/5 bg-white/[0.02]">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newOccupationLabel}
+                                    onChange={(e) => setNewOccupationLabel(e.target.value)}
+                                    placeholder="새 직업군 추가..."
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-brand-primary/50"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                                <button
+                                    onClick={handleAddOccupation}
+                                    className="bg-brand-primary text-black text-xs font-bold px-2 rounded-lg hover:shadow-neon transition-all"
+                                >
+                                    +
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 )}

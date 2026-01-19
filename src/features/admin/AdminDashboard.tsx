@@ -243,7 +243,7 @@ export const AdminDashboard: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gemini API Key</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gemini API Key (Unified)</label>
                                     <input
                                         type="password"
                                         value={localApiKey}
@@ -251,7 +251,11 @@ export const AdminDashboard: React.FC = () => {
                                         placeholder="API 키를 입력하면 모든 사용자의 요청에 우선 적용됩니다."
                                         className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
                                     />
-                                    <p className="text-[10px] text-gray-600 font-medium">관리자가 입력한 키는 로컬 보안 환경 내에서만 관리되며 서버로 직접 전달되지 않습니다.</p>
+                                    <p className="text-[10px] text-gray-600 font-medium">
+                                        * 이 키 하나로 텍스트 생성부터 <strong>이미지 분석 및 생성</strong>까지 모두 처리합니다.
+                                        <br />
+                                        * 관리자가 입력한 키는 로컬 보안 환경 내에서만 관리되며 서버로 직접 전달되지 않습니다.
+                                    </p>
                                 </div>
 
                                 <button
@@ -261,65 +265,6 @@ export const AdminDashboard: React.FC = () => {
                                     <Save size={20} />
                                     <span>시스템 설정 저장</span>
                                 </button>
-                            </div>
-
-                            {/* Image Generation Settings */}
-                            <div className="space-y-6 pt-12 border-t border-white/5">
-                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 text-white">
-                                    <ImageIcon size={20} className="text-brand-primary" />
-                                    <span className="font-bold text-sm uppercase tracking-widest">Image Generation Settings</span>
-                                </div>
-
-                                {/* Active Provider Selector */}
-                                <div className="space-y-3">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Provider</label>
-                                    <div className="flex gap-4">
-                                        <button
-                                            onClick={() => adminState.setActiveImageProvider('dalle')}
-                                            className={`flex-1 py-4 rounded-xl border font-black uppercase tracking-widest transition-all ${adminState.activeImageProvider === 'dalle' ? 'bg-white text-black border-white' : 'bg-transparent text-gray-500 border-white/10 hover:bg-white/5'}`}
-                                        >
-                                            DALL-E (OpenAI)
-                                        </button>
-                                        <button
-                                            onClick={() => adminState.setActiveImageProvider('nano')}
-                                            className={`flex-1 py-4 rounded-xl border font-black uppercase tracking-widest transition-all ${adminState.activeImageProvider === 'nano' ? 'bg-[#FFD700] text-black border-[#FFD700]' : 'bg-transparent text-gray-500 border-white/10 hover:bg-white/5'}`}
-                                        >
-                                            Nano Banana
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* DALL-E Key */}
-                                    <div className="space-y-3">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">DALL-E API Key (OpenAI)</label>
-                                        <input
-                                            type="password"
-                                            value={adminState.dallEApiKey || ''}
-                                            onChange={(e) => adminState.setDallEApiKey(e.target.value)}
-                                            placeholder="sk-..."
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
-                                        />
-                                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-1">
-                                            Status: {adminState.dallEApiKey ? <span className="text-green-500">Active</span> : <span className="text-red-500">Missing</span>}
-                                        </div>
-                                    </div>
-
-                                    {/* Nano Banana Key */}
-                                    <div className="space-y-3">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nano Banana API Key</label>
-                                        <input
-                                            type="password"
-                                            value={adminState.nanoBananaApiKey || ''}
-                                            onChange={(e) => adminState.setNanoBananaApiKey(e.target.value)}
-                                            placeholder="Enter Key..."
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
-                                        />
-                                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-1">
-                                            Status: {adminState.nanoBananaApiKey ? <span className="text-green-500">Active</span> : <span className="text-gray-500">Optional</span>}
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </motion.div>
                     )}

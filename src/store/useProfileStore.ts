@@ -26,6 +26,9 @@ interface ProfileState {
     blogAccounts: string[]; // 네이버 ID 목록
     selectedBlogId: string | null;
 
+    // 병원 사진 (New)
+    clinicPhotos: Record<string, string>; // key: section (entrance, desk, etc), value: url/description
+
     // 프로파일 완료 여부
     isProfileComplete: boolean;
 
@@ -53,6 +56,7 @@ const initialState = {
     allowReviewMention: false,
     blogAccounts: [],
     selectedBlogId: null,
+    clinicPhotos: {},
     isProfileComplete: false,
 };
 
