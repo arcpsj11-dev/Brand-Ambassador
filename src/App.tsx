@@ -65,7 +65,7 @@ const App: React.FC = () => {
           </div>
           <div>
             <span className="font-black text-xl tracking-tight block">ANTIGRAVITY</span>
-            <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em] block">MVP DEMO v2.1</span>
+            <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em] block">MVP DEMO v2.2 (Admin Update)</span>
           </div>
         </div>
 
