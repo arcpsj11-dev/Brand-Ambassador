@@ -24,6 +24,13 @@ interface AdminSettings {
 
     // Mock User Management for Admin
     users: Array<{ id: string; tier: 'START' | 'GROW' | 'SCALE'; role: 'user' | 'admin' }>;
+
+    // Membership Tier Configuration
+    tierConfigs: Record<string, {
+        maxSlots: number;
+        durationRaw: string; // e.g., "1개월", "무제한"
+        label: string;
+    }>;
 }
 
 interface AdminState extends AdminSettings {
@@ -35,8 +42,7 @@ interface AdminState extends AdminSettings {
     updateOccupationPrompt: (occupationId: string, type: keyof PromptSet, content: string) => void;
     addOccupation: (id: string, label: string) => void;
 
-    // Deprecated but kept for compatibility types if needed elsewhere (though we should migrate consumers)
-    // targetPersona: string; 
+    updateTierConfig: (tierId: string, updates: Partial<{ maxSlots: number; durationRaw: string }>) => void;
 
     updateUserTier: (userId: string, tier: 'START' | 'GROW' | 'SCALE') => void;
 
@@ -157,6 +163,12 @@ export const useAdminStore = create<AdminState>()(
                 { id: 'admin', tier: 'SCALE', role: 'admin' },
             ],
 
+            tierConfigs: {
+                'START': { maxSlots: 1, durationRaw: '7일 체험', label: 'BASIC (START)' },
+                'GROW': { maxSlots: 3, durationRaw: '30일', label: 'PRO (GROW)' },
+                'SCALE': { maxSlots: 5, durationRaw: '30일', label: 'ULTRA (SCALE)' }
+            },
+
             setGeminiApiKey: (key) => set({ geminiApiKey: key }),
             setNanoBananaApiKey: (key) => set({ nanoBananaApiKey: key }),
             setDallEApiKey: (key) => set({ dallEApiKey: key }),
@@ -171,6 +183,16 @@ export const useAdminStore = create<AdminState>()(
                         id,
                         label,
                         prompts: { ...DEFAULT_PROMPTS_ORIENTAL } // Default shallow copy
+                    }
+                }
+            })),
+
+            updateTierConfig: (tierId, updates) => set((state) => ({
+                tierConfigs: {
+                    ...state.tierConfigs,
+                    [tierId]: {
+                        ...state.tierConfigs[tierId],
+                        ...updates
                     }
                 }
             })),
@@ -206,7 +228,8 @@ export const useAdminStore = create<AdminState>()(
                 activeImageProvider: state.activeImageProvider,
                 activeOccupationId: state.activeOccupationId,
                 occupations: state.occupations,
-                users: state.users
+                users: state.users,
+                tierConfigs: state.tierConfigs
             }),
         }
     )

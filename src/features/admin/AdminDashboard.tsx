@@ -229,6 +229,58 @@ export const AdminDashboard: React.FC = () => {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Membership Configuration Section */}
+                            <div className="space-y-6 pt-8 border-t border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <ShieldCheck size={20} className="text-brand-primary" />
+                                    <h3 className="text-lg font-black uppercase tracking-tight">Membership Configuration (등급별 정책 설정)</h3>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {(['START', 'GROW', 'SCALE'] as const).map((tier) => {
+                                        const config = adminState.tierConfigs[tier];
+                                        if (!config) return null;
+
+                                        return (
+                                            <div key={tier} className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 hover:border-brand-primary/30 transition-all">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className={`text-xs font-black px-2 py-1 rounded border ${tier === 'SCALE' ? 'text-brand-primary border-brand-primary/30 bg-brand-primary/10' : tier === 'GROW' ? 'text-purple-400 border-purple-400/30 bg-purple-400/10' : 'text-gray-400 border-gray-500/30'}`}>
+                                                        {tier}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500 font-bold">{config.label}</span>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Max Blog Slots (최대 슬롯)</label>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                value={config.maxSlots}
+                                                                onChange={(e) => adminState.updateTierConfig(tier, { maxSlots: parseInt(e.target.value) || 0 })}
+                                                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm font-bold focus:border-brand-primary outline-none"
+                                                            />
+                                                            <span className="text-xs text-gray-500 font-bold whitespace-nowrap">개</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Duration (이용 기간)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={config.durationRaw}
+                                                            onChange={(e) => adminState.updateTierConfig(tier, { durationRaw: e.target.value })}
+                                                            className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm font-bold focus:border-brand-primary outline-none"
+                                                            placeholder="예: 30일"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </motion.div>
                     )}
 
@@ -270,7 +322,7 @@ export const AdminDashboard: React.FC = () => {
                     )}
 
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
