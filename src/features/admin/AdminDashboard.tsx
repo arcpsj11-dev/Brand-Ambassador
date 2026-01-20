@@ -15,6 +15,7 @@ import {
 import { motion } from 'framer-motion';
 import { useAdminStore } from '../../store/useAdminStore';
 import { OccupationSelector } from './OccupationSelector';
+import { AdminImageTestTool } from './AdminImageTestTool';
 
 export const AdminDashboard: React.FC = () => {
     const adminState = useAdminStore();
@@ -25,7 +26,7 @@ export const AdminDashboard: React.FC = () => {
         users, updateUserTier
     } = adminState;
 
-    const [activeTab, setActiveTab] = useState<'prompts' | 'users' | 'settings'>('prompts');
+    const [activeTab, setActiveTab] = useState<'prompts' | 'users' | 'settings' | 'image-test'>('prompts');
     const [localPrompts, setLocalPrompts] = useState(occupations[activeOccupationId]?.prompts);
     const [localApiKey, setLocalApiKey] = useState(geminiApiKey);
 
@@ -83,6 +84,13 @@ export const AdminDashboard: React.FC = () => {
                         <Settings size={18} />
                         <span>글로벌 설정</span>
                     </button>
+                    <button
+                        onClick={() => setActiveTab('image-test')}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'image-test' ? 'bg-brand-primary text-black font-bold' : 'text-gray-400 hover:bg-white/5'}`}
+                    >
+                        <ImageIcon size={18} />
+                        <span>이미지 테스트</span>
+                    </button>
                 </nav>
             </div>
 
@@ -97,11 +105,13 @@ export const AdminDashboard: React.FC = () => {
                                 {activeTab === 'prompts' && 'Prompt Control'}
                                 {activeTab === 'users' && 'User Management'}
                                 {activeTab === 'settings' && 'Global Settings'}
+                                {activeTab === 'image-test' && 'Image Test Tool'}
                             </h1>
                             <p className="text-gray-500 font-medium">
                                 {activeTab === 'prompts' && '직업별 AI 생성 로직의 핵심 프롬프트를 실시간으로 제어합니다.'}
                                 {activeTab === 'users' && '회원의 권한 및 멤버십 등급을 수동으로 조정합니다.'}
                                 {activeTab === 'settings' && '시스템 전반에 적용되는 API 키 및 기본 타겟을 설정합니다.'}
+                                {activeTab === 'image-test' && '프롬프트를 입력하여 이미지 생성 API를 즉시 테스트합니다.'}
                             </p>
                         </div>
 
@@ -318,6 +328,13 @@ export const AdminDashboard: React.FC = () => {
                                     <span>시스템 설정 저장</span>
                                 </button>
                             </div>
+                        </motion.div>
+                    )}
+
+                    {/* Image Test Tab */}
+                    {activeTab === 'image-test' && (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+                            <AdminImageTestTool />
                         </motion.div>
                     )}
 

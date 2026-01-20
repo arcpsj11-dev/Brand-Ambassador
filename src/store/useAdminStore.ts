@@ -18,7 +18,7 @@ interface AdminSettings {
     geminiApiKey: string;
     nanoBananaApiKey: string;
     dallEApiKey: string;
-    activeImageProvider: 'nano' | 'dalle';
+    activeImageProvider: 'nano' | 'dalle' | 'google' | 'gemini';
     activeOccupationId: string;
     occupations: Record<string, Occupation>;
 
@@ -37,7 +37,7 @@ interface AdminState extends AdminSettings {
     setGeminiApiKey: (key: string) => void;
     setNanoBananaApiKey: (key: string) => void;
     setDallEApiKey: (key: string) => void;
-    setActiveImageProvider: (provider: 'nano' | 'dalle') => void;
+    setActiveImageProvider: (provider: 'nano' | 'dalle' | 'google' | 'gemini') => void;
     setActiveOccupation: (id: string) => void;
     updateOccupationPrompt: (occupationId: string, type: keyof PromptSet, content: string) => void;
     addOccupation: (id: string, label: string) => void;
@@ -140,7 +140,7 @@ export const useAdminStore = create<AdminState>()(
             geminiApiKey: '',
             nanoBananaApiKey: '',
             dallEApiKey: '',
-            activeImageProvider: 'dalle', // Default to DALL-E as it's more standard
+            activeImageProvider: 'google', // Using Google Imagen 4
             activeOccupationId: 'oriental_doctor',
 
             occupations: {

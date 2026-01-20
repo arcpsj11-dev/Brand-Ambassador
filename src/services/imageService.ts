@@ -70,6 +70,60 @@ export const imageService = {
                 throw new Error("Nano Banana Endpoint URL is not configured. Please contact support or use DALL-E.");
             }
 
+            // ==========================================
+            // 3. Google Imagen 4 Provider (also accepts 'gemini' for backward compatibility)
+            // ==========================================
+            if (activeImageProvider === 'google' || activeImageProvider === 'gemini') {
+                const { geminiApiKey } = useAdminStore.getState();
+                const apiKey = geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
+
+                if (!apiKey) {
+                    console.warn("[ImageService] Google API Key not set");
+                    throw new Error("API_KEY_MISSING: Google/Gemini API Key is not set.");
+                }
+
+                console.log("[ImageService] Generating image with Google Imagen 4...");
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'x-goog-api-key': apiKey,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            instances: [{ prompt: prompt }],
+                            parameters: {
+                                sampleCount: 1,
+                                aspectRatio: "1:1",
+                                personGeneration: "allow_adult"
+                            }
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("[ImageService] Google Imagen Error:", errorText);
+                    throw new Error(`Google Imagen API Error ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log("[ImageService] Imagen response received");
+
+                if (data.predictions && data.predictions[0]) {
+                    const imageData = data.predictions[0];
+
+                    if (imageData.bytesBase64Encoded) {
+                        const mimeType = imageData.mimeType || 'image/png';
+                        return `data:${mimeType};base64,${imageData.bytesBase64Encoded}`;
+                    }
+                }
+
+                throw new Error("Invalid response format from Google Imagen API");
+            }
+
             throw new Error("Unknown Image Provider Selected");
 
         } catch (globalError) {

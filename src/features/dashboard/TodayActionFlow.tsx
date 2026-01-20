@@ -57,6 +57,27 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
         }
     };
 
+    // Bulk image generation
+    const handleGenerateAllImages = async () => {
+        if (!currentContent?.imagePrompts) return;
+
+        setIsGeneratingImage(true);
+
+        for (let i = 0; i < currentContent.imagePrompts.length; i++) {
+            const img = currentContent.imagePrompts[i];
+            try {
+                console.log(`[Bulk] Generating image ${i + 1}/${currentContent.imagePrompts.length}...`);
+                const url = await imageService.generateImage(img.prompt);
+                setGeneratedImages(prev => ({ ...prev, [i]: url }));
+            } catch (error) {
+                console.error(`Image ${i + 1} generation failed:`, error);
+                // Continue even if one fails
+            }
+        }
+
+        setIsGeneratingImage(false);
+    };
+
     // 로딩 메시지 순환
     useEffect(() => {
         if (flowState === 'PROCESSING') {
@@ -319,9 +340,28 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                             {/* [NEW] Image Prompts Section */}
                             {currentContent.imagePrompts && currentContent.imagePrompts.length > 0 && (
                                 <div className="space-y-4 pt-8 border-t border-white/10">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold text-brand-primary uppercase tracking-widest">AI Suggested Images</span>
-                                        <div className="h-px flex-1 bg-brand-primary/20"></div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-brand-primary uppercase tracking-widest">AI Suggested Images</span>
+                                            <div className="h-px flex-1 bg-brand-primary/20"></div>
+                                        </div>
+                                        <button
+                                            onClick={handleGenerateAllImages}
+                                            disabled={isGeneratingImage}
+                                            className="px-4 py-2 rounded-lg bg-brand-primary text-black font-bold text-xs uppercase tracking-widest hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            {isGeneratingImage ? (
+                                                <>
+                                                    <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                                    생성 중...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ImageIcon size={14} />
+                                                    모든 이미지 생성
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                     <div className="grid grid-cols-1 gap-4">
                                         {currentContent.imagePrompts.map((img, idx) => (
