@@ -16,7 +16,21 @@ export const imageService = {
             // 1. DALL-E Provider (OpenAI)
             // ==========================================
             if (activeImageProvider === 'dalle') {
-                if (!dallEApiKey) throw new Error("API_KEY_MISSING: DALL-E API Key is not set.");
+                // [Smart Failover] If DALL-E is selected but no key, check Google
+                if (!dallEApiKey) {
+                    const { geminiApiKey } = useAdminStore.getState();
+                    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+                    if (geminiApiKey || envKey) {
+                        console.warn("[ImageService] DALL-E Key missing. Auto-switching to Google Imagen...");
+                        // Temporarily force 'google' for this execution
+                        // We don't update store here to avoid side effects during render, 
+                        // but we could if we wanted to fix it permanently.
+                        // Let's just fall through to the Google block? 
+                        // No, we need to explicitly call the google logic or change the variable.
+                        return this.generateImageWithGoogle(prompt, geminiApiKey || envKey);
+                    }
+                    throw new Error("API_KEY_MISSING: DALL-E API Key is not set.");
+                }
 
                 // Check for potential strict mode or network issues by logging
                 const response = await fetch('https://api.openai.com/v1/images/generations', {
@@ -45,6 +59,7 @@ export const imageService = {
                 }
                 return data.data[0].url;
             }
+
 
             // ==========================================
             // 2. Nano Banana Provider (Custom/Karlo/etc.)
@@ -76,52 +91,7 @@ export const imageService = {
             if (activeImageProvider === 'google' || activeImageProvider === 'gemini') {
                 const { geminiApiKey } = useAdminStore.getState();
                 const apiKey = geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
-
-                if (!apiKey) {
-                    console.warn("[ImageService] Google API Key not set");
-                    throw new Error("API_KEY_MISSING: Google/Gemini API Key is not set.");
-                }
-
-                console.log("[ImageService] Generating image with Google Imagen 4...");
-
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'x-goog-api-key': apiKey,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            instances: [{ prompt: prompt }],
-                            parameters: {
-                                sampleCount: 1,
-                                aspectRatio: "1:1",
-                                personGeneration: "allow_adult"
-                            }
-                        })
-                    }
-                );
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("[ImageService] Google Imagen Error:", errorText);
-                    throw new Error(`Google Imagen API Error ${response.status}: ${errorText}`);
-                }
-
-                const data = await response.json();
-                console.log("[ImageService] Imagen response received");
-
-                if (data.predictions && data.predictions[0]) {
-                    const imageData = data.predictions[0];
-
-                    if (imageData.bytesBase64Encoded) {
-                        const mimeType = imageData.mimeType || 'image/png';
-                        return `data:${mimeType};base64,${imageData.bytesBase64Encoded}`;
-                    }
-                }
-
-                throw new Error("Invalid response format from Google Imagen API");
+                return this.generateImageWithGoogle(prompt, apiKey);
             }
 
             throw new Error("Unknown Image Provider Selected");
@@ -134,5 +104,56 @@ export const imageService = {
             const fallbackText = prompt.length > 20 ? "AI Image Generated" : encodeURIComponent(prompt);
             return `https://placehold.co/1024x1024/222/FFF?text=${fallbackText}`;
         }
+    },
+
+    /**
+     * Helper: Generate specific to Google Imagen 4
+     */
+    async generateImageWithGoogle(prompt: string, apiKey: string): Promise<string> {
+        if (!apiKey) {
+            console.warn("[ImageService] Google API Key not set");
+            throw new Error("API_KEY_MISSING: Google/Gemini API Key is not set.");
+        }
+
+        console.log("[ImageService] Generating image with Google Imagen 4...");
+
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`,
+            {
+                method: 'POST',
+                headers: {
+                    'x-goog-api-key': apiKey,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    instances: [{ prompt: prompt }],
+                    parameters: {
+                        sampleCount: 1,
+                        aspectRatio: "1:1",
+                        personGeneration: "allow_adult"
+                    }
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("[ImageService] Google Imagen Error:", errorText);
+            throw new Error(`Google Imagen API Error ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("[ImageService] Imagen response received");
+
+        if (data.predictions && data.predictions[0]) {
+            const imageData = data.predictions[0];
+
+            if (imageData.bytesBase64Encoded) {
+                const mimeType = imageData.mimeType || 'image/png';
+                return `data:${mimeType};base64,${imageData.bytesBase64Encoded}`;
+            }
+        }
+
+        throw new Error("Invalid response format from Google Imagen API");
     }
 };

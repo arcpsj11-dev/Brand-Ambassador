@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Bot, AlertTriangle, ArrowRight, CheckCircle2, Image as ImageIcon } from 'lucide-react';
+import { handleManualCopy } from '../../utils/clipboardUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useContentStore } from '../../store/useContentStore';
 import { useBrandStore } from '../../store/useBrandStore';
@@ -78,6 +79,30 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
         setIsGeneratingImage(false);
     };
 
+    const handleDownloadAll = async () => {
+        const imageEntries = Object.entries(generatedImages);
+        if (imageEntries.length === 0) return;
+
+        for (const [index, url] of imageEntries) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = `blog_image_${Number(index) + 1}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+                // Add a small delay between downloads to prevent browser blocking
+                await new Promise(r => setTimeout(r, 300));
+            } catch (error) {
+                console.error(`Failed to download image ${index}:`, error);
+            }
+        }
+    };
+
     // 로딩 메시지 순환
     useEffect(() => {
         if (flowState === 'PROCESSING') {
@@ -132,7 +157,8 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             const contentGen = geminiReasoningService.generateStream(targetTopic, {
                 clinicName: brand.clinicName || '도담한의원',
                 address: brand.address || '김포시 운양동',
-                phoneNumber: brand.phoneNumber || '031-988-1575'
+                phoneNumber: brand.phoneNumber || '031-988-1575',
+                pillarTitle // [SYNC] Pass pillarTitle for internal linking context
             });
 
             let fullBody = "";
@@ -218,8 +244,13 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
         }
     };
 
+    // Manual selection copy handler to force plain text (Fixes black background issue)
+
     return (
-        <div className="fixed inset-0 z-[100] bg-black text-white flex flex-col items-center justify-center h-[100dvh] overflow-hidden">
+        <div
+            onCopy={handleManualCopy}
+            className="fixed inset-0 z-[100] bg-black text-white flex flex-col items-center justify-center h-[100dvh] overflow-hidden"
+        >
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .no-select {
@@ -310,13 +341,21 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                 >
                     <div className="min-h-full flex flex-col max-w-3xl mx-auto relative">
                         {/* Header - Sticky Top */}
-                        <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-center shrink-0">
+                        <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 p-4 flex items-center justify-center gap-3 shrink-0">
                             <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-brand-primary">
                                 <ShieldCheck size={14} />
                                 <span className="text-[10px] font-black uppercase tracking-widest">
                                     최종 확인 및 복사
                                 </span>
                             </div>
+                            {currentContent.type && (
+                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${currentContent.type === 'supporting'
+                                    ? 'bg-white/5 text-gray-400 border border-white/10'
+                                    : 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30'
+                                    }`}>
+                                    {currentContent.type === 'supporting' ? '보조글' : '필러글'}
+                                </div>
+                            )}
                         </div>
 
                         {/* Content Body */}
@@ -345,23 +384,35 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                                             <span className="text-xs font-bold text-brand-primary uppercase tracking-widest">AI Suggested Images</span>
                                             <div className="h-px flex-1 bg-brand-primary/20"></div>
                                         </div>
-                                        <button
-                                            onClick={handleGenerateAllImages}
-                                            disabled={isGeneratingImage}
-                                            className="px-4 py-2 rounded-lg bg-brand-primary text-black font-bold text-xs uppercase tracking-widest hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                        >
-                                            {isGeneratingImage ? (
-                                                <>
-                                                    <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                                    생성 중...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <ImageIcon size={14} />
-                                                    모든 이미지 생성
-                                                </>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={handleGenerateAllImages}
+                                                disabled={isGeneratingImage}
+                                                className="px-4 py-2 rounded-lg bg-brand-primary/20 hover:bg-brand-primary text-brand-primary hover:text-black font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border border-brand-primary/30"
+                                            >
+                                                {isGeneratingImage ? (
+                                                    <>
+                                                        <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                                        생성 중...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ImageIcon size={14} />
+                                                        전체 재생성
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {Object.keys(generatedImages).length > 0 && (
+                                                <button
+                                                    onClick={handleDownloadAll}
+                                                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 border border-white/20 shadow-lg"
+                                                >
+                                                    <ArrowRight size={14} className="rotate-90" />
+                                                    이미지 일괄 다운로드
+                                                </button>
                                             )}
-                                        </button>
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-1 gap-4">
                                         {currentContent.imagePrompts.map((img, idx) => (

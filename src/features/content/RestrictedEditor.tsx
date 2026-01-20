@@ -12,6 +12,7 @@ import {
     MessageSquare,
     Zap
 } from 'lucide-react';
+import { handleManualCopy, handlePaste } from '../../utils/clipboardUtils';
 import { useContentStore, type Content } from '../../store/useContentStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStepStore } from '../../store/useStepStore';
@@ -94,6 +95,7 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
         }
     };
 
+
     const handleSegmentBlur = (id: string, text: string) => {
         if (isAdmin) return;
 
@@ -149,10 +151,13 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
     if (!content) return null;
 
     return (
-        <div className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-6 text-white no-select">
+        <div
+            onCopy={handleManualCopy}
+            className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-6 text-white no-select"
+        >
             <style dangerouslySetInnerHTML={{
                 __html: `
-                .no-select { user-select: none; -webkit-user-select: none; }
+                .no-select { user-select: text; -webkit-user-select: text; }
                 .editable-paragraph:focus { outline: none; background: rgba(255, 255, 255, 0.05); border-color: rgba(34, 211, 238, 0.3); }
                 .fixed-paragraph { cursor: default; }
             `}} />
@@ -215,6 +220,7 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
                             readOnly={!titleAuth.granted && !isAdmin}
                             onChange={(e) => setTitle(e.target.value)}
                             onBlur={handleTitleBlur}
+                            onPaste={handlePaste}
                             className={`w-full bg-transparent text-4xl font-black focus:outline-none placeholder-white/20 ${titleAuth.granted || isAdmin ? 'text-white' : 'text-white/40 cursor-not-allowed'}`}
                         />
                         <p className="text-[10px] text-gray-600 font-bold">
@@ -253,6 +259,7 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
                                                 setSegments(prev => prev.map(s => s.id === seg.id ? { ...s, text: newText } : s));
                                             }}
                                             onBlur={(e) => handleSegmentBlur(seg.id, e.target.value)}
+                                            onPaste={handlePaste}
                                             rows={4}
                                             className="w-full p-6 bg-transparent border border-white/10 rounded-2xl text-base text-white leading-relaxed font-medium editable-paragraph transition-all resize-none"
                                         />

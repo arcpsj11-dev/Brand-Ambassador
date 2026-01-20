@@ -3,6 +3,7 @@ import { useBrandStore } from '../../store/useBrandStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Save, Loader2, Building2, Phone, MapPin, Stethoscope, Globe, Diamond, Zap, Info, Quote } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { handleManualCopy, handlePaste } from '../../utils/clipboardUtils';
 
 export const BrandSettings: React.FC = () => {
     const brand = useBrandStore();
@@ -51,7 +52,10 @@ export const BrandSettings: React.FC = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-10 pb-20">
+        <div
+            onCopy={handleManualCopy}
+            className="max-w-4xl mx-auto space-y-10 pb-20"
+        >
             {/* Membership Widget */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <motion.div
@@ -136,6 +140,7 @@ export const BrandSettings: React.FC = () => {
                         className="w-full bg-white/5 border border-white/10 rounded-lg p-3 focus:outline-none focus:border-brand-primary/50 transition-colors"
                         placeholder="예: https://blog.naver.com/id"
                         value={formData.blogUrl}
+                        onPaste={handlePaste}
                         onChange={(e) => setFormData({ ...formData, blogUrl: e.target.value })}
                     />
                 </div>
@@ -149,6 +154,7 @@ export const BrandSettings: React.FC = () => {
                         className="w-full bg-white/5 border border-white/10 rounded-lg p-3 focus:outline-none focus:border-brand-primary/50 transition-colors"
                         placeholder="예: 도담한의원"
                         value={formData.clinicName}
+                        onPaste={handlePaste}
                         onChange={(e) => setFormData({ ...formData, clinicName: e.target.value })}
                     />
                 </div>
@@ -162,6 +168,7 @@ export const BrandSettings: React.FC = () => {
                         className="w-full bg-white/5 border border-white/10 rounded-lg p-3 focus:outline-none focus:border-brand-primary/50 transition-colors"
                         placeholder="예: 031-000-0000"
                         value={formData.phoneNumber}
+                        onPaste={handlePaste}
                         onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                     />
                 </div>
@@ -175,6 +182,7 @@ export const BrandSettings: React.FC = () => {
                         className="w-full bg-white/5 border border-white/10 rounded-lg p-3 focus:outline-none focus:border-brand-primary/50 transition-colors"
                         placeholder="예: 경기도 김포시 구래동..."
                         value={formData.address}
+                        onPaste={handlePaste}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     />
                 </div>
@@ -187,6 +195,7 @@ export const BrandSettings: React.FC = () => {
                         className="w-full bg-white/5 border border-white/10 rounded-lg p-3 h-32 focus:outline-none focus:border-brand-primary/50 transition-colors"
                         placeholder="예: 추나 요법, 다이어트 한약..."
                         value={formData.subjects}
+                        onPaste={handlePaste}
                         onChange={(e) => setFormData({ ...formData, subjects: e.target.value })}
                     />
                 </div>
@@ -199,6 +208,7 @@ export const BrandSettings: React.FC = () => {
                         className="w-full bg-white/5 border border-white/10 rounded-lg p-3 h-32 focus:outline-none focus:border-brand-primary/50 transition-colors"
                         placeholder="예: 환자 한 분 한 분을 가족처럼..."
                         value={formData.philosophy}
+                        onPaste={handlePaste}
                         onChange={(e) => setFormData({ ...formData, philosophy: e.target.value })}
                     />
                 </div>
@@ -215,6 +225,7 @@ export const BrandSettings: React.FC = () => {
                         className="w-full bg-white/5 border border-white/10 rounded-lg p-4 h-32 focus:outline-none focus:border-brand-primary/50 transition-colors placeholder:text-gray-600"
                         placeholder="예: '수술 없이 디스크 치료 돕는 고가 감압치료기', '최신식 추나 전용 베드' 등"
                         value={formData.equipment}
+                        onPaste={handlePaste}
                         onChange={(e) => setFormData({ ...formData, equipment: e.target.value })}
                     />
                     <div className="flex flex-wrap gap-2">
@@ -244,6 +255,7 @@ export const BrandSettings: React.FC = () => {
                         className="w-full bg-white/5 border border-white/10 rounded-lg p-4 h-24 focus:outline-none focus:border-brand-accent/50 transition-colors placeholder:text-gray-600"
                         placeholder="예: '무료 주차 가능', '카페 같은 넓은 대기실', '프라이빗 1인 진료실' 등"
                         value={formData.facilities}
+                        onPaste={handlePaste}
                         onChange={(e) => setFormData({ ...formData, facilities: e.target.value })}
                     />
                     <div className="flex flex-wrap gap-2">

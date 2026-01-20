@@ -1,34 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { useExperimentStore } from '../store/useExperimentStore';
-import type { StepType } from '../store/useExperimentStore';
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+// [CLEAN] Removed experiment store imports
 import { useAdminStore } from '../store/useAdminStore';
 import type { TopicCluster } from '../store/useTopicStore';
 // Helper: A/B 테스트 활성 프롬프트 가져오기
-const getActiveVariantPrompt = (step: StepType): { prompt: string; variantId: string; experimentId: string } | null => {
-    try {
-        const { getActiveExperiment, incrementVariantUsage } = useExperimentStore.getState();
-        const experiment = getActiveExperiment(step);
-
-        if (experiment && experiment.variants.length > 0) {
-            const activeVariants = experiment.variants.filter(v => v.isActive);
-            if (activeVariants.length === 0) return null;
-
-            const randomIndex = Math.floor(Math.random() * activeVariants.length);
-            const selectedVariant = activeVariants[randomIndex];
-
-            incrementVariantUsage(experiment.id, selectedVariant.id);
-
-            return {
-                prompt: selectedVariant.promptContent,
-                variantId: selectedVariant.id,
-                experimentId: experiment.id
-            };
-        }
-    } catch (e) {
-        console.warn("Experiment Store Access Failed:", e);
-    }
-    return null;
-};
+// [CLEAN] Removed A/B testing helper `getActiveVariantPrompt` to ensure strict Admin Prompt adherence.
 
 export interface ReasoningStep {
     id: string;
@@ -60,16 +35,129 @@ const getGenAI = () => {
 };
 
 // [나노바나나] 의료법 및 포털 정책 준수 레이어 (절대 규칙)
-const COMPLIANCE_LAYER = `
-[절대 준수 출력 제약 조건]
-- 본 콘텐츠는 후기나 광고가 아닌 '정보 제공형 콘텐츠'여야 합니다.
-- '내돈내산', '효과 보장', '성능 확실', '치료 결과 단정' 등의 표현을 절대 사용하지 마세요.
-- 병원명, 전화번호, 정확한 상세 주소는 본문 중간에 직접 기재하지 않습니다. (마무리 영역에만 허용)
-- 모든 치료 효과는 '도움이 될 수 있다', '회복을 돕는 목적', '기대할 수 있다' 등 완곡한 표현을 사용하세요.
-- 의료법 및 네이버 검색 정책을 위반하는 과장되거나 확정적인 표현은 엄격히 금지합니다.
-- 글 구조는 A-READ 방식을 유지하되, 이미지 위치는 [이미지: 설명] 형식을 따릅니다.
-- 글 말미에는 반드시 '다음 글에서 다룰 주제'를 예고하는 문단을 포함하세요.
-`;
+// [CLEAN] Removed COMPLIANCE_LAYER. Prompts now strictly follow Admin Store templates.
+
+// Schemas
+const TOPIC_CLUSTER_SCHEMA = {
+    type: SchemaType.OBJECT,
+    properties: {
+        clusters: {
+            type: SchemaType.ARRAY,
+            items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    id: { type: SchemaType.STRING },
+                    category: { type: SchemaType.STRING },
+                    topics: {
+                        type: SchemaType.ARRAY,
+                        items: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                day: { type: SchemaType.NUMBER },
+                                type: { type: SchemaType.STRING },
+                                title: { type: SchemaType.STRING },
+                            },
+                            required: ["day", "type", "title"]
+                        }
+                    }
+                },
+                required: ["id", "category", "topics"]
+            }
+        }
+    },
+    required: ["clusters"]
+};
+
+const KEYWORD_ANALYSIS_SCHEMA = {
+    type: SchemaType.OBJECT,
+    properties: {
+        briefing: { type: SchemaType.STRING },
+        keywords: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+        recommendation: { type: SchemaType.STRING },
+    },
+    required: ["briefing", "keywords", "recommendation"]
+};
+
+const IMAGE_PROMPT_SCHEMA = {
+    type: SchemaType.OBJECT,
+    properties: {
+        images: {
+            type: SchemaType.ARRAY,
+            items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    prompt: { type: SchemaType.STRING },
+                    alt: { type: SchemaType.STRING },
+                },
+                required: ["prompt", "alt"]
+            }
+        }
+    },
+    required: ["images"]
+};
+
+const COACHING_SCHEMA = {
+    type: SchemaType.OBJECT,
+    properties: {
+        overallScore: { type: SchemaType.NUMBER },
+        targetScore: { type: SchemaType.NUMBER },
+        recommendations: {
+            type: SchemaType.ARRAY,
+            items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    category: { type: SchemaType.STRING },
+                    issue: { type: SchemaType.STRING },
+                    action: { type: SchemaType.STRING },
+                    priority: { type: SchemaType.STRING, enum: ["critical", "high", "medium", "low"] },
+                },
+                required: ["category", "issue", "action", "priority"]
+            }
+        }
+    },
+    required: ["overallScore", "targetScore", "recommendations"]
+};
+
+
+
+
+// Helper: Robust JSON Parser
+const cleanAndParseJSON = (text: string) => {
+    try {
+        // 1. Remove Code Blocks
+        let clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        // 2. Try Parsing
+        return JSON.parse(clean);
+    } catch (e) {
+        console.warn("Standard JSON Parse Failed. Raw Text:", text);
+
+        // 3. Fallback: Extract innermost JSON object or array
+        const firstOpenBrace = text.indexOf('{');
+        const firstOpenBracket = text.indexOf('[');
+        let start = -1;
+        let end = -1;
+
+        // Determine if we should look for object or array
+        if (firstOpenBrace !== -1 && (firstOpenBracket === -1 || firstOpenBrace < firstOpenBracket)) {
+            start = firstOpenBrace;
+            end = text.lastIndexOf('}');
+        } else if (firstOpenBracket !== -1) {
+            start = firstOpenBracket;
+            end = text.lastIndexOf(']');
+        }
+
+        if (start !== -1 && end !== -1) {
+            const jsonSubstring = text.substring(start, end + 1);
+            try {
+                return JSON.parse(jsonSubstring);
+            } catch (innerE) {
+                console.error("Extraction Parse Failed. Extracted:", jsonSubstring);
+            }
+        }
+        throw e;
+    }
+};
 
 export const geminiReasoningService = {
     // [나노바나나] 지능형 인텐트 분석
@@ -127,6 +215,7 @@ export const geminiReasoningService = {
         clinicName: string;
         address: string;
         phoneNumber: string;
+        pillarTitle?: string;
         equipment?: string;
         facilities?: string;
         extraPrompt?: string;
@@ -140,11 +229,14 @@ export const geminiReasoningService = {
             const persona = activeOccupation.label;
             const bodyPrompt = activeOccupation.prompts.body;
 
-            const systemPrompt = bodyPrompt
+            // [STRICT SYNC] Only use replaced template. No secret appendages.
+            const prompt = bodyPrompt
                 .replace(/{{title}}/g, input)
-                .replace(/{{persona}}/g, persona);
-
-            const prompt = `${systemPrompt} \n${COMPLIANCE_LAYER} \nClinic Info: ${context.clinicName} / ${context.address} / ${context.phoneNumber}`;
+                .replace(/{{persona}}/g, persona)
+                .replace(/{{pillarTitle}}/g, context.pillarTitle || '')
+                .replace(/{{clinicName}}/g, context.clinicName)
+                .replace(/{{address}}/g, context.address)
+                .replace(/{{phoneNumber}}/g, context.phoneNumber);
 
             const result = await model.generateContentStream(prompt);
             for await (const chunk of result.stream) {
@@ -162,7 +254,10 @@ export const geminiReasoningService = {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash-exp",
-                generationConfig: { responseMimeType: "application/json" }
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: KEYWORD_ANALYSIS_SCHEMA
+                }
             });
 
             const prompt = `"${input}" 주제에 대해 김포 ${context.city} 지역 SEO 전략을 수립하세요.
@@ -174,7 +269,7 @@ export const geminiReasoningService = {
             }`;
 
             const result = await model.generateContent(prompt);
-            const aiData = JSON.parse(result.response.text());
+            const aiData = cleanAndParseJSON(result.response.text());
 
             return {
                 thoughtChain: [
@@ -196,7 +291,10 @@ export const geminiReasoningService = {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash-exp",
-                generationConfig: { responseMimeType: "application/json" }
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: TOPIC_CLUSTER_SCHEMA as any
+                }
             });
 
             const adminState = useAdminStore.getState();
@@ -208,10 +306,20 @@ export const geminiReasoningService = {
                 .replace(/{{topic}}/g, topic)
                 .replace(/{{persona}}/g, persona);
 
-            const result = await model.generateContent(prompt);
-            const text = result.response.text();
-            const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            return JSON.parse(jsonStr);
+            // [나노바나나] 절대적인 구조 강제 (Admin 프롬프트에 이미 포함됨 - 중복 제거)
+            // const structuralEnforcement = ... (Removed to strictly follow Admin Prompt)
+
+            const finalPrompt = prompt;
+
+            const result = await model.generateContent(finalPrompt);
+            const data = cleanAndParseJSON(result.response.text());
+
+            // 30개 생성 보장 확인 (부족하면 클라이언트 측에서 처리하거나 로그)
+            if (data.clusters && data.clusters.length < 3) {
+                console.warn("Gemini generated fewer than 3 clusters. Generated:", data.clusters.length);
+            }
+
+            return data;
         } catch (error) {
             console.error("Bulk Title Error:", error);
             throw error;
@@ -224,7 +332,10 @@ export const geminiReasoningService = {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash-exp",
-                generationConfig: { responseMimeType: "application/json" }
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: IMAGE_PROMPT_SCHEMA as any
+                }
             });
 
             const adminState = useAdminStore.getState();
@@ -238,11 +349,7 @@ ${contentBody}
 [콘텐츠 본문 끝]`;
 
             const result = await model.generateContent(prompt);
-            const responseText = result.response.text();
-
-            // JSON 마크다운 블록 제거 및 파싱
-            const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const data = JSON.parse(cleanJson);
+            const data = cleanAndParseJSON(result.response.text());
 
             if (data.images && data.images.length > 0) {
                 return data.images;
@@ -265,7 +372,10 @@ ${contentBody}
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash-exp",
-                generationConfig: { responseMimeType: "application/json" }
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: TOPIC_CLUSTER_SCHEMA as any
+                }
             });
 
             // Admin Store에서 'Monthly Titles' 프롬프트 가져오기
@@ -282,9 +392,7 @@ ${contentBody}
             // console.log("Using Synced Admin Prompt for Cluster:", prompt);
 
             const result = await model.generateContent(prompt);
-            const text = result.response.text();
-            const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const data = JSON.parse(jsonStr) as MonthlyTitleResponse;
+            const data = cleanAndParseJSON(result.response.text()) as MonthlyTitleResponse;
 
             return data; // Return full response (clusters array)
         } catch (error) {
@@ -309,39 +417,18 @@ ${contentBody}
             const bodyPromptTemplate = activeOccupation.prompts.body;
             const targetPersona = activeOccupation.label;
 
-            const isPillar = params.topicIndex === 1;
+            // const isPillar = params.topicIndex === 1; // [CLEAN] Unused
 
+            // [STRICT SYNC] Only use replaced template. No secret appendages.
             let finalPrompt = bodyPromptTemplate
                 .replace(/{{title}}/g, params.currentTitle)
                 .replace(/{{pillarTitle}}/g, params.pillarTitle)
                 .replace(/{{persona}}/g, targetPersona || params.persona.jobTitle)
-                .replace(/{{tone}}/g, params.persona.toneAndManner);
+                .replace(/{{tone}}/g, params.persona.toneAndManner)
+                .replace(/{{clinicName}}/g, params.clinicInfo?.name || '')
+                .replace(/{{address}}/g, params.clinicInfo?.address || '')
+                .replace(/{{phoneNumber}}/g, params.clinicInfo?.phone || '');
 
-            finalPrompt += `\n\n${isPillar ? '필러 포스트: 주제를 총괄하는 전문적인 기둥 콘텐츠.' : `서브 포스트: "${params.pillarTitle}"의 특정 내용을 심화한 콘텐츠.`}`;
-
-            // A/B Test Injection (STEP4_BODY)
-            // Note: STEP4_BODY is assumed to cover the main generation logic here.
-            const variant = getActiveVariantPrompt('STEP4_BODY');
-            if (variant) {
-                // If variant exists, override the prompt.
-                // We use simple placeholder replacement for context injection.
-                // If the user's prompt is a full rewrite, they must include placeholders e.g. {{title}}
-                // MVP: If no {{title}} is found in variant, we append context at the top.
-                console.log(`[A/B Experiment] ${variant.experimentId} / Variant ${variant.variantId} Applied`);
-
-                finalPrompt = variant.prompt
-                    .replace(/{{title}}/g, params.currentTitle)
-                    .replace(/{{pillarTitle}}/g, params.pillarTitle)
-                    .replace(/{{persona}}/g, params.persona.jobTitle)
-                    .replace(/{{tone}}/g, params.persona.toneAndManner);
-
-                // Fallback: If replacement didn't happen (no placeholders), prepend context
-                if (!finalPrompt.includes(params.currentTitle)) {
-                    finalPrompt = `Subject: ${params.currentTitle}\n\n` + finalPrompt;
-                }
-            }
-
-            finalPrompt += `\n\n${COMPLIANCE_LAYER}`;
             const result = await model.generateContent(finalPrompt);
             return {
                 title: params.currentTitle,
@@ -373,7 +460,10 @@ ${contentBody}
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash-exp",
-                generationConfig: { responseMimeType: "application/json" }
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: COACHING_SCHEMA as any
+                }
             });
 
             const prompt = `당신은 네이버 블로그 SEO 전문가이자 AI 코칭 시스템입니다.
@@ -399,7 +489,7 @@ JSON 형식:
 최대 5개 항목만 출력하세요.`;
 
             const result = await model.generateContent(prompt);
-            const data = JSON.parse(result.response.text());
+            const data = cleanAndParseJSON(result.response.text());
             return data;
         } catch (error) {
             console.error("Competitor Coaching Error:", error);

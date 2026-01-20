@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, ChevronRight, Zap, Banana, Loader2 } from 'lucide-react';
+import { Lock, ChevronRight, Zap, Banana, Loader2, Trash2 } from 'lucide-react';
 import { geminiReasoningService } from '../../services/geminiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlannerStore } from '../../store/usePlannerStore';
@@ -26,9 +26,19 @@ const MarketingCard: React.FC<{ plan: any; onClick: () => void }> = ({ plan, onC
             </div>
 
             <header className="flex justify-between items-start z-10">
-                <span className={`text-[10px] font-black tracking-widest uppercase ${isDone ? 'text-yellow-500' : 'text-gray-500'}`}>
-                    Day {String(plan.day).padStart(2, '0')}
-                </span>
+                <div className="flex flex-col gap-1">
+                    <span className={`text-[10px] font-black tracking-widest uppercase ${isDone ? 'text-yellow-500' : 'text-gray-500'}`}>
+                        Day {String(plan.day).padStart(2, '0')}
+                    </span>
+                    {plan.type && (
+                        <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${plan.type === 'pillar'
+                            ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30'
+                            : 'bg-white/5 text-gray-400 border border-white/10'
+                            }`}>
+                            {plan.type === 'pillar' ? '필러글' : '보조글'}
+                        </span>
+                    )}
+                </div>
                 {isLocked ? <Lock size={14} className="text-gray-600" /> :
                     isDone ? <Banana size={16} className="text-yellow-500 fill-yellow-500 animate-pulse" /> :
                         <div className="w-2 h-2 rounded-full bg-brand-primary animate-pulse shadow-neon" />}
@@ -72,9 +82,18 @@ const MarketingCard: React.FC<{ plan: any; onClick: () => void }> = ({ plan, onC
 
 export const MarketingCanvas: React.FC = () => {
     const brand = useBrandStore();
-    const { monthlyPlan, isScouted, persona, topic, setMonthlyPlan, setPersona, setTopic } = usePlannerStore();
-    const { setClusters } = useTopicStore();
+    const { monthlyPlan, isScouted, persona, topic, setMonthlyPlan, setPersona, setTopic, clearPlanner } = usePlannerStore();
+    const { setClusters, resetTopics } = useTopicStore();
     const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
+
+    // [나노바나나] 데이터 초기화 (Reset)
+    const handleClearAll = () => {
+        if (window.confirm("지금까지 생성된 모든 기획 내용과 주제를 삭제하시겠습니까? \n(되돌릴 수 없습니다)")) {
+            clearPlanner();
+            resetTopics();
+            alert("모든 기획 데이터가 초기화되었습니다.");
+        }
+    };
 
     // [나노바나나] 지수 기반 전략 생성 엔진 (AI 리얼 생성)
     const generateChameleonStrategy = async () => {
@@ -96,8 +115,10 @@ export const MarketingCanvas: React.FC = () => {
 
             if (titlesData.clusters && Array.isArray(titlesData.clusters)) {
                 titlesData.clusters.forEach((cluster: any) => {
-                    if (cluster.pillar) allTopics.push(cluster.pillar);
-                    if (cluster.satellites) allTopics.push(...cluster.satellites);
+                    if (cluster.pillar) allTopics.push({ ...cluster.pillar, type: 'pillar' });
+                    if (cluster.satellites) {
+                        allTopics.push(...cluster.satellites.map((s: any) => ({ ...s, type: 'supporting' })));
+                    }
                 });
             }
 
@@ -147,6 +168,17 @@ export const MarketingCanvas: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                    {/* [NEW] Clear All Button */}
+                    {isScouted && (
+                        <button
+                            onClick={handleClearAll}
+                            className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-4 py-3 rounded-xl transition-all border border-red-500/20 mt-auto"
+                            title="모든 기획 데이터 초기화"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                    )}
+
                     <div className="flex-1 lg:w-48 space-y-1">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Persona</label>
                         <input

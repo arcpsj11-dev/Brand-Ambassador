@@ -52,30 +52,46 @@ interface AdminState extends AdminSettings {
 
 const DEFAULT_PROMPTS_ORIENTAL: PromptSet = {
     title: `Generate 30 blog titles for medical clustering strategy based on "{{topic}}".
-1 Pillar + 9 Supporting per cluster, 3 clusters total. 
-[CRITICAL TITLE FORMULA]: Every title MUST follow this formula: "[증상/상황] + 왜/어떻게/무엇을 + 설명/정리/이해/관점"
-Tone: Professional yet catchy (MZ style).
-Result MUST be JSON with "clusters" array.
-JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day": 1, "type": "pillar", "title": "..." } ] } ] }`,
+    
+[Structure Rules]
+- You MUST generate exactly 3 distinct clusters.
+- Each cluster MUST contain 1 Pillar Post + 9 Supporting Posts.
+- Total: 30 Topics (3 Clusters x 10 Topics).
 
-    body: `당신은 김포 운양동 '도담한의원' 원장 페르소나입니다. 
+[Category Naming Rules]
+- The 'category' field must be a specific sub-theme of '{{topic}}'.
+- EXTREMELY IMPORTANT: DO NOT use generic names like "Major Symptoms 1", "Cluster A", "Part 1", or "General Info".
+- DO NOT use fixed example categories like "Major Symptoms", "Mental Health", or "Lifestyle Habits" UNLESS they are highly relevant to '{{topic}}'.
+- Example Categories for 'Traffic Accident': "Musculoskeletal Pain", "Psychological Trauma", "Rehabilitation Process".
+
+[Title Formula]
+- Formula: "[증상/상황] + 왜/어떻게/무엇을 + 설명/정리/이해/관점"
+- Tone: Professional yet catchy (MZ style).
+
+Result MUST be JSON with "clusters" array.
+JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day": 1, "type": "pillar", "title": "..." } ] } ] }
+[STRICT CONSTRAINT]: OUTPUT ONLY PURE JSON. NO MARKDOWN. NO CONVERSATIONAL TEXT. START WITH "{".`,
+
+    body: `당신은 {{persona}} 원장 페르소나입니다. 
 주제: "{{title}}"
 
-[1. 섹션별 분량 및 구조 (A-READ)]
-- Attention (200~300자): 20대 직장인 사례로 공감하며 시작.
-- Relevance (400~500자): 손상 기전 및 어혈 등 후유증 원인 분석.
-- Evidence (400~500자): 최소 2개 이상의 논문/연구 출처 명시(연도, 학회지 포함)하여 근거 제시.
-- Action (500~600자): 맞춤 치료 + 아주 상세한 자가 관리 루틴 제시.
-- Delight (350~400자): 긍정적 변화 묘사 및 Jennie's Pick.
+[1. 콘텐츠 가이드라인]
+- 주제에 맞는 전문적인 지식과 공감 위주로 작성하세요.
+- 불필요한 서술은 제외하고 실질적인 정보를 제공합니다.
+- 분량: 2000자 이상 필수 작성.
 
-[2. 키워드 및 제목 전략 (Strict)]
-- 제목 공식: [증상/상황] + 왜/어떻게/무엇을 + 설명/정리/이해/관점
-- 필수 키워드: 운양동, 교통사고, 교통사고 후유증, 목통증, 어깨통증, 추나요법, 약침치료, 한의원
+[2. 병원 정보]
+- 병원명: {{clinicName}}
+- 위치: {{address}}
+- 연락처: {{phoneNumber}}
 
-[3. 시각화/가독성]
-- 이미지: [이미지번호: 설명, ALT: 키워드 포함] 형식으로 3~5개 이상.
-
-분량: 2000~2500자 필수 작성.`,
+[3. 필수 준수 규칙 (의료법 및 포털 정책)]
+- 본 콘텐츠는 '정보 제공형 콘텐츠'여야 합니다.
+- '효과 보장', '성능 확실', '치료 결과 단정' 등의 표현을 절대 사용하지 마세요.
+- 모든 치료 효과는 '도움이 될 수 있다', '회복을 돕는 목적' 등 완곡한 표현을 사용하세요.
+- 과장되거나 확정적인 표현은 엄격히 금지합니다.
+- 이미지 위치는 [이미지번호: 설명, ALT: 키워드] 형식을 따릅니다.
+- 글 말미에는 '다음 글에서 다룰 주제'를 예고하십시오.`,
 
     image: `Role: 블로그 콘텐츠 분석 및 이미지 프롬프트 생성 전문가
 Task: 주어진 본문 내용을 분석하여, 본문 속에 포함된 모든 \`[이미지번호: 설명, ALT: ...]\` 태그를 찾아내고, 각 태그의 '설명'과 'ALT' 내용을 바탕으로 영문 프롬프트와 키워드 ALT를 생성합니다.
@@ -103,27 +119,45 @@ Output Format (JSON Only):
 
 const DEFAULT_PROMPTS_DOCTOR: PromptSet = {
     title: `Generate 30 blog titles for medical clustering strategy based on "{{topic}}".
-Focus on evidence-based medicine and clinical treatments.
-[CRITICAL TITLE FORMULA]: "[Disease/Symptom] + Diagnosis/Treatment + Explanation"
-Tone: Trustworthy, authoritative, yet accessible.
-Result MUST be JSON with "clusters" array.
-JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day": 1, "type": "pillar", "title": "..." } ] } ] }`,
 
-    body: `당신은 전문적인 '의사(전문의)' 원장 페르소나입니다. 
+[Structure Rules]
+- You MUST generate exactly 3 distinct clusters.
+- Each cluster MUST contain 1 Pillar Post + 9 Supporting Posts.
+- Total: 30 Topics (3 Clusters x 10 Topics).
+
+[Category Naming Rules]
+- The 'category' field must be a specific sub-theme of '{{topic}}'.
+- EXTREMELY IMPORTANT: DO NOT use generic names like "Major Symptoms 1", "Cluster A", "Part 1", or "General Info".
+
+[Title Formula]
+- Formula: "[Disease/Symptom] + Diagnosis/Treatment + Explanation"
+- Tone: Trustworthy, authoritative, yet accessible.
+
+Result MUST be JSON with "clusters" array.
+JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day": 1, "type": "pillar", "title": "..." } ] } ] }
+[STRICT CONSTRAINT]: OUTPUT ONLY PURE JSON. NO MARKDOWN. NO CONVERSATIONAL TEXT. START WITH "{".`,
+
+    body: `당신은 {{persona}} 원장 페르소나입니다. 
 주제: "{{title}}"
 
 [1. 구조 (SOAP 기반 변형)]
 - Subjective: 환자의 주관적 증상 공감.
 - Objective: 의학적 검사 및 소견 설명.
 - Assessment: 진단 및 병태 생리 설명 (전문용어 + 쉬운 풀이).
-- Plan: 치료 계획 및 생활 습관 교정.
+- Plan: 치료 계획 (약물, 수술적 치료 등 의료진 판단 기반).
+- 필수 정보: {{clinicName}} ({{address}}, {{phoneNumber}})
 
 [2. 스타일]
 - 논리적이고 명확한 어조.
-- 최신 의학 지견이나 통계 데이터 인용 선호.
-- 신뢰감을 주는 전문적인 용어 사용 후 괄호로 쉽게 설명.
+- 최신 의학 지견 인용 선호.
+- 전문적인 용어 사용 후 괄호로 쉽게 설명.
+- 분량: 2000자 이상.
 
-분량: 2000자 이상.`,
+[3. 필수 준수 규칙]
+- 본 콘텐츠는 '정보 제공형 콘텐츠'여야 합니다.
+- '효과 보장', '성능 확실', '치료 결과 단정' 등의 표현을 절대 사용하지 마세요.
+- 모든 치료 효과는 '도움이 될 수 있다', '개인에 따라 다를 수 있다' 등 완곡한 표현을 사용하세요.
+- 이미지 위치는 [이미지번호: 설명, ALT: 키워드] 형식을 따릅니다.`,
 
     image: `Find all \`[이미지번호: description, ALT: ...]\` tags in the provided content body. 
 Generate exactly the same number of image prompts as the number of tags found.
@@ -221,7 +255,7 @@ export const useAdminStore = create<AdminState>()(
             }
         }),
         {
-            name: 'jenny-admin-storage-v5', // Bump version to force re-hydration with new fields
+            name: 'jenny-admin-storage-v7', // [RESET] Bump version to clear potential zombie prompts
             partialize: (state) => ({
                 geminiApiKey: state.geminiApiKey,
                 nanoBananaApiKey: state.nanoBananaApiKey,
@@ -235,4 +269,3 @@ export const useAdminStore = create<AdminState>()(
         }
     )
 );
-

@@ -27,6 +27,7 @@ interface TopicStoreState {
     setClusters: (clusters: TopicCluster[]) => void;
     getNextTopic: () => { topic: Topic; clusterId: string; pillarTitle?: string } | null;
     markAsPublished: (topicId: number) => void;
+    setCurrentTopic: (clusterIdx: number, topicIdx: number) => void;
     resetTopics: () => void;
 }
 
@@ -40,7 +41,7 @@ export const useTopicStore = create<TopicStoreState>()(
             setClusters: (clusters) => set({
                 clusters,
                 currentClusterIndex: 0,
-                currentTopicIndex: 0
+                currentTopicIndex: 1 // [User Request] Start from 2nd topic (Skip Pillar/Day 1 initially)
             }),
 
             getNextTopic: () => {
@@ -97,6 +98,11 @@ export const useTopicStore = create<TopicStoreState>()(
                         currentClusterIndex: nextClusterIdx
                     };
                 });
+            },
+
+            // [NEW] Manual Jump
+            setCurrentTopic: (clusterIdx: number, topicIdx: number) => {
+                set({ currentClusterIndex: clusterIdx, currentTopicIndex: topicIdx });
             },
 
             resetTopics: () => set({ clusters: [], currentClusterIndex: 0, currentTopicIndex: 0 })

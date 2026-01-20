@@ -15,6 +15,7 @@ import {
     Layout,
     Lock
 } from 'lucide-react';
+import { handleManualCopy, handlePaste } from '../../utils/clipboardUtils';
 import { useContentStore, type Content } from '../../store/useContentStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStepStore } from '../../store/useStepStore';
@@ -71,6 +72,7 @@ export const FullEditor: React.FC<FullEditorProps> = ({ contentId, onClose }) =>
         setTimeout(() => setToast(null), 3000);
     };
 
+
     const handleBodyBlur = (text: string) => {
         if (!bodyAuth.granted) return;
 
@@ -115,9 +117,13 @@ export const FullEditor: React.FC<FullEditorProps> = ({ contentId, onClose }) =>
     if (!content) return null;
 
     return (
-        <div className="fixed inset-0 z-[160] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 text-white no-select">
+        <div
+            onCopy={handleManualCopy}
+            className="fixed inset-0 z-[160] bg-black/98 backdrop-blur-3xl flex items-center justify-center p-6 text-white no-select"
+        >
             <style dangerouslySetInnerHTML={{
                 __html: `
+                .no-select { user-select: text; -webkit-user-select: text; }
                 .full-textarea:focus { outline: none; border-color: rgba(34, 211, 238, 0.4); background: rgba(255, 255, 255, 0.02); }
             `}} />
 
@@ -167,6 +173,7 @@ export const FullEditor: React.FC<FullEditorProps> = ({ contentId, onClose }) =>
                                     value={title}
                                     readOnly={!titleAuth.granted}
                                     onChange={(e) => setTitle(e.target.value)}
+                                    onPaste={handlePaste}
                                     className={`w-full bg-transparent text-5xl font-black focus:outline-none placeholder-white/20 leading-tight ${titleAuth.granted ? 'text-white' : 'text-white/40 cursor-not-allowed'}`}
                                 />
                                 {!titleAuth.granted && <p className="text-[8px] text-red-500 font-bold uppercase tracking-widest">SCALE 플랜 업그레이드가 필요합니다.</p>}
@@ -179,6 +186,7 @@ export const FullEditor: React.FC<FullEditorProps> = ({ contentId, onClose }) =>
                                     value={slug}
                                     readOnly={!slugAuth.granted}
                                     onChange={(e) => setSlug(e.target.value)}
+                                    onPaste={handlePaste}
                                     className={`bg-transparent text-xs font-bold focus:outline-none w-48 ${slugAuth.granted ? 'text-brand-primary' : 'text-gray-700'}`}
                                 />
                             </div>
@@ -196,6 +204,7 @@ export const FullEditor: React.FC<FullEditorProps> = ({ contentId, onClose }) =>
                                 readOnly={!bodyAuth.granted}
                                 onChange={(e) => setBody(e.target.value)}
                                 onBlur={(e) => handleBodyBlur(e.target.value)}
+                                onPaste={handlePaste}
                                 className={`w-full h-[600px] bg-transparent text-lg font-medium leading-relaxed p-0 full-textarea resize-none transition-all scrollbar-hide ${bodyAuth.granted ? 'text-white/90' : 'text-white/30 cursor-not-allowed'}`}
                             />
                         </div>
@@ -231,6 +240,7 @@ export const FullEditor: React.FC<FullEditorProps> = ({ contentId, onClose }) =>
                                         value={ctaText}
                                         readOnly={!ctaAuth.granted}
                                         onChange={(e) => setCtaText(e.target.value)}
+                                        onPaste={handlePaste}
                                         className={`w-full h-32 p-4 bg-black/40 border border-white/10 rounded-2xl text-xs font-medium focus:outline-none resize-none italic leading-relaxed ${ctaAuth.granted ? 'text-gray-300' : 'text-gray-700'}`}
                                     />
                                 </div>

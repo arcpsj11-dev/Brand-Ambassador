@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useProfileStore, type ContentTone } from '../../store/useProfileStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Check, Building2, User, MessageSquare, Plus, X, Image as ImageIcon } from 'lucide-react';
+import { handleManualCopy, handlePaste } from '../../utils/clipboardUtils';
 
 type SetupStep = 1 | 2 | 3 | 4;
 
@@ -49,6 +50,7 @@ const Step1: React.FC<StepProps> = ({ localData, setLocalData }) => {
                     value={localData.clinicName}
                     onChange={(e) => setLocalData({ ...localData, clinicName: e.target.value })}
                     placeholder="예: 도담한의원"
+                    onPaste={handlePaste}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-primary transition-all outline-none"
                 />
             </div>
@@ -64,6 +66,7 @@ const Step1: React.FC<StepProps> = ({ localData, setLocalData }) => {
                         onChange={(e) => setCustomSubject(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && addCustomSubject()}
                         placeholder="진료 과목을 입력하고 Enter를 누르세요 (예: 교통사고, 다이어트)"
+                        onPaste={handlePaste}
                         className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-primary transition-all outline-none"
                     />
                     <button
@@ -97,6 +100,7 @@ const Step1: React.FC<StepProps> = ({ localData, setLocalData }) => {
                     value={localData.targetDemographic}
                     onChange={(e) => setLocalData({ ...localData, targetDemographic: e.target.value })}
                     placeholder="예: 30-50대 여성, 교통사고 환자"
+                    onPaste={handlePaste}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-primary transition-all outline-none"
                 />
             </div>
@@ -110,6 +114,7 @@ const Step1: React.FC<StepProps> = ({ localData, setLocalData }) => {
                     value={localData.region}
                     onChange={(e) => setLocalData({ ...localData, region: e.target.value })}
                     placeholder="예: 김포 운양동"
+                    onPaste={handlePaste}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-primary transition-all outline-none"
                 />
             </div>
@@ -140,6 +145,7 @@ const Step2: React.FC<StepProps> = ({ localData, setLocalData }) => (
                         setLocalData({ ...localData, keyKeywords: newKeywords.filter(k => k) });
                     }}
                     placeholder={`키워드 ${index + 1}: 예) 교통사고 추나치료`}
+                    onPaste={handlePaste}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-primary transition-all outline-none"
                 />
             ))}
@@ -153,6 +159,7 @@ const Step2: React.FC<StepProps> = ({ localData, setLocalData }) => (
                 value={localData.mainTopic}
                 onChange={(e) => setLocalData({ ...localData, mainTopic: e.target.value })}
                 placeholder="예: 교통사고 후유증 치료, 추나요법 전문"
+                onPaste={handlePaste}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-primary transition-all outline-none h-24 resize-none"
             />
         </div>
@@ -168,6 +175,7 @@ const Step2: React.FC<StepProps> = ({ localData, setLocalData }) => (
                     avoidTopics: e.target.value.split(',').map(s => s.trim()).filter(s => s)
                 })}
                 placeholder="예: 다이어트, 미용 시술 (쉼표로 구분)"
+                onPaste={handlePaste}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-primary transition-all outline-none h-20 resize-none"
             />
         </div>
@@ -362,7 +370,10 @@ export const ProfileSetup: React.FC = () => {
     ];
 
     return (
-        <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <div
+            onCopy={handleManualCopy}
+            className="min-h-[80vh] flex items-center justify-center p-6"
+        >
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}

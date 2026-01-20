@@ -12,6 +12,8 @@ import { useSlotStore } from '../../store/useSlotStore';
 import { geminiReasoningService } from '../../services/geminiService';
 import { useTopicStore } from '../../store/useTopicStore'; // [NEW]
 
+import { usePlannerStore } from '../../store/usePlannerStore'; // [NEW]
+
 interface TopicClusterGeneratorProps {
     slotId: string;
     onComplete?: () => void;
@@ -19,12 +21,19 @@ interface TopicClusterGeneratorProps {
 
 export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ slotId, onComplete }) => {
     const { slots, updateSlot } = useSlotStore();
-    const { setClusters } = useTopicStore(); // [NEW]
+    const { clusters, currentClusterIndex, currentTopicIndex, setClusters, setCurrentTopic } = useTopicStore(); // [NEW] Use persistent state
+    const { clearPlanner } = usePlannerStore(); // [NEW]
     const slot = slots.find(s => s.slotId === slotId);
 
     const [keyword, setKeyword] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
+    // Remove local preview state, rely on store (or use local just for confirmation)
     const [previewClusters, setPreviewClusters] = useState<any[] | null>(null);
+
+    // If we have clusters in store, we show the persistent list.
+    // If we just generated new ones (preview), we show that instead.
+    const activeClusters = previewClusters || (clusters.length > 0 ? clusters : null);
+    const isPreview = !!previewClusters;
 
     if (!slot) return null;
 
@@ -63,9 +72,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
     const handleApply = () => {
         if (!previewClusters || previewClusters.length === 0) return;
 
-        // 1. Update Slot Store (Set first cluster as active context)
-        // Flatten all 30 topics for progress tracking (1 Pillar + 29 "Satellites")
-        // We use the very first pillar as the main title, and everything else as satellites regardless of their actual type in the cluster
+        // 1. Update Slot Store
         const allTopics = previewClusters.flatMap((cluster: any) =>
             cluster.topics.map((t: any) => t.title)
         );
@@ -82,18 +89,42 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
         });
 
         // 2. [SYNC] Update Topic Store (Full 30-day Plan / All Clusters)
-        // This ensures the Dashboard executes through ALL generated topics.
         setClusters(previewClusters);
 
         if (onComplete) onComplete();
-        alert(`성공적으로 30일치 플랜(${previewClusters.length}개 클러스터)이 생성되었습니다.\n대시보드에서 순차적으로 글쓰기를 시작하세요!`);
-        setPreviewClusters(null);
+        // alert(`성공적으로 30일치 플랜(${previewClusters.length}개 클러스터)이 생성되었습니다.\n대시보드에서 순차적으로 글쓰기를 시작하세요!`);
+        setPreviewClusters(null); // Clear preview, falls back to store
         setKeyword('');
     };
 
+    const handleReset = () => {
+        if (window.confirm("현재 진행 중인 30일 플랜을 초기화하시겠습니까? (삭제된 데이터는 복구할 수 없습니다)")) {
+            // 1. Clear Local Preview
+            setPreviewClusters(null);
+
+            // 2. Clear Topic Store (The 30-day list)
+            setClusters([]);
+
+            // 3. Clear Slot Store (The 'Active Strategy' reference)
+            updateSlot(slotId, {
+                currentCluster: {
+                    pillarTitle: '',
+                    satelliteTitles: [],
+                    currentIndex: 1
+                }
+            });
+
+            // 4. Clear Planner Store (The Marketing Canvas visualization)
+            clearPlanner();
+
+            alert("모든 플랜 데이터가 깔끔하게 정리되었습니다.");
+        }
+    }
+
     return (
         <div className="space-y-6">
-            {!previewClusters ? (
+            {!activeClusters ? (
+                // 1. [EMPTY STATE] Search Input
                 <div className="space-y-4">
                     <div className="p-4 rounded-2xl bg-brand-primary/5 border border-brand-primary/10">
                         <p className="text-xs text-brand-primary font-black uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -124,6 +155,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                     </div>
                 </div>
             ) : (
+                // 2. [ACTIVE / PREVIEW STATE] List
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -131,67 +163,152 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                 >
                     <div className="flex items-center justify-between">
                         <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                            <Sparkles size={14} className="text-brand-primary" /> Generated 30-Day Plan
+                            <Sparkles size={14} className="text-brand-primary" />
+                            {isPreview ? "Generated Preview (Not Saved)" : "Active 30-Day Plan"}
                         </h4>
-                        <button
-                            onClick={() => setPreviewClusters(null)}
-                            className="text-[10px] font-bold text-gray-500 hover:text-white uppercase"
-                        >
-                            Reset
-                        </button>
+                        <div className="flex gap-2">
+                            {/* Only show 'Reset' (Clear) if it's persistent data, or 'Cancel' if preview */}
+                            <button
+                                onClick={isPreview ? () => setPreviewClusters(null) : handleReset}
+                                className="text-[10px] font-bold text-gray-500 hover:text-red-400 uppercase"
+                            >
+                                {isPreview ? "Cancel" : "Reset Plan"}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-                        {previewClusters.map((cluster: any, cIdx: number) => {
+                        {activeClusters.map((cluster: any, cIdx: number) => {
                             const pillar = cluster.topics.find((t: any) => t.type === 'pillar');
                             const satellites = cluster.topics.filter((t: any) => t.type === 'supporting');
 
                             return (
                                 <div key={cIdx} className="space-y-2">
-                                    <div className="p-4 rounded-xl bg-brand-primary/10 border border-brand-primary/30 relative overflow-hidden group">
-                                        <div className="absolute top-0 right-0 bg-brand-primary text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter">Cluster {cIdx + 1} Pillar</div>
-                                        <div className="flex items-start gap-3">
-                                            <Layers size={16} className="text-brand-primary shrink-0 mt-0.5" />
-                                            <p className="text-sm font-black text-white">{pillar?.title || cluster.category}</p>
+                                    <div
+                                        onClick={() => {
+                                            if (!isPreview) {
+                                                setCurrentTopic(cIdx, 0); // Pillar is always index 0
+                                                updateSlot(slotId, {
+                                                    currentCluster: {
+                                                        ...slot.currentCluster,
+                                                        currentIndex: 0
+                                                    }
+                                                });
+                                            }
+                                        }}
+                                        className={`p-4 rounded-xl border relative overflow-hidden group/pillar cursor-pointer transition-all
+                                            ${pillar?.isPublished
+                                                ? 'bg-brand-primary/20 border-brand-primary/50'
+                                                : (cIdx === currentClusterIndex && currentTopicIndex === 0)
+                                                    ? 'bg-white/10 border-brand-primary shadow-neon shadow-brand-primary/20'
+                                                    : 'bg-brand-primary/10 border-brand-primary/30 hover:bg-white/10 hover:border-white/30'
+                                            }
+                                        `}
+                                    >
+                                        <div className="absolute top-0 right-0 bg-brand-primary text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter flex items-center gap-1">
+                                            {pillar?.isPublished && <CheckCircle2 size={8} />}
+                                            Cluster {cIdx + 1} Pillar
                                         </div>
+                                        <div className="flex items-start gap-3">
+                                            <Layers size={16} className={`${pillar?.isPublished ? 'text-brand-primary' : 'text-brand-primary'} shrink-0 mt-0.5`} />
+                                            <p className={`text-sm font-black ${pillar?.isPublished ? 'text-white line-through opacity-50' : 'text-white'}`}>
+                                                {pillar?.title || cluster.category}
+                                            </p>
+                                        </div>
+                                        {/* Hover Badge */}
+                                        {!isPreview && !pillar?.isPublished && !(cIdx === currentClusterIndex && currentTopicIndex === 0) && (
+                                            <div className="absolute right-3 bottom-2 opacity-0 group-hover/pillar:opacity-100 transition-opacity">
+                                                <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded font-bold uppercase">Select Pillar</span>
+                                            </div>
+                                        )}
+                                        {/* Active Indicator */}
+                                        {!isPreview && cIdx === currentClusterIndex && currentTopicIndex === 0 && (
+                                            <div className="absolute right-3 bottom-2">
+                                                <span className="text-[9px] bg-brand-primary text-black px-1.5 py-0.5 rounded font-black uppercase shadow-neon">Active</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="pl-4 border-l-2 border-white/5 space-y-2">
-                                        {satellites.map((sat: any, sIdx: number) => (
-                                            <div key={sIdx} className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all">
-                                                <div className="flex items-start gap-3">
-                                                    <span className="text-gray-600 font-mono font-bold text-xs">{String(sIdx + 1).padStart(2, '0')}</span>
-                                                    <p className="text-xs font-bold text-gray-300">{sat.title}</p>
+                                        {satellites.map((sat: any, sIdx: number) => {
+                                            // Calculate global index (simulated for simplicity, or strictly based on logic)
+                                            // Pillar is Topic 0 of cluster. Satellites are 1..9.
+                                            // Store tracks by clusterIndex and topicIndex.
+                                            // This loop is for display.
+                                            // Need to find if THIS specific topic is active or done.
+
+                                            // Logic: 
+                                            // cIdx < currentClusterIndex => DONE (All topics in prev clusters done?) - Assuming sequential
+                                            // cIdx === currentClusterIndex:
+                                            //    active if sIdx+1 === currentTopicIndex (assuming Pillar is 0)
+                                            // Actually use t.isPublished from Store
+
+                                            // Note: 'sat' here is a topic object.
+                                            const isDone = sat.isPublished;
+                                            // Active if: (This Cluster is Current) AND (This Topic Index is Current)
+                                            // Satellites index in 'topics' array: 1 + sIdx
+                                            // Because 0 is pillar.
+                                            const topicRealIndex = 1 + sIdx;
+                                            const isActive = !isPreview && (cIdx === currentClusterIndex && topicRealIndex === currentTopicIndex);
+
+                                            return (
+                                                <div key={sIdx}
+                                                    onClick={() => {
+                                                        // [SYNC] Set global current topic on click
+                                                        if (!isPreview) {
+                                                            setCurrentTopic(cIdx, topicRealIndex);
+                                                            // Also update Slot Store visual (optional, but good for consistency)
+                                                            updateSlot(slotId, {
+                                                                currentCluster: {
+                                                                    ...slot.currentCluster,
+                                                                    currentIndex: topicRealIndex
+                                                                }
+                                                            });
+                                                        }
+                                                    }}
+                                                    className={`p-3 rounded-lg border transition-all flex items-start gap-3 cursor-pointer relative group/item
+                                                        ${isDone
+                                                            ? 'bg-brand-primary/20 border-brand-primary/50' // Done
+                                                            : isActive
+                                                                ? 'bg-white/10 border-brand-primary shadow-neon shadow-brand-primary/20 scale-[1.02] z-10' // Active
+                                                                : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10' // Pending
+                                                        }
+                                                    `}
+                                                >
+                                                    <span className={`font-mono font-bold text-xs ${isDone ? 'text-brand-primary' : 'text-gray-600'}`}>
+                                                        {isDone ? <CheckCircle2 size={14} /> : String(sIdx + 1).padStart(2, '0')}
+                                                    </span>
+                                                    <p className={`text-xs font-bold ${isDone ? 'text-white line-through opacity-50' : isActive ? 'text-white' : 'text-gray-300'}`}>
+                                                        {sat.title}
+                                                    </p>
+
+                                                    {/* Active Badge */}
+                                                    {isActive && <div className="ml-auto text-[8px] bg-brand-primary text-black px-1.5 rounded font-black uppercase">Next</div>}
+
+                                                    {/* Hover Badge (Click to Select) */}
+                                                    {!isActive && !isDone && !isPreview && (
+                                                        <div className="absolute right-3 top-3 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                            <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded font-bold uppercase">Select</span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
 
-                    <button
-                        onClick={handleApply}
-                        className="w-full py-4 rounded-xl bg-brand-primary text-black font-black uppercase tracking-widest shadow-neon hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                    >
-                        <span>Apply Full Plan (30 Days)</span>
-                        <ArrowRight size={18} />
-                    </button>
+                    {isPreview && (
+                        <button
+                            onClick={handleApply}
+                            className="w-full py-4 rounded-xl bg-brand-primary text-black font-black uppercase tracking-widest shadow-neon hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                        >
+                            <span>Apply Full Plan (30 Days)</span>
+                            <ArrowRight size={18} />
+                        </button>
+                    )}
                 </motion.div>
-            )}
-
-            {/* Empty State / Current Strategy */}
-            {!previewClusters && slot.currentCluster.pillarTitle && (
-                <div className="pt-4 border-t border-white/5">
-                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3">Currently Active Strategy</p>
-                    <div className="p-3 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between group">
-                        <div className="flex items-center gap-3">
-                            <Layers size={14} className="text-gray-500" />
-                            <span className="text-xs font-bold text-gray-400 truncate max-w-[200px]">{slot.currentCluster.pillarTitle}</span>
-                        </div>
-                        <CheckCircle2 size={12} className="text-brand-primary opacity-50" />
-                    </div>
-                </div>
             )}
         </div>
     );
