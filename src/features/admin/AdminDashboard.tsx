@@ -21,6 +21,9 @@ export const AdminDashboard: React.FC = () => {
     const adminState = useAdminStore();
     const {
         geminiApiKey, setGeminiApiKey,
+        dallEApiKey, setDallEApiKey,
+        nanoBananaApiKey, setNanoBananaApiKey,
+        activeImageProvider, setActiveImageProvider,
         activeOccupationId, occupations,
         updateOccupationPrompt,
         users, updateUserTier
@@ -28,7 +31,10 @@ export const AdminDashboard: React.FC = () => {
 
     const [activeTab, setActiveTab] = useState<'prompts' | 'users' | 'settings' | 'image-test'>('prompts');
     const [localPrompts, setLocalPrompts] = useState(occupations[activeOccupationId]?.prompts);
-    const [localApiKey, setLocalApiKey] = useState(geminiApiKey);
+    const [localGeminiKey, setLocalGeminiKey] = useState(geminiApiKey);
+    const [localDalleKey, setLocalDalleKey] = useState(dallEApiKey);
+    const [localNanoKey, setLocalNanoKey] = useState(nanoBananaApiKey);
+    const [localProvider, setLocalProvider] = useState(activeImageProvider);
 
     // Sync local prompts when active occupation changes
     useEffect(() => {
@@ -47,8 +53,11 @@ export const AdminDashboard: React.FC = () => {
     };
 
     const handleSaveSettings = () => {
-        setGeminiApiKey(localApiKey);
-        alert('API 설정이 저장되었습니다.');
+        setGeminiApiKey(localGeminiKey);
+        setDallEApiKey(localDalleKey);
+        setNanoBananaApiKey(localNanoKey);
+        setActiveImageProvider(localProvider);
+        alert('시스템 설정이 저장되었습니다.');
     };
 
     return (
@@ -330,26 +339,94 @@ export const AdminDashboard: React.FC = () => {
                     {/* Settings Tab */}
                     {activeTab === 'settings' && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-                            {/* API Key Section */}
+                            {/* Provider Selection */}
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3 p-4 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 text-brand-primary">
+                                    <ImageIcon size={20} />
+                                    <span className="font-bold text-sm uppercase tracking-widest">Active Image Provider</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {[
+                                        { id: 'google', label: 'Google Imagen 4', desc: 'Gemini 기반 이미지 생성' },
+                                        { id: 'dalle', label: 'OpenAI DALL-E 3', desc: '고품질 상용 로직' },
+                                        { id: 'nano', label: 'Nano Banana', desc: '커스텀/스테이블 디퓨전' }
+                                    ].map((provider) => (
+                                        <button
+                                            key={provider.id}
+                                            onClick={() => setLocalProvider(provider.id as any)}
+                                            className={`p-6 rounded-2xl border text-left transition-all ${localProvider === provider.id
+                                                ? 'bg-brand-primary/20 border-brand-primary shadow-neon-sm'
+                                                : 'bg-white/5 border-white/10 hover:border-white/20'
+                                                }`}
+                                        >
+                                            <div className={`text-sm font-black mb-1 ${localProvider === provider.id ? 'text-brand-primary' : 'text-white'}`}>
+                                                {provider.label}
+                                            </div>
+                                            <div className="text-[10px] text-gray-500 font-medium">{provider.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* API Key Section */}
+                            <div className="space-y-8">
+                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 text-brand-primary">
                                     <Key size={20} />
-                                    <span className="font-bold text-sm uppercase tracking-widest">Global Gemini API Configuration</span>
+                                    <span className="font-bold text-sm uppercase tracking-widest">API Configuration</span>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gemini API Key (Unified)</label>
-                                    <input
-                                        type="password"
-                                        value={localApiKey}
-                                        onChange={(e) => setLocalApiKey(e.target.value)}
-                                        placeholder="API 키를 입력하면 모든 사용자의 요청에 우선 적용됩니다."
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
-                                    />
-                                    <p className="text-[10px] text-gray-600 font-medium">
-                                        * 이 키 하나로 텍스트 생성부터 <strong>이미지 분석 및 생성</strong>까지 모두 처리합니다.
+                                <div className="grid grid-cols-1 gap-8">
+                                    {/* Gemini */}
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                                            <span>Gemini / Google API Key</span>
+                                            {localProvider === 'google' && <span className="text-[10px] text-brand-primary border border-brand-primary/30 px-2 rounded">Active</span>}
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={localGeminiKey}
+                                            onChange={(e) => setLocalGeminiKey(e.target.value)}
+                                            placeholder="Google Cloud / AI Studio 키"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
+                                        />
+                                    </div>
+
+                                    {/* DALL-E */}
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                                            <span>OpenAI API Key (DALL-E)</span>
+                                            {localProvider === 'dalle' && <span className="text-[10px] text-brand-primary border border-brand-primary/30 px-2 rounded">Active</span>}
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={localDalleKey}
+                                            onChange={(e) => setLocalDalleKey(e.target.value)}
+                                            placeholder="sk-..."
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
+                                        />
+                                    </div>
+
+                                    {/* Nano Banana */}
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                                            <span>Nano Banana API Key</span>
+                                            {localProvider === 'nano' && <span className="text-[10px] text-brand-primary border border-brand-primary/30 px-2 rounded">Active</span>}
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={localNanoKey}
+                                            onChange={(e) => setLocalNanoKey(e.target.value)}
+                                            placeholder="Nano Banana 전용 키"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/5 border-l-4 border-brand-primary p-4 rounded-r-xl">
+                                    <p className="text-[11px] text-gray-400 font-medium leading-relaxed">
+                                        * 선택된 <strong>Active Image Provider</strong>에 따라 위 API 키들 중 하나가 이미지 생성에 사용됩니다.
                                         <br />
-                                        * 관리자가 입력한 키는 로컬 보안 환경 내에서만 관리되며 서버로 직접 전달되지 않습니다.
+                                        * Gemini 키는 텍스트 생성에는 기본적으로 사용되며, 이미지를 'Google'로 설정 시 이미지 생성에도 활용됩니다.
                                     </p>
                                 </div>
 
