@@ -17,7 +17,7 @@ export const ContentKitchen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     const chat = useChatStore();
     const contentStore = useContentStore();
     const { canAccess } = useStepStore();
-    const canEditTitle = () => canAccess('editTitleFull', 'GROW').granted;
+    const canEditTitle = () => canAccess('editTitleFull', 'PRO').granted;
 
     const [content, setContent] = useState('');
     const [title, setTitle] = useState(activeDraft?.topic || '');

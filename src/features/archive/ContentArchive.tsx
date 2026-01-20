@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useBrandStore } from '../../store/useBrandStore';
 import { geminiReasoningService } from '../../services/geminiService';
 import { useProfileStore } from '../../store/useProfileStore';
-import { FileText, Calendar, Clock, Search, Copy, Check, Wand2, Loader2, X, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { FileText, Calendar, Clock, Search, Copy, Check, Wand2, Loader2, X } from 'lucide-react';
 
 export const ContentArchive: React.FC = () => {
     const { contents } = useContentStore();

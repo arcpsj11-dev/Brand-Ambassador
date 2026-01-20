@@ -195,6 +195,7 @@ export const SlotManager: React.FC = () => {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="relative w-full max-w-4xl glass-card border-white/10 bg-[#121212] p-8 overflow-y-auto max-h-[90vh] shadow-2xl custom-scrollbar"
                         >
                             <div className="flex items-center justify-between mb-8">

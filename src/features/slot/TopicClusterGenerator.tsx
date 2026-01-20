@@ -21,7 +21,7 @@ interface TopicClusterGeneratorProps {
 
 export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ slotId, onComplete }) => {
     const { slots, updateSlot } = useSlotStore();
-    const { clusters, currentClusterIndex, currentTopicIndex, setClusters, setCurrentTopic } = useTopicStore(); // [NEW] Use persistent state
+    const { clusters, currentClusterIndex, currentTopicIndex, setClusters, setCurrentTopic, resetTopics } = useTopicStore(); // [NEW] Use persistent state
     const { clearPlanner } = usePlannerStore(); // [NEW]
     const slot = slots.find(s => s.slotId === slotId);
 
@@ -58,12 +58,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
             }
         } catch (error: unknown) {
             console.error(error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            if (errorMessage === "API_KEY_MISSING") {
-                alert("관리자 설정에서 Gemini API Key를 먼저 설정해주세요.");
-            } else {
-                alert(`주제 생성 중 오류가 발생했습니다: ${errorMessage}`);
-            }
+            alert('주제 생성 중 오류가 발생했습니다. API 키 설정을 확인해주세요.');
         } finally {
             setIsGenerating(false);
         }
@@ -97,13 +92,15 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
         setKeyword('');
     };
 
-    const handleReset = () => {
-        if (window.confirm("현재 진행 중인 30일 플랜을 초기화하시겠습니까? (삭제된 데이터는 복구할 수 없습니다)")) {
+    const handleReset = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+
+        if (window.confirm("현재 진행 중인 30일 플랜을 초기화하시겠습니까?\n(작성 중인 데이터와 매칭된 주제 리스트가 모두 삭제됩니다.)")) {
             // 1. Clear Local Preview
             setPreviewClusters(null);
 
             // 2. Clear Topic Store (The 30-day list)
-            setClusters([]);
+            resetTopics();
 
             // 3. Clear Slot Store (The 'Active Strategy' reference)
             updateSlot(slotId, {
@@ -117,7 +114,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
             // 4. Clear Planner Store (The Marketing Canvas visualization)
             clearPlanner();
 
-            alert("모든 플랜 데이터가 깔끔하게 정리되었습니다.");
+            alert("모든 플랜 데이터가 초기화되었습니다. 새로운 키워드로 전략을 생성해보세요.");
         }
     }
 
@@ -169,8 +166,15 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                         <div className="flex gap-2">
                             {/* Only show 'Reset' (Clear) if it's persistent data, or 'Cancel' if preview */}
                             <button
-                                onClick={isPreview ? () => setPreviewClusters(null) : handleReset}
-                                className="text-[10px] font-bold text-gray-500 hover:text-red-400 uppercase"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isPreview) {
+                                        setPreviewClusters(null);
+                                    } else {
+                                        handleReset(e);
+                                    }
+                                }}
+                                className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-gray-500 hover:text-red-400 hover:border-red-400/30 uppercase transition-all"
                             >
                                 {isPreview ? "Cancel" : "Reset Plan"}
                             </button>
