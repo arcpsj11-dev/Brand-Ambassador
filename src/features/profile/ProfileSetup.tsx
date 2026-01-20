@@ -244,15 +244,18 @@ const Step4: React.FC<StepProps> = ({ localData, setLocalData }) => {
 
     const handleFileChange = (id: string, file: File | null) => {
         if (file) {
-            // Note: In a real app, upload to server here.
-            // For now, we simulate storage by using the file name
-            setLocalData({
-                ...localData,
-                clinicPhotos: {
-                    ...localData.clinicPhotos,
-                    [id]: file.name
-                }
-            });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setLocalData({
+                    ...localData,
+                    clinicPhotos: {
+                        ...localData.clinicPhotos,
+                        [id]: base64String
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
         }
     };
 

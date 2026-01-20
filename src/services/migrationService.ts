@@ -15,17 +15,17 @@ export function migrateToSlotSystem(): boolean {
 
     // 이미 슬롯이 있으면 마이그레이션 불필요
     if (slotStore.slots.length > 0) {
-        console.log('[Migration] Slots already exist, skipping migration');
+        return false;
         return false;
     }
 
     // 기존 데이터가 없으면 마이그레이션 불필요
     if (!profileStore.isProfileComplete) {
-        console.log('[Migration] No existing profile data, skipping migration');
+        return false;
         return false;
     }
 
-    console.log('[Migration] Starting migration to slot system...');
+
 
     try {
         // 기존 토픽 클러스터 데이터 추출
@@ -50,10 +50,9 @@ export function migrateToSlotSystem(): boolean {
             isActive: true
         };
 
-        const slotId = slotStore.createSlot(defaultSlot);
+        slotStore.createSlot(defaultSlot);
 
-        console.log(`[Migration] Successfully created slot: ${slotId}`);
-        console.log('[Migration] Migration completed successfully');
+
 
         return true;
     } catch (error) {

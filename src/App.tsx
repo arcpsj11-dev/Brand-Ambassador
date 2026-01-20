@@ -17,6 +17,7 @@ import { AdminDashboard } from './features/admin/AdminDashboard';
 import { Sparkles, LogOut, LayoutDashboard, Database, LayoutGrid, Activity, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSlotStore } from './store/useSlotStore';
+import { useContentStore } from './store/useContentStore';
 
 const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -26,9 +27,10 @@ const App: React.FC = () => {
   // 앱 로드 시 슬롯 시스템 마이그레이션 실행
   React.useEffect(() => {
     if (isAuthenticated) {
-      migrateToSlotSystem();
       // 마이그레이션 후 활성 슬롯이 없다면 첫 슬롯 지정
       useSlotStore.getState().ensureActiveSlot();
+      // 날짜 변경 시 오늘의 액션 상태 초기화 체크
+      useContentStore.getState().checkAndResetDailyStatus();
     }
   }, [isAuthenticated]);
 

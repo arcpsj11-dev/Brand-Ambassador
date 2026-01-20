@@ -27,7 +27,7 @@ export const SlotManager: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'basic' | 'strategy'>('basic');
     const [contentFlowSlotId, setContentFlowSlotId] = useState<string | null>(null);
 
-    const userTier = user?.tier || 'START';
+    const userTier = user?.tier || 'BASIC';
     const tier = userTier;
     const maxSlots = getMaxSlots(tier);
 

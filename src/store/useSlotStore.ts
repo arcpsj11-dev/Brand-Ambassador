@@ -59,13 +59,14 @@ interface SlotState {
 
     // Safety
     ensureActiveSlot: () => void;
+    clearStore: () => void;
 }
 
 // 등급별 슬롯 제한 맵 (Fallback defaults)
 const TIER_SLOT_LIMITS: Record<UserTier, number> = {
-    START: 1,
-    GROW: 3,
-    SCALE: 5
+    BASIC: 1,
+    PRO: 3,
+    ULTRA: 5
 };
 
 export const useSlotStore = create<SlotState>()(
@@ -212,7 +213,8 @@ export const useSlotStore = create<SlotState>()(
                 if (slots.length > 0 && !activeSlotId) {
                     set({ activeSlotId: slots[0].slotId });
                 }
-            }
+            },
+            clearStore: () => set({ slots: [], activeSlotId: null })
         }),
         {
             name: 'antigravity-slot-storage'

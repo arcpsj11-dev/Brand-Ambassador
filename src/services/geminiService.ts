@@ -88,6 +88,7 @@ const IMAGE_PROMPT_SCHEMA = {
                 properties: {
                     prompt: { type: SchemaType.STRING },
                     alt: { type: SchemaType.STRING },
+                    recommendedPhotoKey: { type: SchemaType.STRING },
                 },
                 required: ["prompt", "alt"]
             }
@@ -219,7 +220,8 @@ export const geminiReasoningService = {
         equipment?: string;
         facilities?: string;
         extraPrompt?: string;
-        blogIndex?: number
+        blogIndex?: number;
+        profile?: any;
     }) {
         try {
             const genAI = getGenAI();
@@ -230,13 +232,30 @@ export const geminiReasoningService = {
             const bodyPrompt = activeOccupation.prompts.body;
 
             // [STRICT SYNC] Only use replaced template. No secret appendages.
+            // [PROFILE CONTEXT] Build a detailed context from profile store
+            const profile = context.profile || {};
+            const profileInfo = `
+[병원 프로파일 정보]
+병원명: ${context.clinicName}
+주소: ${context.address}
+연락처: ${context.phoneNumber}
+진료과목: ${(profile.subjects || []).join(', ')}
+주요 타깃: ${profile.targetDemographic || '미지정'}
+지역: ${profile.region || '미지정'}
+핵심 주제: ${profile.mainTopic || '미지정'}
+주요 키워드: ${(profile.keyKeywords || []).join(', ')}
+피해야 할 주제: ${(profile.avoidTopics || []).join(', ')}
+콘텐츠 톤: ${profile.contentTone || 'informative'}
+원내 보유 사진 항목: ${Object.keys(profile.clinicPhotos || {}).join(', ')}
+`;
+
             const prompt = bodyPrompt
                 .replace(/{{title}}/g, input)
                 .replace(/{{persona}}/g, persona)
                 .replace(/{{pillarTitle}}/g, context.pillarTitle || '')
                 .replace(/{{clinicName}}/g, context.clinicName)
                 .replace(/{{address}}/g, context.address)
-                .replace(/{{phoneNumber}}/g, context.phoneNumber);
+                .replace(/{{phoneNumber}}/g, context.phoneNumber) + `\n\n위 설정과 함께 아래 병원 프로파일 정보를 본문에 자연스럽게 녹여내어 신뢰감 있는 글을 작성해 주세요.\n${profileInfo}`;
 
             const result = await model.generateContentStream(prompt);
             for await (const chunk of result.stream) {
@@ -256,7 +275,7 @@ export const geminiReasoningService = {
                 model: "gemini-2.0-flash-exp",
                 generationConfig: {
                     responseMimeType: "application/json",
-                    responseSchema: KEYWORD_ANALYSIS_SCHEMA
+                    responseSchema: KEYWORD_ANALYSIS_SCHEMA as any
                 }
             });
 
@@ -316,7 +335,7 @@ export const geminiReasoningService = {
 
             // 30개 생성 보장 확인 (부족하면 클라이언트 측에서 처리하거나 로그)
             if (data.clusters && data.clusters.length < 3) {
-                console.warn("Gemini generated fewer than 3 clusters. Generated:", data.clusters.length);
+
             }
 
             return data;
@@ -327,7 +346,7 @@ export const geminiReasoningService = {
     },
 
     // [나노바나나] 이미지 프롬프트 및 ALT 추출/생성
-    async generateImagePrompts(contentBody: string): Promise<Array<{ prompt: string, alt: string }>> {
+    async generateImagePrompts(contentBody: string, profilePhotos?: string[]): Promise<Array<{ prompt: string, alt: string, recommendedPhotoKey?: string }>> {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
@@ -343,6 +362,9 @@ export const geminiReasoningService = {
             const imagePromptTemplate = activeOccupation.prompts.image;
 
             const prompt = `${imagePromptTemplate} 
+
+필요시 아래 병원 보유 사진 목록 중 가장 적합한 항목이 있다면 'recommendedPhotoKey'에 해당 키(예: desk, entrance 등)를 적어주세요.
+병원 보유 사진 목록: ${profilePhotos?.join(', ') || '없음'}
 
 [콘텐츠 본문 시작]
 ${contentBody}
@@ -389,7 +411,7 @@ ${contentBody}
                 .replace(/{{topic}}/g, keyword)
                 .replace(/{{persona}}/g, targetPersona);
 
-            // console.log("Using Synced Admin Prompt for Cluster:", prompt);
+
 
             const result = await model.generateContent(prompt);
             const data = cleanAndParseJSON(result.response.text()) as MonthlyTitleResponse;

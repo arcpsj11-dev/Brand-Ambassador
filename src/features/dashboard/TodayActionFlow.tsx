@@ -37,7 +37,14 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     const brand = useBrandStore();
 
     const [flowState, setFlowState] = useState<FlowState>('ENTRY');
-    const [currentContent, setCurrentContent] = useState<{ title: string; body: string; type: string; pillarTitle?: string; day: number; imagePrompts?: Array<{ prompt: string; alt: string }> } | null>(null);
+    const [currentContent, setCurrentContent] = useState<{
+        title: string;
+        body: string;
+        type: string;
+        pillarTitle?: string;
+        day: number;
+        imagePrompts?: Array<{ prompt: string; alt: string; recommendedPhotoKey?: string }>
+    } | null>(null);
     const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
     const [showUpgradeNotif, setShowUpgradeNotif] = useState(false);
     const [currentContentId, setCurrentContentId] = useState<string | null>(null);
@@ -158,7 +165,8 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                 clinicName: brand.clinicName || '도담한의원',
                 address: brand.address || '김포시 운양동',
                 phoneNumber: brand.phoneNumber || '031-988-1575',
-                pillarTitle // [SYNC] Pass pillarTitle for internal linking context
+                pillarTitle, // [SYNC] Pass pillarTitle for internal linking context
+                profile: useProfileStore.getState() // [NEW] Pass profile context
             });
 
             let fullBody = "";
@@ -167,7 +175,8 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             }
 
             // 4. [NEW] 이미지 프롬프트 생성 (병렬 처리 가능하지만, 본문 내용 기반이므로 순차 처리)
-            const imagePrompts = await geminiReasoningService.generateImagePrompts(fullBody);
+            const profilePhotos = Object.keys(useProfileStore.getState().clinicPhotos || {});
+            const imagePrompts = await geminiReasoningService.generateImagePrompts(fullBody, profilePhotos);
 
             const newContentData = {
                 title: targetTopic,
@@ -235,10 +244,17 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
         setFlowState('END');
 
         // 승급 체크
+        const tierMap: Record<string, string> = {
+            'START': 'BASIC',
+            'GROW': 'PRO',
+            'SCALE': 'ULTRA',
+        };
+        const userTier = tierMap[user?.tier as string] || 'BASIC';
+
         if (checkAndUpgrade({
             completedCount: completedCount + 1,
             accountStatus: 'NORMAL',
-            plan: user?.tier || 'GROW'
+            plan: userTier as any
         })) {
             setShowUpgradeNotif(true);
         }
@@ -453,6 +469,40 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                                                     <span className="font-bold">ALT:</span>
                                                     <span>{img.alt}</span>
                                                 </div>
+
+                                                {/* [NEW] Recommended Real Photo from Profile */}
+                                                {img.recommendedPhotoKey && useProfileStore.getState().clinicPhotos[img.recommendedPhotoKey] && (
+                                                    <div className="mt-4 p-4 rounded-xl border border-brand-primary/30 bg-brand-primary/5 space-y-3">
+                                                        <div className="flex items-center gap-2 text-brand-primary text-[10px] font-black uppercase tracking-widest">
+                                                            <ImageIcon size={14} />
+                                                            Recommended Real Photo (추천 원내 사진)
+                                                        </div>
+                                                        <div className="relative rounded-lg overflow-hidden border border-brand-primary/20 aspect-video bg-black/40">
+                                                            <img
+                                                                src={useProfileStore.getState().clinicPhotos[img.recommendedPhotoKey]}
+                                                                alt="Real clinic photo"
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <div className="absolute top-2 right-2 flex gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const link = document.createElement('a');
+                                                                        link.href = useProfileStore.getState().clinicPhotos[img.recommendedPhotoKey!];
+                                                                        link.download = `real_clinic_photo_${img.recommendedPhotoKey}.png`;
+                                                                        link.click();
+                                                                    }}
+                                                                    className="p-2 rounded-lg bg-black/60 hover:bg-black transition-all text-white"
+                                                                    title="Download Photo"
+                                                                >
+                                                                    <ArrowRight size={14} className="rotate-90" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-500 font-medium">
+                                                            * 이 포스팅에는 원장님이 직접 올리신 '{img.recommendedPhotoKey}' 사진을 사용하는 것을 강력 추천합니다.
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

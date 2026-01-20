@@ -121,12 +121,12 @@ JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day"
                 if (hasGenericNames) {
                     console.warn("\n⚠️ WARNING: Generic category names detected!");
                 } else {
-                    console.log("\n✅ SUCCESS: Category names appear descriptive.");
+
                 }
 
             } else {
                 console.warn("\n⚠️ WARNING: Structure mismatch.");
-                json.clusters.forEach(c => console.log(`  - ${c.category}: ${c.topics.length} topics`));
+                json.clusters.forEach(c => { });
             }
         } else {
             console.error("\n❌ FAILURE: JSON structure mismatch.");

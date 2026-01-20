@@ -38,7 +38,7 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
 
     const content = getContentById(contentId) as Content;
     const isAdmin = user?.role === 'admin';
-    const plan = user?.tier || 'START';
+    const plan = user?.tier || 'BASIC';
     const filterEngine = useRef(new RiskFilterEngine(medicalRuleSet));
 
     // 권한 확인
@@ -205,7 +205,7 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
                 <div className="bg-brand-primary/5 px-8 py-3 border-b border-brand-primary/10 flex items-center gap-3">
                     <ShieldCheck size={14} className="text-brand-primary" />
                     <span className="text-[11px] font-bold text-brand-primary uppercase tracking-widest">
-                        {titleAuth.granted ? '🔒 부분 수동 조정 모드 활성화됨' : '🔒 START 플랜: 읽기 전용 모드'}
+                        {titleAuth.granted ? '🔒 부분 수동 조정 모드 활성화됨' : '🔒 BASIC 플랜: 읽기 전용 모드'}
                     </span>
                 </div>
 
@@ -226,7 +226,7 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
                         <p className="text-[10px] text-gray-600 font-bold">
                             {titleAuth.granted
                                 ? '제목의 핵심 구조는 유지됩니다. 표현만 다듬어 주세요. (±20% 이내 수정 가능)'
-                                : '제목을 수정하려면 GROW 플랜 이상이 필요합니다.'}
+                                : '제목을 수정하려면 PRO 플랜 이상이 필요합니다.'}
                         </p>
                     </div>
 
@@ -237,7 +237,7 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
                             <div key={seg.id} className="relative group">
                                 {!seg.isEditable ? (
                                     <div
-                                        onClick={() => showToast('info', !bodyAuth.granted ? '본문을 수정하려면 GROW 플랜 이상이 필요합니다.' : '이 문단은 블로그 구조 안정화를 위해 수정할 수 없습니다.')}
+                                        onClick={() => showToast('info', !bodyAuth.granted ? '본문을 수정하려면 PRO 플랜 이상이 필요합니다.' : '이 문단은 블로그 구조 안정화를 위해 수정할 수 없습니다.')}
                                         className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 opacity-40 fixed-paragraph transition-opacity hover:opacity-100"
                                     >
                                         <div className="flex items-center gap-2 text-gray-600 mb-3">
@@ -277,7 +277,7 @@ export const RestrictedEditor: React.FC<RestrictedEditorProps> = ({ contentId, o
                             <h4 className="text-sm font-black uppercase tracking-widest text-gray-500">Next Stage: STEP 3 (Operator Mode)</h4>
                             <p className="text-xs text-gray-600 leading-relaxed max-w-sm">
                                 전체 구조 변경, CTA 삽입, 키워드 전략 수정 권한은<br />
-                                <span className="text-brand-primary font-black">SCALE 플랜</span> + <span className="text-brand-primary font-black">STEP 3</span> 달성 시 해금됩니다.
+                                <span className="text-brand-primary font-black">ULTRA 플랜</span> + <span className="text-brand-primary font-black">STEP 3</span> 달성 시 해금됩니다.
                             </p>
                         </div>
                     </div>

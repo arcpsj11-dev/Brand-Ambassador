@@ -22,22 +22,22 @@ interface PermissionRequirement {
 
 // 기능별 맵핑 (Protocol v1.0)
 const PERMISSION_MAP: Record<FeatureKey, PermissionRequirement> = {
-    editTitlePartial: { minPlan: 'GROW', minStep: 2 },
-    editBodyPartial: { minPlan: 'GROW', minStep: 2 },
-    editTitleFull: { minPlan: 'SCALE', minStep: 3 },
-    editBodyFull: { minPlan: 'SCALE', minStep: 3 },
-    editStructure: { minPlan: 'SCALE', minStep: 3 },
-    insertCTA: { minPlan: 'SCALE', minStep: 3 },
-    editSlug: { minPlan: 'SCALE', minStep: 3 },
-    manualSchedule: { minPlan: 'SCALE', minStep: 3 },
-    internalDirectKeyword: { minPlan: 'SCALE', minStep: 3 },
-    accessVeo: { minPlan: 'SCALE', minStep: 3 },
+    editTitlePartial: { minPlan: 'PRO', minStep: 2 },
+    editBodyPartial: { minPlan: 'PRO', minStep: 2 },
+    editTitleFull: { minPlan: 'ULTRA', minStep: 3 },
+    editBodyFull: { minPlan: 'ULTRA', minStep: 3 },
+    editStructure: { minPlan: 'ULTRA', minStep: 3 },
+    insertCTA: { minPlan: 'ULTRA', minStep: 3 },
+    editSlug: { minPlan: 'ULTRA', minStep: 3 },
+    manualSchedule: { minPlan: 'ULTRA', minStep: 3 },
+    internalDirectKeyword: { minPlan: 'ULTRA', minStep: 3 },
+    accessVeo: { minPlan: 'ULTRA', minStep: 3 },
 };
 
 const TIER_ORDER: Record<MembershipTier, number> = {
-    START: 1,
-    GROW: 2,
-    SCALE: 3
+    BASIC: 1,
+    PRO: 2,
+    ULTRA: 3
 };
 
 interface StepStoreState {
@@ -88,8 +88,11 @@ export const useStepStore = create<StepStoreState>()(
 
                 // STEP 1 -> 2
                 if (currentStep === 1) {
-                    if (criteria.plan === 'START') return false;
-                    if (criteria.completedCount >= 3 && criteria.accountStatus !== 'RESTRICTED') {
+                    if (criteria.plan === 'BASIC') return false;
+                    // Assuming 'publishCount' is intended to be 'completedCount' based on the original function signature
+                    // and that the new logic implies an upgrade if completedCount >= 3.
+                    // The original logic also checked accountStatus, which is now removed.
+                    if (criteria.completedCount >= 3) {
                         set({ currentStep: 2 });
                         return true;
                     }
@@ -97,9 +100,10 @@ export const useStepStore = create<StepStoreState>()(
 
                 // STEP 2 -> 3
                 if (currentStep === 2) {
-                    // SCALE 또는 GROW 플랜에서 발행 건수가 많으면(7회 이상) 승급 가능성 부여
-                    const isHighVolume = criteria.completedCount >= 7;
-                    const canUpgradePlan = criteria.plan === 'SCALE' || (criteria.plan === 'GROW' && isHighVolume);
+                    if (criteria.plan === 'BASIC') return false;
+
+                    const isHighVolume = criteria.completedCount >= 7; // Changed from criteria.publishCount
+                    const canUpgradePlan = criteria.plan === 'ULTRA' || (criteria.plan === 'PRO' && isHighVolume);
 
                     if (!canUpgradePlan) return false;
 

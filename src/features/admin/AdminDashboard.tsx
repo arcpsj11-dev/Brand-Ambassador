@@ -200,42 +200,75 @@ export const AdminDashboard: React.FC = () => {
                                         <tr className="border-b border-white/5 bg-white/5 text-gray-400 font-bold uppercase tracking-widest">
                                             <th className="px-8 py-4 text-left">회원 아이디</th>
                                             <th className="px-8 py-4 text-left">역할</th>
-                                            <th className="px-8 py-4 text-left">멤버십 등급</th>
+                                            <th className="px-8 py-4 text-left">등급/기한</th>
+                                            <th className="px-8 py-4 text-left">자동조절</th>
                                             <th className="px-8 py-4 text-right">조정</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
-                                        {users.map((user) => (
-                                            <tr key={user.id} className="hover:bg-white/5 transition-all group">
-                                                <td className="px-8 py-6 font-bold flex items-center gap-3">
-                                                    <User size={18} className="text-brand-primary opacity-50" />
-                                                    {user.id}
-                                                </td>
-                                                <td className="px-8 py-6">
-                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${user.role === 'admin' ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30' : 'bg-white/10 text-gray-400'}`}>
-                                                        {user.role}
-                                                    </span>
-                                                </td>
-                                                <td className="px-8 py-6">
-                                                    <span className={`font-black tracking-tighter italic ${user.tier === 'SCALE' ? 'text-brand-primary' : user.tier === 'GROW' ? 'text-purple-400' : 'text-gray-400'}`}>
-                                                        {user.tier}
-                                                    </span>
-                                                </td>
-                                                <td className="px-8 py-6 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        {(['START', 'GROW', 'SCALE'] as const).map((t) => (
-                                                            <button
-                                                                key={t}
-                                                                onClick={() => updateUserTier(user.id, t)}
-                                                                className={`px-3 py-1.5 rounded-lg font-bold text-[10px] transition-all ${user.tier === t ? 'bg-brand-primary text-black shadow-neon' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`}
-                                                            >
-                                                                {t}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {users.map((user) => {
+                                            const isExpired = user.expiresAt && new Date() > new Date(user.expiresAt);
+                                            return (
+                                                <tr key={user.id} className="hover:bg-white/5 transition-all group">
+                                                    <td className="px-8 py-6 font-bold flex items-center gap-3">
+                                                        <User size={18} className="text-brand-primary opacity-50" />
+                                                        {user.id}
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${user.role === 'admin' ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30' : 'bg-white/10 text-gray-400'}`}>
+                                                            {user.role}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className={`font-black tracking-tighter italic ${user.tier === 'ULTRA' ? 'text-brand-primary' : user.tier === 'PRO' ? 'text-purple-400' : 'text-gray-400'}`}>
+                                                                {user.tier}
+                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="개월"
+                                                                    className="w-12 bg-black/40 border border-white/10 rounded px-1 py-0.5 text-[10px] focus:border-brand-primary outline-none"
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            const months = parseInt((e.target as HTMLInputElement).value);
+                                                                            if (!isNaN(months)) {
+                                                                                const expiresAt = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
+                                                                                adminState.updateUserMembership(user.id, { expiresAt });
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <span className={`text-[9px] font-bold ${isExpired ? 'text-red-500' : 'text-gray-500'}`}>
+                                                                    {user.expiresAt ? new Date(user.expiresAt).toLocaleDateString() : '무제한'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <button
+                                                            onClick={() => adminState.updateUserMembership(user.id, { autoAdjustment: !user.autoAdjustment })}
+                                                            className={`w-10 h-5 rounded-full relative transition-all ${user.autoAdjustment ? 'bg-brand-primary' : 'bg-white/10'}`}
+                                                        >
+                                                            <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${user.autoAdjustment ? 'right-1' : 'left-1'}`} />
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            {(['BASIC', 'PRO', 'ULTRA'] as const).map((t) => (
+                                                                <button
+                                                                    key={t}
+                                                                    onClick={() => updateUserTier(user.id, t)}
+                                                                    className={`px-3 py-1.5 rounded-lg font-bold text-[10px] transition-all ${user.tier === t ? 'bg-brand-primary text-black shadow-neon' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`}
+                                                                >
+                                                                    {t}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
@@ -248,14 +281,14 @@ export const AdminDashboard: React.FC = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {(['START', 'GROW', 'SCALE'] as const).map((tier) => {
+                                    {(['BASIC', 'PRO', 'ULTRA'] as const).map((tier) => {
                                         const config = adminState.tierConfigs[tier];
                                         if (!config) return null;
 
                                         return (
                                             <div key={tier} className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 hover:border-brand-primary/30 transition-all">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <span className={`text-xs font-black px-2 py-1 rounded border ${tier === 'SCALE' ? 'text-brand-primary border-brand-primary/30 bg-brand-primary/10' : tier === 'GROW' ? 'text-purple-400 border-purple-400/30 bg-purple-400/10' : 'text-gray-400 border-gray-500/30'}`}>
+                                                    <span className={`text-xs font-black px-2 py-1 rounded border ${tier === 'ULTRA' ? 'text-brand-primary border-brand-primary/30 bg-brand-primary/10' : tier === 'PRO' ? 'text-purple-400 border-purple-400/30 bg-purple-400/10' : 'text-gray-400 border-gray-500/30'}`}>
                                                         {tier}
                                                     </span>
                                                     <span className="text-xs text-gray-500 font-bold">{config.label}</span>

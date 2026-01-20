@@ -40,7 +40,7 @@ export const FullEditor: React.FC<FullEditorProps> = ({ contentId, onClose }) =>
     const { incrementRiskCorrection, canAccess } = useStepStore();
 
     const content = getContentById(contentId) as Content;
-    const plan = user?.tier || 'START';
+    const plan = user?.tier || 'BASIC';
     const filterEngine = useRef(new RiskFilterEngine(medicalRuleSet));
 
     // 권한 확인 (SCALE 전용 기능들)
@@ -176,7 +176,7 @@ export const FullEditor: React.FC<FullEditorProps> = ({ contentId, onClose }) =>
                                     onPaste={handlePaste}
                                     className={`w-full bg-transparent text-5xl font-black focus:outline-none placeholder-white/20 leading-tight ${titleAuth.granted ? 'text-white' : 'text-white/40 cursor-not-allowed'}`}
                                 />
-                                {!titleAuth.granted && <p className="text-[8px] text-red-500 font-bold uppercase tracking-widest">SCALE 플랜 업그레이드가 필요합니다.</p>}
+                                {!titleAuth.granted && <p className="text-[8px] text-red-500 font-bold uppercase tracking-widest">ULTRA 플랜 업그레이드가 필요합니다.</p>}
                             </div>
 
                             <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/5 w-fit group">

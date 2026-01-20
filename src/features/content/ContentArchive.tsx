@@ -27,7 +27,7 @@ export const ContentArchive: React.FC = () => {
     const [selectedEditorId, setSelectedEditorId] = useState<string | null>(null);
 
     const isAdmin = user?.role === 'admin';
-    const plan = user?.tier || 'START';
+    const plan = user?.tier || 'BASIC';
 
     // 1️⃣ 화면 진입 조건 (Gate) - STEP 2 이상 + 3건 이상 발행
     const isGateOpen = isAdmin || (
@@ -158,15 +158,15 @@ export const ContentArchive: React.FC = () => {
 
                                     {titleFullAuth.granted ? (
                                         <span className="px-2 py-0.5 rounded text-[10px] font-black bg-purple-500/10 border border-purple-500/20 text-purple-400 uppercase tracking-widest">
-                                            전체 편집 (SCALE)
+                                            전체 편집 (ULTRA)
                                         </span>
                                     ) : titlePartialAuth.granted ? (
                                         <span className="px-2 py-0.5 rounded text-[10px] font-black bg-brand-primary/10 border border-brand-primary/20 text-brand-primary uppercase tracking-widest">
-                                            부분 편집 (GROW)
+                                            부분 편집 (PRO)
                                         </span>
                                     ) : (
                                         <span className="px-2 py-0.5 rounded text-[10px] font-black bg-gray-500/10 border border-white/10 text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                                            <Lock size={8} /> 수정 불가 (START)
+                                            <Lock size={8} /> 수정 불가 (BASIC)
                                         </span>
                                     )}
 
@@ -220,10 +220,10 @@ export const ContentArchive: React.FC = () => {
                         ? '원장님(관리자)은 모든 콘텐츠를 자유롭게 관리할 수 있습니다.'
                         : isGateOpen
                             ? (titleFullAuth.granted
-                                ? '축하합니다! SCALE 플랜과 자격 달성으로 전체 편집(Operator Mode) 권한이 활성화되었습니다.'
-                                : titlePartialAuth.granted
-                                    ? 'GROW 플랜 사용자로서 부분 편집 권한이 해금되었습니다. 전체 구조를 바꾸려면 SCALE 플랜이 필요합니다.'
-                                    : '단계가 해금되었으나 현재 START 플랜입니다. 편집 기능을 사용하려면 GROW 이상의 요금제가 필요합니다.')
+                                ? '축하합니다! ULTRA 플랜과 자격 달성으로 전체 편집(Operator Mode) 권한이 활성화되었습니다.'
+                                : (plan === 'PRO'
+                                    ? 'PRO 플랜 사용자로서 부분 편집 권한이 해금되었습니다. 전체 구조를 바꾸려면 ULTRA 플랜이 필요합니다.'
+                                    : '단계가 해금되었으나 현재 BASIC 플랜입니다. 편집 기능을 사용하려면 PRO 이상의 요금제가 필요합니다.'))
                             : '현재 블로그 지수 보호를 위해 수정이 제한되어 있습니다. 3회 이상 발행 성공 시 STEP 2 권한이 자동으로 해금됩니다.'}
                 </div>
             </div>

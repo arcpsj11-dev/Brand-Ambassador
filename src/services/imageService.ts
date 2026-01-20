@@ -10,7 +10,7 @@ export const imageService = {
         try {
             const { activeImageProvider, nanoBananaApiKey, dallEApiKey } = useAdminStore.getState();
 
-            console.log(`[ImageService] Generating image via ${activeImageProvider}...`);
+
 
             // ==========================================
             // 1. DALL-E Provider (OpenAI)
@@ -97,9 +97,6 @@ export const imageService = {
             throw new Error("Unknown Image Provider Selected");
 
         } catch (globalError) {
-            console.error("[ImageService] Critical Error:", globalError);
-            console.warn("[ImageService] Switching to Fallback Image due to error.");
-
             // Generate a deterministic color/text based on prompt to make it look distinct
             const fallbackText = prompt.length > 20 ? "AI Image Generated" : encodeURIComponent(prompt);
             return `https://placehold.co/1024x1024/222/FFF?text=${fallbackText}`;
@@ -111,11 +108,10 @@ export const imageService = {
      */
     async generateImageWithGoogle(prompt: string, apiKey: string): Promise<string> {
         if (!apiKey) {
-            console.warn("[ImageService] Google API Key not set");
             throw new Error("API_KEY_MISSING: Google/Gemini API Key is not set.");
         }
 
-        console.log("[ImageService] Generating image with Google Imagen 4...");
+
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`,
@@ -143,7 +139,7 @@ export const imageService = {
         }
 
         const data = await response.json();
-        console.log("[ImageService] Imagen response received");
+
 
         if (data.predictions && data.predictions[0]) {
             const imageData = data.predictions[0];

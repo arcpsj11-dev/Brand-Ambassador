@@ -1,8 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useContentStore } from './useContentStore';
+import { useTopicStore } from './useTopicStore';
+import { useSlotStore } from './useSlotStore';
+import { usePlannerStore } from './usePlannerStore';
 
 export type UserRole = 'admin' | 'user';
-export type MembershipTier = 'START' | 'GROW' | 'SCALE';
+export type MembershipTier = 'BASIC' | 'PRO' | 'ULTRA';
 export type AccountStatus = 'NORMAL' | 'WARNING' | 'RESTRICTED' | 'TRUSTED';
 
 interface UserInfo {
@@ -12,6 +16,8 @@ interface UserInfo {
     accountStatus: AccountStatus;
     remainingSearches: number;
     currentStep: 1 | 2 | 3;
+    expiresAt?: string;
+    autoAdjustment?: boolean;
 }
 
 interface RegisteredUser {
@@ -19,6 +25,8 @@ interface RegisteredUser {
     pw: string;
     tier: MembershipTier;
     role: UserRole;
+    expiresAt?: string;
+    autoAdjustment?: boolean;
 }
 
 interface AuthState {
@@ -37,11 +45,11 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             registeredUsers: [
-                { id: 'admin', pw: 'admin123', tier: 'SCALE', role: 'admin' },
-                { id: 'user', pw: 'user123', tier: 'START', role: 'user' },
-                { id: 'grow', pw: '1234', tier: 'GROW', role: 'user' },
-                { id: 'scale', pw: '1234', tier: 'SCALE', role: 'user' },
-                { id: 'diamond', pw: '1234', tier: 'SCALE', role: 'user' },
+                { id: 'admin', pw: 'admin123', tier: 'ULTRA', role: 'admin' },
+                { id: 'user', pw: 'user123', tier: 'BASIC', role: 'user', autoAdjustment: true },
+                { id: 'grow', pw: '1234', tier: 'PRO', role: 'user', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), autoAdjustment: true },
+                { id: 'scale', pw: '1234', tier: 'ULTRA', role: 'user', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), autoAdjustment: true },
+                { id: 'diamond', pw: '1234', tier: 'ULTRA', role: 'user' },
             ],
             login: (id, pw) => {
                 const { registeredUsers } = get();
@@ -53,12 +61,18 @@ export const useAuthStore = create<AuthState>()(
                         user: {
                             id: foundUser.id,
                             role: foundUser.role,
-                            tier: foundUser.tier,
+                            tier: (foundUser.expiresAt && new Date() > new Date(foundUser.expiresAt) && foundUser.autoAdjustment) ? 'BASIC' : foundUser.tier,
                             accountStatus: foundUser.role === 'admin' ? 'TRUSTED' : 'NORMAL',
-                            remainingSearches: foundUser.tier === 'SCALE' ? 999 : (foundUser.tier === 'GROW' ? 20 : 5),
-                            currentStep: foundUser.role === 'admin' ? 3 : 1
+                            remainingSearches: foundUser.tier === 'ULTRA' ? 999 : (foundUser.tier === 'PRO' ? 20 : 5),
+                            currentStep: foundUser.role === 'admin' ? 3 : 1,
+                            expiresAt: foundUser.expiresAt,
+                            autoAdjustment: foundUser.autoAdjustment
                         },
                     });
+
+                    // Trigger daily reset check immediately after login
+                    useContentStore.getState().checkAndResetDailyStatus();
+
                     return true;
                 }
                 return false;
@@ -72,21 +86,28 @@ export const useAuthStore = create<AuthState>()(
                 const newUser: RegisteredUser = {
                     id,
                     pw,
-                    tier: 'START',
+                    tier: 'BASIC',
                     role: 'user'
                 };
 
                 set({ registeredUsers: [...registeredUsers, newUser] });
                 return true;
             },
-            logout: () => set({ user: null, isAuthenticated: false }),
+            logout: () => {
+                set({ user: null, isAuthenticated: false });
+                // Clear other stores to prevent session leakage
+                useContentStore.getState().clearStore();
+                useTopicStore.getState().resetTopics();
+                useSlotStore.getState().clearStore();
+                usePlannerStore.getState().clearPlanner();
+            },
             updateTier: (tier) => {
                 const { user } = get();
                 if (!user) return;
 
                 let newStep = user.currentStep;
-                if (tier === 'START') newStep = 1;
-                else if (tier === 'GROW' && newStep > 2) newStep = 2;
+                if (tier === 'BASIC') newStep = 1;
+                else if (tier === 'PRO' && newStep > 2) newStep = 2;
 
                 set({ user: { ...user, tier, currentStep: newStep as 1 | 2 | 3 } });
             }

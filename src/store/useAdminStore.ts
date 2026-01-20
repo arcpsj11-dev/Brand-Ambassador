@@ -23,7 +23,7 @@ interface AdminSettings {
     occupations: Record<string, Occupation>;
 
     // Mock User Management for Admin
-    users: Array<{ id: string; tier: 'START' | 'GROW' | 'SCALE'; role: 'user' | 'admin' }>;
+    users: Array<{ id: string; tier: 'BASIC' | 'PRO' | 'ULTRA'; role: 'user' | 'admin'; expiresAt?: string; autoAdjustment?: boolean }>;
 
     // Membership Tier Configuration
     tierConfigs: Record<string, {
@@ -44,7 +44,8 @@ interface AdminState extends AdminSettings {
 
     updateTierConfig: (tierId: string, updates: Partial<{ maxSlots: number; durationRaw: string }>) => void;
 
-    updateUserTier: (userId: string, tier: 'START' | 'GROW' | 'SCALE') => void;
+    updateUserTier: (userId: string, tier: 'BASIC' | 'PRO' | 'ULTRA') => void;
+    updateUserMembership: (userId: string, updates: { expiresAt?: string; autoAdjustment?: boolean }) => void;
 
     // Helper to get current active occupation
     getActiveOccupation: () => Occupation;
@@ -192,16 +193,16 @@ export const useAdminStore = create<AdminState>()(
             },
 
             users: [
-                { id: 'user', tier: 'START', role: 'user' },
-                { id: 'grow', tier: 'GROW', role: 'user' },
-                { id: 'scale', tier: 'SCALE', role: 'user' },
-                { id: 'admin', tier: 'SCALE', role: 'admin' },
+                { id: 'user', tier: 'BASIC', role: 'user', autoAdjustment: true },
+                { id: 'grow', tier: 'PRO', role: 'user', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), autoAdjustment: true },
+                { id: 'scale', tier: 'ULTRA', role: 'user', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), autoAdjustment: true },
+                { id: 'admin', tier: 'ULTRA', role: 'admin' },
             ],
 
             tierConfigs: {
-                'START': { maxSlots: 1, durationRaw: '7일 체험', label: 'BASIC (START)' },
-                'GROW': { maxSlots: 3, durationRaw: '30일', label: 'PRO (GROW)' },
-                'SCALE': { maxSlots: 5, durationRaw: '30일', label: 'ULTRA (SCALE)' }
+                'BASIC': { maxSlots: 1, durationRaw: '7일 체험', label: 'BASIC' },
+                'PRO': { maxSlots: 3, durationRaw: '30일', label: 'PRO' },
+                'ULTRA': { maxSlots: 5, durationRaw: '30일', label: 'ULTRA' }
             },
 
             setGeminiApiKey: (key) => set({ geminiApiKey: key }),
@@ -247,6 +248,10 @@ export const useAdminStore = create<AdminState>()(
 
             updateUserTier: (userId, tier) => set((state) => ({
                 users: state.users.map(u => u.id === userId ? { ...u, tier } : u)
+            })),
+
+            updateUserMembership: (userId, updates) => set((state) => ({
+                users: state.users.map(u => u.id === userId ? { ...u, ...updates } : u)
             })),
 
             getActiveOccupation: () => {

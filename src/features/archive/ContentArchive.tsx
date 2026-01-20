@@ -1,12 +1,24 @@
 import React, { useState } from 'react';
 import { useContentStore, type Content } from '../../store/useContentStore';
-import { FileText, Calendar, Clock, Search, Copy, Check } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useBrandStore } from '../../store/useBrandStore';
+import { geminiReasoningService } from '../../services/geminiService';
+import { useProfileStore } from '../../store/useProfileStore';
+import { FileText, Calendar, Clock, Search, Copy, Check, Wand2, Loader2, X, ArrowRight, Image as ImageIcon } from 'lucide-react';
 
 export const ContentArchive: React.FC = () => {
     const { contents } = useContentStore();
+    const { user } = useAuthStore();
+    const brand = useBrandStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedContent, setSelectedContent] = useState<Content | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    // [NEW] Admin Regeneration State
+    const [regeneratedBody, setRegeneratedBody] = useState<string | null>(null);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+
+    const isAdmin = user?.role === 'admin';
 
     // 날짜 내림차순 정렬 (최신순)
     const sortedContents = [...contents].sort((a, b) =>
@@ -24,6 +36,33 @@ export const ContentArchive: React.FC = () => {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
+    const handleRegenerate = async () => {
+        if (!selectedContent || !isAdmin) return;
+
+        setRegeneratedBody('');
+        setIsRegenerating(true);
+
+        try {
+            const stream = geminiReasoningService.generateStream(selectedContent.title, {
+                clinicName: brand.clinicName || '도담한의원',
+                address: brand.address || '김포시 운양동',
+                phoneNumber: brand.phoneNumber || '031-988-1575',
+                profile: useProfileStore.getState() // [NEW] Pass profile context
+            });
+
+            let fullBody = '';
+            for await (const chunk of stream) {
+                fullBody += chunk;
+                setRegeneratedBody(fullBody);
+            }
+        } catch (error) {
+            console.error('Regeneration failed:', error);
+            alert('재생성 중 오류가 발생했습니다.');
+        } finally {
+            setIsRegenerating(false);
+        }
+    };
+
     const formatDate = (date: Date) => {
         return new Date(date).toLocaleDateString('ko-KR', {
             year: 'numeric',
@@ -32,6 +71,12 @@ export const ContentArchive: React.FC = () => {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    // Reset regeneration when selection changes
+    const selectContent = (content: Content) => {
+        setSelectedContent(content);
+        setRegeneratedBody(null);
     };
 
     return (
@@ -67,7 +112,7 @@ export const ContentArchive: React.FC = () => {
                         filteredContents.map(content => (
                             <div
                                 key={content.id}
-                                onClick={() => setSelectedContent(content)}
+                                onClick={() => selectContent(content)}
                                 className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedContent?.id === content.id
                                     ? 'bg-brand-primary/10 border-brand-primary'
                                     : 'bg-white/5 border-transparent hover:bg-white/10'
@@ -91,7 +136,7 @@ export const ContentArchive: React.FC = () => {
             </div>
 
             {/* 상세 보기 영역 */}
-            <div className="flex-1 glass-card flex flex-col overflow-hidden relative">
+            <div className={`flex-1 glass-card flex flex-col overflow-hidden relative transition-all duration-500 ${regeneratedBody !== null ? 'max-w-none' : ''}`}>
                 {selectedContent ? (
                     <>
                         <div className="p-6 border-b border-white/10 flex justify-between items-start">
@@ -102,31 +147,98 @@ export const ContentArchive: React.FC = () => {
                                         <Clock size={14} />
                                         {formatDate(selectedContent.createdAt)}
                                     </span>
+                                    {isAdmin && (
+                                        <div className="flex items-center gap-2 px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-[10px] font-black uppercase">
+                                            Admin View
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                            <button
-                                onClick={() => handleCopy(`${selectedContent.title}\n\n${selectedContent.body}`, selectedContent.id)}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-bold"
-                            >
-                                {copiedId === selectedContent.id ? (
-                                    <>
-                                        <Check size={16} className="text-green-500" />
-                                        <span className="text-green-500">복사됨</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy size={16} />
-                                        <span>전체 복사</span>
-                                    </>
+                            <div className="flex items-center gap-3">
+                                {isAdmin && (
+                                    <button
+                                        onClick={handleRegenerate}
+                                        disabled={isRegenerating}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-primary/10 hover:bg-brand-primary text-brand-primary hover:text-black transition-all text-sm font-bold border border-brand-primary/20 disabled:opacity-50"
+                                    >
+                                        {isRegenerating ? (
+                                            <Loader2 size={16} className="animate-spin" />
+                                        ) : (
+                                            <Wand2 size={16} />
+                                        )}
+                                        {regeneratedBody !== null ? '다시 재생성' : '새로 생성해서 비교'}
+                                    </button>
                                 )}
-                            </button>
+                                <button
+                                    onClick={() => handleCopy(`${selectedContent.title}\n\n${selectedContent.body}`, selectedContent.id)}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm font-bold"
+                                >
+                                    {copiedId === selectedContent.id ? (
+                                        <>
+                                            <Check size={16} className="text-green-500" />
+                                            <span className="text-green-500">복사됨</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy size={16} />
+                                            <span>전체 복사</span>
+                                        </>
+                                    )}
+                                </button>
+                                {regeneratedBody !== null && (
+                                    <button
+                                        onClick={() => setRegeneratedBody(null)}
+                                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-gray-400"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                            <div className="prose prose-invert max-w-none">
-                                <div className="whitespace-pre-wrap leading-relaxed text-gray-300">
-                                    {selectedContent.body}
+
+                        <div className={`flex-1 flex overflow-hidden ${regeneratedBody !== null ? 'divide-x divide-white/10' : ''}`}>
+                            {/* Original Content */}
+                            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                                {regeneratedBody !== null && (
+                                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                                        Original Version (아카이브된 원본)
+                                    </div>
+                                )}
+                                <div className="prose prose-invert max-w-none">
+                                    <div className="whitespace-pre-wrap leading-relaxed text-gray-300">
+                                        {selectedContent.body}
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* Regenerated Content (Comparison) */}
+                            {regeneratedBody !== null && (
+                                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-brand-primary/[0.02]">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="text-[10px] font-black text-brand-primary uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse" />
+                                            New Version (현재 설정으로 재생성)
+                                        </div>
+                                        {isRegenerating === false && (
+                                            <button
+                                                onClick={() => handleCopy(`${selectedContent.title}\n\n${regeneratedBody}`, 'regenerated')}
+                                                className="text-[10px] font-bold text-gray-500 hover:text-brand-primary flex items-center gap-1"
+                                            >
+                                                {copiedId === 'regenerated' ? '복사됨' : '본문 복사'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="prose prose-invert max-w-none">
+                                        <div className="whitespace-pre-wrap leading-relaxed text-brand-primary/80">
+                                            {regeneratedBody}
+                                            {isRegenerating && (
+                                                <span className="inline-block w-1.5 h-4 ml-1 bg-brand-primary animate-bounce shadow-neon" />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </>
                 ) : (

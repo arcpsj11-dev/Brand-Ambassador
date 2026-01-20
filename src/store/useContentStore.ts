@@ -59,6 +59,8 @@ interface ContentState {
 
     // 콘텐츠 업데이트
     updateContent: (id: string, updates: Partial<Content>) => void;
+    clearStore: () => void;
+    checkAndResetDailyStatus: () => void;
 
     // 삭제 함수 제거, 대신 아카이브
     archiveContent: (id: string) => void;
@@ -123,6 +125,22 @@ export const useContentStore = create<ContentState>()(
                             : content
                     ),
                 }));
+            },
+
+            clearStore: () => set({
+                contents: [],
+                actionStatus: 'IDLE',
+                lastActionDate: null,
+                completedCount: 0,
+                regenerationTopic: null
+            }),
+
+            checkAndResetDailyStatus: () => {
+                const { lastActionDate } = get();
+                const today = new Date().toISOString().split('T')[0];
+                if (lastActionDate && lastActionDate !== today) {
+                    set({ actionStatus: 'IDLE' });
+                }
             },
 
             // 삭제 대신 아카이브
