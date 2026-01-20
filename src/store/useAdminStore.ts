@@ -78,20 +78,20 @@ JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day"
 분량: 2000~2500자 필수 작성.`,
 
     image: `Role: 블로그 콘텐츠 분석 및 이미지 프롬프트 생성 전문가
-Task: 주어진 본문 내용을 분석하여, 블로그 포스팅에 포함되면 좋을 이미지를 3~5개 추출하고, 각 이미지에 대한 상세한 영문 프롬프트(prompt)와 키워드 포함 ALT 텍스트를 생성합니다.
+Task: 주어진 본문 내용을 분석하여, 본문 속에 포함된 모든 \`[이미지번호: 설명, ALT: ...]\` 태그를 찾아내고, 각 태그의 '설명'과 'ALT' 내용을 바탕으로 영문 프롬프트와 키워드 ALT를 생성합니다.
 
 Constraints:
-1. 출력 언어: 모든 'prompt' 내용은 반드시 영어(English)로 작성되어야 합니다.
-2. 이미지 스타일: 생성되는 이미지는 고품질의 사실적인 메디컬 스타일 혹은 깔끔하고 현대적인 클리닉 분위기를 반영해야 합니다.
-3. 이미지 개수: 본문 내용에 따라 3개에서 5개 사이로 이미지를 추출합니다.
-4. ALT 텍스트: 'alt' 속성에는 이미지 내용을 설명하는 한국어 키워드를 5개 이상 포함하여 SEO에 최적화합니다.
+1. 개수 일치: 본문 내에 있는 이미지 태그의 개수와 동일한 개수의 결과물을 생성해야 합니다. (예: 본문에 태그가 3개면 결과도 반드시 3개)
+2. 내용 일치: 각 태그의 '설명' 부분을 영문 프롬프트(prompt)로 변환하고, 'ALT' 부분을 키워드 포함 ALT 텍스트로 변환합니다.
+3. 출력 언어: 'prompt'는 반드시 영어(English)로 작성합니다.
+4. ALT 텍스트: 'alt' 속성에는 한국어 키워드를 5개 이상 포함합니다.
 
 Output Format (JSON Only):
 {
   "images": [
     {
-      "prompt": "A photorealistic scene of a person in their 20s wearing office attire, gently holding their stiff neck with a tired expression, sitting at a modern desk with a laptop, morning light coming through the window, clean and realistic medical lifestyle photography.",
-      "alt": "교통사고 후 목통증, 20대 직장인 통증, 출근 후 목 결림, 장시간 컴퓨터 사용, 어깨 통증, 일상 불편"
+      "prompt": "English prompt based on the description in the tag",
+      "alt": "Korean ALT text based on the tag"
     }
   ]
 }`,
@@ -125,8 +125,9 @@ JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day"
 
 분량: 2000자 이상.`,
 
-    image: `Analyze the content and generate 3-5 realistic medical illustration or clinical setting image prompts.
-Output prompts in English.
+    image: `Find all \`[이미지번호: description, ALT: ...]\` tags in the provided content body. 
+Generate exactly the same number of image prompts as the number of tags found.
+Each prompt should be in English and based on the description in the tag.
 JSON Format: { "images": [ { "prompt": "...", "alt": "..." } ] }`,
 
     chat: `당신은 냉철하고 정확한 '의사' 마케팅 파트너입니다.

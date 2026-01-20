@@ -231,18 +231,26 @@ export const geminiReasoningService = {
             const activeOccupation = adminState.getActiveOccupation();
             const imagePromptTemplate = activeOccupation.prompts.image;
 
-            const prompt = `${imagePromptTemplate} \n\n본문: ${contentBody.substring(0, 4000)}`;
+            const prompt = `${imagePromptTemplate} 
+
+[콘텐츠 본문 시작]
+${contentBody}
+[콘텐츠 본문 끝]`;
 
             const result = await model.generateContent(prompt);
-            const data = JSON.parse(result.response.text());
+            const responseText = result.response.text();
+
+            // JSON 마크다운 블록 제거 및 파싱
+            const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const data = JSON.parse(cleanJson);
 
             if (data.images && data.images.length > 0) {
                 return data.images;
             }
 
-            // Fallback if no images found
+            // Fallback
             return [{
-                prompt: "Professional clinic room, natural light, soft colors, realistic but friendly, warm professional photography",
+                prompt: "Professional clinic room interior, clean and realistic medical photography",
                 alt: "도담한의원 진료실 전경"
             }];
         } catch (error) {
