@@ -24,6 +24,7 @@ const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const { isProfileComplete } = useProfileStore();
   const { activeTab, setActiveTab } = useUIStore();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const adminState = useAdminStore();
 
   // 앱 로드 시 슬롯 시스템 마이그레이션 실행
@@ -66,9 +67,47 @@ const App: React.FC = () => {
     <div className="min-h-screen flex bg-background text-white selection:bg-brand-primary/30">
       <WelcomeModal />
       <Step3UnlockOverlay />
+
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 w-full z-[60] bg-background/80 backdrop-blur-xl border-b border-white/5 p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-neon">
+            <Sparkles className="text-black" size={16} />
+          </div>
+          <span className="font-black text-sm tracking-tight">BRAND AMBASSADOR</span>
+        </div>
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 text-gray-400 hover:text-brand-primary transition-colors"
+        >
+          {isMobileMenuOpen ? <LayoutDashboard className="rotate-45" size={24} /> : <div className="space-y-1.5">
+            <div className="w-6 h-0.5 bg-current rounded-full" />
+            <div className="w-6 h-0.5 bg-current rounded-full" />
+            <div className="w-6 h-0.5 bg-current rounded-full" />
+          </div>}
+        </button>
+      </header>
+
+      {/* Sidebar Overlay (Mobile) */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="lg:hidden fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
-      <aside className="w-64 border-r border-white/5 flex flex-col fixed h-full bg-background/50 backdrop-blur-xl z-50">
-        <div className="p-8 flex items-center gap-3">
+      <aside className={`
+        fixed h-full bg-background/50 backdrop-blur-xl z-[58] border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out
+        w-72 lg:w-64
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="p-8 pb-4 lg:p-8 flex items-center gap-3">
           <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-neon">
             <Sparkles className="text-black" size={20} />
           </div>
@@ -86,7 +125,10 @@ const App: React.FC = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setIsMobileMenuOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive
                   ? 'bg-brand-primary text-black shadow-neon'
                   : 'text-gray-400 hover:bg-white/5 hover:text-white'
@@ -165,7 +207,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 p-10 min-h-screen relative">
+      <main className="flex-1 lg:ml-64 p-5 lg:p-10 min-h-screen relative pt-24 lg:pt-10">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -177,11 +219,13 @@ const App: React.FC = () => {
             {activeTab === 'dashboard' && (
               <div className="space-y-8">
                 <header className="space-y-3">
-                  <div className="flex items-end justify-between">
-                    <h1 className="text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
+                  <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+                    <h1 className="text-4xl lg:text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
                       대시보드
                     </h1>
-                    <SlotSelector />
+                    <div className="w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
+                      <SlotSelector />
+                    </div>
                   </div>
                   <p className="text-gray-500 font-medium">
                     안티그래비티 MVP 데모 - 새로 구현된 기능을 확인하세요

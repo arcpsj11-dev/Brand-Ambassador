@@ -12,7 +12,7 @@ import {
     FileText,
     Type
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAdminStore } from '../../store/useAdminStore';
 import { OccupationSelector } from './OccupationSelector';
 import { AdminImageTestTool } from './AdminImageTestTool';
@@ -33,6 +33,7 @@ export const AdminDashboard: React.FC = () => {
     } = adminState;
 
     const [activeTab, setActiveTab] = useState<'prompts' | 'users' | 'settings' | 'image-test'>('prompts');
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [localPrompts, setLocalPrompts] = useState(occupations[activeOccupationId]?.prompts);
     const [localGeminiKey, setLocalGeminiKey] = useState(geminiApiKey);
     const [localNaverClientId, setLocalNaverClientId] = useState(naverClientId);
@@ -92,9 +93,43 @@ export const AdminDashboard: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen bg-[#0A0A0B] text-white">
+        <div className="flex flex-col lg:flex-row h-screen bg-[#0A0A0B] text-white relative">
+            {/* Mobile Header (Admin) */}
+            <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/5 bg-black">
+                <div className="flex items-center gap-2">
+                    <ShieldCheck size={18} className="text-brand-primary" />
+                    <span className="font-black text-sm uppercase italic">Admin Panel</span>
+                </div>
+                <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="p-2 text-gray-400 hover:text-white"
+                >
+                    <div className="space-y-1.5">
+                        <div className="w-6 h-0.5 bg-current rounded-full" />
+                        <div className="w-6 h-0.5 bg-current rounded-full" />
+                        <div className="w-6 h-0.5 bg-current rounded-full" />
+                    </div>
+                </button>
+            </div>
+
+            {/* Sidebar Overlay (Mobile Admin) */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="lg:hidden fixed inset-0 z-[65] bg-black/60 backdrop-blur-sm"
+                    />
+                )}
+            </AnimatePresence>
+
             {/* Sidebar */}
-            <div className="w-64 border-r border-white/5 bg-black p-6 flex flex-col gap-8">
+            <div className={`
+                fixed lg:relative h-full w-64 border-r border-white/5 bg-black p-6 flex flex-col gap-8 z-[70] transition-transform duration-300
+                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            `}>
                 <div className="flex items-center gap-3 px-2">
                     <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
                         <ShieldCheck size={20} className="text-black" />
@@ -107,28 +142,28 @@ export const AdminDashboard: React.FC = () => {
 
                 <nav className="flex flex-col gap-2">
                     <button
-                        onClick={() => setActiveTab('prompts')}
+                        onClick={() => { setActiveTab('prompts'); setIsMobileMenuOpen(false); }}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'prompts' ? 'bg-brand-primary text-black font-bold' : 'text-gray-400 hover:bg-white/5'}`}
                     >
                         <Wand2 size={18} />
                         <span>프롬프트 제어</span>
                     </button>
                     <button
-                        onClick={() => setActiveTab('users')}
+                        onClick={() => { setActiveTab('users'); setIsMobileMenuOpen(false); }}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'users' ? 'bg-brand-primary text-black font-bold' : 'text-gray-400 hover:bg-white/5'}`}
                     >
                         <Users size={18} />
                         <span>회원 등급 조정</span>
                     </button>
                     <button
-                        onClick={() => setActiveTab('settings')}
+                        onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-brand-primary text-black font-bold' : 'text-gray-400 hover:bg-white/5'}`}
                     >
                         <Settings size={18} />
                         <span>글로벌 설정</span>
                     </button>
                     <button
-                        onClick={() => setActiveTab('image-test')}
+                        onClick={() => { setActiveTab('image-test'); setIsMobileMenuOpen(false); }}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'image-test' ? 'bg-brand-primary text-black font-bold' : 'text-gray-400 hover:bg-white/5'}`}
                     >
                         <ImageIcon size={18} />
@@ -138,19 +173,19 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-5 lg:p-12 custom-scrollbar">
                 <div className="max-w-5xl mx-auto space-y-12">
 
                     {/* Header */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                         <div className="space-y-2">
-                            <h1 className="text-4xl font-black italic uppercase tracking-tighter">
+                            <h1 className="text-3xl lg:text-4xl font-black italic uppercase tracking-tighter">
                                 {activeTab === 'prompts' && 'Prompt Control'}
                                 {activeTab === 'users' && 'User Management'}
                                 {activeTab === 'settings' && 'Global Settings'}
                                 {activeTab === 'image-test' && 'Image Test Tool'}
                             </h1>
-                            <p className="text-gray-500 font-medium">
+                            <p className="text-gray-500 font-medium text-sm">
                                 {activeTab === 'prompts' && '직업별 AI 생성 로직의 핵심 프롬프트를 실시간으로 제어합니다.'}
                                 {activeTab === 'users' && '회원의 권한 및 멤버십 등급을 수동으로 조정합니다.'}
                                 {activeTab === 'settings' && '시스템 전반에 적용되는 API 키 및 기본 타겟을 설정합니다.'}
@@ -159,7 +194,11 @@ export const AdminDashboard: React.FC = () => {
                         </div>
 
                         {/* Occupation Selector in Header for Prompt Tab */}
-                        {activeTab === 'prompts' && <OccupationSelector />}
+                        {activeTab === 'prompts' && (
+                            <div className="w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
+                                <OccupationSelector />
+                            </div>
+                        )}
                     </div>
 
                     {/* Prompts Tab */}
@@ -243,8 +282,8 @@ export const AdminDashboard: React.FC = () => {
                     {/* Users Tab */}
                     {activeTab === 'users' && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-                            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden text-sm">
-                                <table className="w-full">
+                            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-x-auto text-sm">
+                                <table className="w-full min-w-[800px]">
                                     <thead>
                                         <tr className="border-b border-white/5 bg-white/5 text-gray-400 font-bold uppercase tracking-widest">
                                             <th className="px-8 py-4 text-left">회원 아이디</th>

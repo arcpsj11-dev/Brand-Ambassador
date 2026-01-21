@@ -137,11 +137,11 @@ export const DashboardDiagnosisCard: React.FC = () => {
                     <div className="col-span-full bg-white/5 rounded-xl p-4 mt-2">
                         <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
                             <Activity size={14} className="text-gray-400" /> 분석 결과
-                            <span className="text-xs font-normal text-gray-500">
+                            <span className="text-[10px] lg:text-xs font-normal text-gray-500">
                                 ({comparison.verdict === 'EASY' ? '충분히 이길 수 있습니다!' : comparison.verdict === 'IMPOSSIBLE' ? '상대가 너무 강력합니다.' : '치열한 접전이 예상됩니다.'})
                             </span>
                         </h4>
-                        <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                             <div>
                                 <div className="text-green-500 font-bold mb-1 flex items-center gap-1"><TrendingUp size={12} /> 나의 강점</div>
                                 <ul className="list-disc list-inside text-gray-400 space-y-1">
