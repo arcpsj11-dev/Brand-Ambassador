@@ -93,9 +93,9 @@ export const AdminDashboard: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row h-screen bg-[#0A0A0B] text-white relative">
+        <div className="flex flex-col md:flex-row h-screen bg-[#0A0A0B] text-white relative">
             {/* Mobile Header (Admin) */}
-            <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/5 bg-black">
+            <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-black">
                 <div className="flex items-center gap-2">
                     <ShieldCheck size={18} className="text-brand-primary" />
                     <span className="font-black text-sm uppercase italic">Admin Panel</span>
@@ -120,15 +120,15 @@ export const AdminDashboard: React.FC = () => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="lg:hidden fixed inset-0 z-[65] bg-black/60 backdrop-blur-sm"
+                        className="md:hidden fixed inset-0 z-[65] bg-black/60 backdrop-blur-sm"
                     />
                 )}
             </AnimatePresence>
 
             {/* Sidebar */}
             <div className={`
-                fixed lg:relative h-full w-64 border-r border-white/5 bg-black p-6 flex flex-col gap-8 z-[70] transition-transform duration-300
-                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                fixed md:relative h-full w-64 border-r border-white/5 bg-black p-6 flex flex-col gap-8 z-[70] transition-transform duration-300
+                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
                 <div className="flex items-center gap-3 px-2">
                     <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
@@ -173,13 +173,13 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-y-auto p-5 lg:p-12 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-5 md:p-12 custom-scrollbar">
                 <div className="max-w-5xl mx-auto space-y-12">
 
                     {/* Header */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="space-y-2">
-                            <h1 className="text-3xl lg:text-4xl font-black italic uppercase tracking-tighter">
+                            <h1 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter">
                                 {activeTab === 'prompts' && 'Prompt Control'}
                                 {activeTab === 'users' && 'User Management'}
                                 {activeTab === 'settings' && 'Global Settings'}
@@ -195,7 +195,7 @@ export const AdminDashboard: React.FC = () => {
 
                         {/* Occupation Selector in Header for Prompt Tab */}
                         {activeTab === 'prompts' && (
-                            <div className="w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
+                            <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                                 <OccupationSelector />
                             </div>
                         )}

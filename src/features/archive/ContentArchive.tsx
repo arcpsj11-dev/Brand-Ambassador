@@ -80,9 +80,9 @@ export const ContentArchive: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-120px)] gap-6">
+        <div className="flex flex-col md:flex-row h-auto md:h-[calc(100vh-120px)] gap-6">
             {/* 리스트 영역 */}
-            <div className={`w-full lg:w-1/3 glass-card flex flex-col overflow-hidden ${selectedContent ? 'hidden lg:flex' : 'flex'}`}>
+            <div className={`w-full md:w-1/3 glass-card flex flex-col overflow-hidden ${selectedContent ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-4 border-b border-white/10">
                     <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                         <FileText className="text-brand-primary" />
@@ -136,7 +136,7 @@ export const ContentArchive: React.FC = () => {
             </div>
 
             {/* 상세 보기 영역 */}
-            <div className={`flex-1 glass-card flex flex-col overflow-hidden relative transition-all duration-500 ${selectedContent ? 'flex' : 'hidden lg:flex'} ${regeneratedBody !== null ? 'max-w-none' : ''}`}>
+            <div className={`flex-1 glass-card flex flex-col overflow-hidden relative transition-all duration-500 ${selectedContent ? 'flex' : 'hidden md:flex'} ${regeneratedBody !== null ? 'max-w-none' : ''}`}>
                 {selectedContent ? (
                     <>
                         <div className="p-6 border-b border-white/10 flex justify-between items-start">
@@ -195,7 +195,7 @@ export const ContentArchive: React.FC = () => {
                                 )}
                                 <button
                                     onClick={() => setSelectedContent(null)}
-                                    className="lg:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-gray-400"
+                                    className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-gray-400"
                                 >
                                     <X size={20} />
                                 </button>

@@ -162,16 +162,16 @@ export const MarketingCanvas: React.FC = () => {
 
     return (
         <div className="space-y-10 pb-20">
-            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[9px] font-black uppercase tracking-widest">
                         <Banana size={12} /> Nano Banana Core
                     </div>
-                    <h1 className="text-4xl lg:text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">Marketing <br /> Canvas</h1>
-                    <p className="text-gray-500 font-medium text-sm lg:text-base">30일간의 마케팅 캔버스. 제니의 전략 카드를 하나씩 뒤집어 보세요.</p>
+                    <h1 className="text-4xl md:text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">Marketing <br /> Canvas</h1>
+                    <p className="text-gray-500 font-medium text-sm md:text-base">30일간의 마케팅 캔버스. 제니의 전략 카드를 하나씩 뒤집어 보세요.</p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                     {/* [NEW] Clear All Button */}
                     {isScouted && (
                         <button
@@ -233,7 +233,7 @@ export const MarketingCanvas: React.FC = () => {
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 md:grid-cols-7 xl:grid-cols-10 gap-3">
                     {monthlyPlan.map((plan: any) => (
                         <MarketingCard
                             key={plan.day}

@@ -64,12 +64,12 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-background text-white selection:bg-brand-primary/30">
+    <div className="min-h-screen flex bg-background text-white selection:bg-brand-primary/30 text-xs font-medium overflow-x-hidden">
       <WelcomeModal />
       <Step3UnlockOverlay />
 
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 w-full z-[60] bg-background/80 backdrop-blur-xl border-b border-white/5 p-4 flex items-center justify-between">
+      <header className="md:hidden fixed top-0 w-full z-[60] bg-background/80 backdrop-blur-xl border-b border-white/5 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-neon">
             <Sparkles className="text-black" size={16} />
@@ -96,118 +96,123 @@ const App: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsMobileMenuOpen(false)}
-            className="lg:hidden fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm"
+            className="md:hidden fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm"
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`
-        fixed h-full bg-background/50 backdrop-blur-xl z-[58] border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out
-        w-72 lg:w-64
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        <div className="p-8 pb-4 lg:p-8 flex items-center gap-3">
-          <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-neon">
-            <Sparkles className="text-black" size={20} />
-          </div>
-          <div>
-            <span className="font-black text-xl tracking-tight block">BRAND AMBASSADOR</span>
-            <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em] block">MVP DEMO v2.2 (Admin Update)</span>
-          </div>
-        </div>
-
-        <nav className="flex-1 px-4 space-y-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive
-                  ? 'bg-brand-primary text-black shadow-neon'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                  }`}
-              >
-                <Icon size={20} className={isActive ? 'text-black' : 'text-gray-500 group-hover:text-brand-primary'} />
-                <span className="font-bold text-sm">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 space-y-3 border-t border-white/5">
-          {user && (
-            <div className="glass-card px-3 py-3 text-xs space-y-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">User Stats</span>
-                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black italic ${user.tier === 'ULTRA' ? 'bg-brand-primary/20 text-brand-primary' : user.tier === 'PRO' ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-gray-400'}`}>
-                  {user.tier}
-                </span>
-              </div>
-
-              {(() => {
-                const currentUserStats = adminState.users.find(u => u.id === user.id);
-                const currentUsage = currentUserStats?.usageCount || 0;
-                const maxUsage = adminState.tierConfigs[user.tier]?.maxUsage || 0;
-                const usagePercentage = Math.min(100, (currentUsage / (maxUsage || 1)) * 100);
-                const completedCount = useContentStore.getState().completedCount;
-
-                return (
-                  <div className="space-y-3">
-                    {/* AI Generation Usage */}
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-end">
-                        <div className="flex flex-col">
-                          <span className="text-gray-400 font-bold text-[10px]">AI 글 생성</span>
-                        </div>
-                        <span className="text-white font-black text-xs">
-                          {currentUsage} / {maxUsage}
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${usagePercentage}%` }}
-                          className={`h-full ${usagePercentage >= 100 ? 'bg-red-500' : 'bg-brand-primary'} shadow-neon-sm`}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Today's Completed Actions */}
-                    <div className="pt-2 border-t border-white/5 flex justify-between items-center">
-                      <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">오늘의 액션 완료</span>
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                        <span className="text-brand-primary font-black text-xs">{completedCount}</span>
-                        <span className="text-gray-600 text-[9px] font-bold italic">DONE</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="pt-2 border-t border-white/5">
-                <p className="font-black text-xs truncate text-white/70">{user.id}</p>
-              </div>
+      {activeTab !== 'admin' && (
+        <aside className={`
+          fixed md:sticky top-0 h-full md:h-screen bg-background/50 backdrop-blur-xl z-[58] md:z-0 border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out
+          w-72 md:w-64 shrink-0
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
+          <div className="p-8 pb-4 md:p-8 flex items-center gap-3">
+            <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-neon">
+              <Sparkles className="text-black" size={20} />
             </div>
-          )}
-          <button
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-all text-sm font-bold"
-          >
-            <LogOut size={16} />
-            로그아웃
-          </button>
-        </div>
-      </aside>
+            <div>
+              <span className="font-black text-xl tracking-tight block">BRAND AMBASSADOR</span>
+              <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em] block">MVP DEMO v2.2 (Admin Update)</span>
+            </div>
+          </div>
+
+          <nav className="flex-1 px-4 space-y-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive
+                    ? 'bg-brand-primary text-black shadow-neon'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                    }`}
+                >
+                  <Icon size={20} className={isActive ? 'text-black' : 'text-gray-500 group-hover:text-brand-primary'} />
+                  <span className="font-bold text-sm">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="p-4 space-y-3 border-t border-white/5">
+            {user && (
+              <div className="glass-card px-3 py-3 text-xs space-y-2 font-medium">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">User Stats</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-black italic ${user.tier === 'ULTRA' ? 'bg-brand-primary/20 text-brand-primary' : user.tier === 'PRO' ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-gray-400'}`}>
+                    {user.tier}
+                  </span>
+                </div>
+
+                {(() => {
+                  const currentUserStats = adminState.users.find(u => u.id === user.id);
+                  const currentUsage = currentUserStats?.usageCount || 0;
+                  const maxUsage = adminState.tierConfigs[user.tier]?.maxUsage || 0;
+                  const usagePercentage = Math.min(100, (currentUsage / (maxUsage || 1)) * 100);
+                  const completedCount = useContentStore.getState().completedCount;
+
+                  return (
+                    <div className="space-y-3">
+                      {/* AI Generation Usage */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-end">
+                          <div className="flex flex-col">
+                            <span className="text-gray-400 font-bold text-[10px]">AI 글 생성</span>
+                          </div>
+                          <span className="text-white font-black text-xs">
+                            {currentUsage} / {maxUsage}
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${usagePercentage}%` }}
+                            className={`h-full ${usagePercentage >= 100 ? 'bg-red-500' : 'bg-brand-primary'} shadow-neon-sm`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Today's Completed Actions */}
+                      <div className="pt-2 border-t border-white/5 flex justify-between items-center">
+                        <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">오늘의 액션 완료</span>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                          <span className="text-brand-primary font-black text-xs">{completedCount}</span>
+                          <span className="text-gray-600 text-[9px] font-bold italic">DONE</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="pt-2 border-t border-white/5">
+                  <p className="font-black text-xs truncate text-white/70">{user.id}</p>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={logout}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-all text-sm font-bold"
+            >
+              <LogOut size={16} />
+              로그아웃
+            </button>
+          </div>
+        </aside>
+      )}
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64 p-5 lg:p-10 min-h-screen relative pt-24 lg:pt-10">
+      <main className={`
+        flex-1 min-h-screen relative
+        ${activeTab === 'admin' ? 'p-0 pt-0' : 'p-5 md:p-10 pt-24 md:pt-10'}
+      `}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -219,11 +224,11 @@ const App: React.FC = () => {
             {activeTab === 'dashboard' && (
               <div className="space-y-8">
                 <header className="space-y-3">
-                  <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-                    <h1 className="text-4xl lg:text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <h1 className="text-4xl md:text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
                       대시보드
                     </h1>
-                    <div className="w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
+                    <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                       <SlotSelector />
                     </div>
                   </div>
