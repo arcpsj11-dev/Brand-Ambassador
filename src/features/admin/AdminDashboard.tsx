@@ -74,7 +74,10 @@ export const AdminDashboard: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center">
                         <ShieldCheck size={20} className="text-black" />
                     </div>
-                    <span className="font-black tracking-tighter text-xl italic uppercase">Admin Panel</span>
+                    <div className="flex flex-col">
+                        <span className="font-black tracking-tighter text-xl italic uppercase">Admin Panel</span>
+                        <span className="text-[8px] text-brand-primary font-bold opacity-50">PROMPT SYNC v8.0</span>
+                    </div>
                 </div>
 
                 <nav className="flex flex-col gap-2">
