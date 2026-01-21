@@ -18,6 +18,7 @@ interface UserInfo {
     currentStep: 1 | 2 | 3;
     expiresAt?: string;
     autoAdjustment?: boolean;
+    hasSeenManual?: boolean;
 }
 
 interface RegisteredUser {
@@ -37,6 +38,7 @@ interface AuthState {
     signup: (id: string, pw: string) => boolean;
     logout: () => void;
     updateTier: (tier: MembershipTier) => void;
+    setHasSeenManual: (seen: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -66,7 +68,8 @@ export const useAuthStore = create<AuthState>()(
                             remainingSearches: foundUser.tier === 'ULTRA' ? 999 : (foundUser.tier === 'PRO' ? 20 : 5),
                             currentStep: foundUser.role === 'admin' ? 3 : 1,
                             expiresAt: foundUser.expiresAt,
-                            autoAdjustment: foundUser.autoAdjustment
+                            autoAdjustment: foundUser.autoAdjustment,
+                            hasSeenManual: false // Default to false on login
                         },
                     });
 
@@ -110,10 +113,16 @@ export const useAuthStore = create<AuthState>()(
                 else if (tier === 'PRO' && newStep > 2) newStep = 2;
 
                 set({ user: { ...user, tier, currentStep: newStep as 1 | 2 | 3 } });
+            },
+            setHasSeenManual: (seen) => {
+                const { user } = get();
+                if (user) {
+                    set({ user: { ...user, hasSeenManual: seen } });
+                }
             }
         }),
         {
-            name: 'jenny-auth-storage',
+            name: 'brand-ambassador-auth-storage',
         }
     )
 );

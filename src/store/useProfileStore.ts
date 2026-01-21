@@ -90,7 +90,7 @@ export const useProfileStore = create<ProfileState>()(
             resetProfile: () => set(initialState),
         }),
         {
-            name: 'antigravity-profile-storage',
+            name: 'brand-ambassador-profile-storage',
         }
     )
 );

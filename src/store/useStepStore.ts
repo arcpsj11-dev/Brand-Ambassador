@@ -130,7 +130,7 @@ export const useStepStore = create<StepStoreState>()(
             setStep: (step) => set({ currentStep: step }),
         }),
         {
-            name: 'antigravity-step-storage',
+            name: 'brand-ambassador-step-storage',
         }
     )
 );

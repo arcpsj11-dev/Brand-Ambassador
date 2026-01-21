@@ -202,7 +202,7 @@ export const useContentStore = create<ContentState>()(
             setRegenerationTopic: (topic) => set({ regenerationTopic: topic }),
         }),
         {
-            name: 'antigravity-content-storage',
+            name: 'brand-ambassador-content-storage',
         }
     )
 );

@@ -43,7 +43,7 @@ export const useBlogScoreStore = create<BlogScoreState>()(
             }
         }),
         {
-            name: 'antigravity-blog-score-storage',
+            name: 'brand-ambassador-blog-score-storage',
         }
     )
 );

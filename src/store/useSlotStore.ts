@@ -217,7 +217,7 @@ export const useSlotStore = create<SlotState>()(
             clearStore: () => set({ slots: [], activeSlotId: null })
         }),
         {
-            name: 'antigravity-slot-storage'
+            name: 'brand-ambassador-slot-storage'
         }
     )
 );

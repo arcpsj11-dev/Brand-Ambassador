@@ -17,6 +17,7 @@ import { Sparkles, LogOut, LayoutDashboard, Database, LayoutGrid, Activity, Shie
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSlotStore } from './store/useSlotStore';
 import { useContentStore } from './store/useContentStore';
+import { WelcomeModal } from './features/onboarding/WelcomeModal';
 
 const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -57,6 +58,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-background text-white selection:bg-brand-primary/30">
+      <WelcomeModal />
       <Step3UnlockOverlay />
       {/* Sidebar */}
       <aside className="w-64 border-r border-white/5 flex flex-col fixed h-full bg-background/50 backdrop-blur-xl z-50">
@@ -65,7 +67,7 @@ const App: React.FC = () => {
             <Sparkles className="text-black" size={20} />
           </div>
           <div>
-            <span className="font-black text-xl tracking-tight block">ANTIGRAVITY</span>
+            <span className="font-black text-xl tracking-tight block">BRAND AMBASSADOR</span>
             <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em] block">MVP DEMO v2.2 (Admin Update)</span>
           </div>
         </div>

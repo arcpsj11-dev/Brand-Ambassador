@@ -302,7 +302,7 @@ export const useAdminStore = create<AdminState>()(
             }
         }),
         {
-            name: 'jenny-admin-storage-v7', // [RESET] Revert to recover user keys
+            name: 'brand-ambassador-admin-storage-v7', // [v8.5 Rename] Change to Brand Ambassador
             partialize: (state) => ({
                 geminiApiKey: state.geminiApiKey,
                 nanoBananaApiKey: state.nanoBananaApiKey,

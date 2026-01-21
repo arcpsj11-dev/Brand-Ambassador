@@ -108,7 +108,7 @@ export const useTopicStore = create<TopicStoreState>()(
             resetTopics: () => set({ clusters: [], currentClusterIndex: 0, currentTopicIndex: 0 })
         }),
         {
-            name: 'antigravity-topic-storage',
+            name: 'brand-ambassador-topic-storage',
         }
     )
 );
