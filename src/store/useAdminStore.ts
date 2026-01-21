@@ -268,7 +268,7 @@ export const useAdminStore = create<AdminState>()(
             }
         }),
         {
-            name: 'jenny-admin-storage-v7', // [RESET] Bump version to clear potential zombie prompts
+            name: 'jenny-admin-storage-v8', // [RESET] Bump version to clear potential zombie prompts
             partialize: (state) => ({
                 geminiApiKey: state.geminiApiKey,
                 nanoBananaApiKey: state.nanoBananaApiKey,
