@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Bot, AlertTriangle, ArrowRight, CheckCircle2, Image as ImageIcon } from 'lucide-react';
+import { ShieldCheck, Bot, AlertTriangle, ArrowRight, CheckCircle2, Image as ImageIcon, Video, Download } from 'lucide-react';
 import { handleManualCopy } from '../../utils/clipboardUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useContentStore } from '../../store/useContentStore';
@@ -13,6 +13,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { useTopicStore } from '../../store/useTopicStore';
 import { imageService } from '../../services/imageService';
+import { videoService } from '../../services/videoService';
 
 interface TodayActionFlowProps {
     onClose: () => void;
@@ -51,6 +52,8 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
 
     // Image Generation State
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [isGeneratingVideo, setIsGeneratingVideo] = useState<number | null>(null); // index of image being processed
+    const [isGeneratingSlideshow, setIsGeneratingSlideshow] = useState(false);
     const [generatedImages, setGeneratedImages] = useState<Record<number, string>>({}); // index -> url
 
     const handleGenerateSingleImage = async (index: number, prompt: string) => {
@@ -62,6 +65,38 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             alert(`이미지 생성 실패: ${error}`);
         } finally {
             setIsGeneratingImage(false);
+        }
+    };
+
+    const handleGenerateVideo = async (index: number, imageUrl: string) => {
+        setIsGeneratingVideo(index);
+        try {
+            const videoBlob = await videoService.generateVideoFromImage(imageUrl);
+            videoService.downloadBlob(videoBlob, `blog_video_${index + 1}.mp4`);
+        } catch (error) {
+            console.error('Video generation failed:', error);
+            alert('동영상 생성에 실패했습니다.');
+        } finally {
+            setIsGeneratingVideo(null);
+        }
+    };
+
+    const handleGenerateSlideshowVideo = async () => {
+        const imageUrls = Object.values(generatedImages);
+        if (imageUrls.length < 2) {
+            alert('동영상을 만들려면 최소 2개 이상의 이미지가 필요합니다.');
+            return;
+        }
+
+        setIsGeneratingSlideshow(true);
+        try {
+            const videoBlob = await videoService.generateSlideshowVideo(imageUrls, 4000); // 4sec per image
+            videoService.downloadBlob(videoBlob, `blog_slideshow_full.mp4`);
+        } catch (error) {
+            console.error('Slideshow generation failed:', error);
+            alert('동영상 생성에 실패했습니다.');
+        } finally {
+            setIsGeneratingSlideshow(false);
         }
     };
 
@@ -420,13 +455,29 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                                             </button>
 
                                             {Object.keys(generatedImages).length > 0 && (
-                                                <button
-                                                    onClick={handleDownloadAll}
-                                                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 border border-white/20 shadow-lg"
-                                                >
-                                                    <ArrowRight size={14} className="rotate-90" />
-                                                    이미지 일괄 다운로드
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={handleDownloadAll}
+                                                        className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 border border-white/20 shadow-lg"
+                                                    >
+                                                        <ArrowRight size={14} className="rotate-90" />
+                                                        이미지 일괄 다운로드
+                                                    </button>
+                                                    {Object.keys(generatedImages).length >= 2 && (
+                                                        <button
+                                                            onClick={handleGenerateSlideshowVideo}
+                                                            disabled={isGeneratingSlideshow}
+                                                            className="px-4 py-2 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/30 text-brand-primary font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 border border-brand-primary/30 shadow-neon-sm"
+                                                        >
+                                                            {isGeneratingSlideshow ? (
+                                                                <div className="w-3 h-3 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+                                                            ) : (
+                                                                <Video size={14} />
+                                                            )}
+                                                            전체 동영상 생성 (MP4)
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -446,10 +497,46 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
 
                                                 {/* Generated Real Image Display */}
                                                 {generatedImages[idx] ? (
-                                                    <div className="relative rounded-lg overflow-hidden border border-white/20 mt-2">
-                                                        <img src={generatedImages[idx]} alt={img.alt} className="w-full h-auto object-cover" />
-                                                        <div className="absolute bottom-0 right-0 bg-black/50 text-[10px] text-white px-2 py-1 backdrop-blur-sm">
-                                                            Generated by AI
+                                                    <div className="space-y-3">
+                                                        <div className="relative rounded-lg overflow-hidden border border-white/20">
+                                                            <img src={generatedImages[idx]} alt={img.alt} className="w-full h-auto object-cover" />
+                                                            <div className="absolute bottom-0 right-0 bg-black/50 text-[10px] text-white px-2 py-1 backdrop-blur-sm">
+                                                                Generated by AI
+                                                            </div>
+                                                            {isGeneratingVideo === idx && (
+                                                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
+                                                                    <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin shadow-neon" />
+                                                                    <span className="text-xs font-black uppercase tracking-widest text-brand-primary animate-pulse">Encoding MP4...</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Always Visible Control Buttons */}
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const link = document.createElement('a');
+                                                                    link.href = generatedImages[idx];
+                                                                    link.download = `blog_image_${idx + 1}.png`;
+                                                                    link.click();
+                                                                }}
+                                                                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all text-xs font-bold"
+                                                            >
+                                                                <Download size={16} />
+                                                                이미지 다운로드
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleGenerateVideo(idx, generatedImages[idx])}
+                                                                disabled={isGeneratingVideo !== null}
+                                                                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-brand-primary/10 hover:bg-brand-primary/20 border border-brand-primary/30 text-brand-primary transition-all text-xs font-bold disabled:opacity-50"
+                                                            >
+                                                                {isGeneratingVideo === idx ? (
+                                                                    <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+                                                                ) : (
+                                                                    <Video size={16} />
+                                                                )}
+                                                                MP4 동영상 생성
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 ) : (

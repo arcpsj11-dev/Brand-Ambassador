@@ -21,6 +21,8 @@ export const AdminDashboard: React.FC = () => {
     const adminState = useAdminStore();
     const {
         geminiApiKey, setGeminiApiKey,
+        naverClientId, setNaverClientId,
+        naverClientSecret, setNaverClientSecret,
         activeOccupationId, occupations,
         updateOccupationPrompt,
         users, updateUserTier
@@ -29,6 +31,8 @@ export const AdminDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'prompts' | 'users' | 'settings' | 'image-test'>('prompts');
     const [localPrompts, setLocalPrompts] = useState(occupations[activeOccupationId]?.prompts);
     const [localApiKey, setLocalApiKey] = useState(geminiApiKey);
+    const [localNaverClientId, setLocalNaverClientId] = useState(naverClientId);
+    const [localNaverClientSecret, setLocalNaverClientSecret] = useState(naverClientSecret);
 
     // Sync local prompts when active occupation changes
     useEffect(() => {
@@ -48,6 +52,8 @@ export const AdminDashboard: React.FC = () => {
 
     const handleSaveSettings = () => {
         setGeminiApiKey(localApiKey);
+        setNaverClientId(localNaverClientId);
+        setNaverClientSecret(localNaverClientSecret);
         alert('API 설정이 저장되었습니다.');
     };
 
@@ -350,6 +356,46 @@ export const AdminDashboard: React.FC = () => {
                                         * 이 키 하나로 텍스트 생성부터 <strong>이미지 분석 및 생성</strong>까지 모두 처리합니다.
                                         <br />
                                         * 관리자가 입력한 키는 로컬 보안 환경 내에서만 관리되며 서버로 직접 전달되지 않습니다.
+                                    </p>
+                                </div>
+
+                                {/* Naver Blog API Configuration */}
+                                <div className="space-y-6 pt-8 border-t border-white/5">
+                                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                                        <Key size={20} />
+                                        <span className="font-bold text-sm uppercase tracking-widest">Naver Blog API Configuration</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-3">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Naver Client ID</label>
+                                            <input
+                                                type="text"
+                                                value={localNaverClientId}
+                                                onChange={(e) => setLocalNaverClientId(e.target.value)}
+                                                placeholder="네이버 개발자센터에서 발급받은 Client ID"
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Naver Client Secret</label>
+                                            <input
+                                                type="password"
+                                                value={localNaverClientSecret}
+                                                onChange={(e) => setLocalNaverClientSecret(e.target.value)}
+                                                placeholder="네이버 개발자센터에서 발급받은 Client Secret"
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-sm focus:border-brand-primary outline-none transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <p className="text-[10px] text-gray-600 font-medium">
+                                        * 네이버 블로그 데이터 수집 및 점수 분석에 사용됩니다.
+                                        <br />
+                                        * API 신청: <a href="https://developers.naver.com/products/search/" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">네이버 개발자 센터</a>
+                                        <br />
+                                        * 입력하지 않으면 Mock 데이터로 UI를 시뮬레이션합니다.
                                     </p>
                                 </div>
 

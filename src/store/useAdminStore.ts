@@ -18,6 +18,8 @@ interface AdminSettings {
     geminiApiKey: string;
     nanoBananaApiKey: string;
     dallEApiKey: string;
+    naverClientId: string;
+    naverClientSecret: string;
     activeImageProvider: 'nano' | 'dalle' | 'google' | 'gemini';
     activeOccupationId: string;
     occupations: Record<string, Occupation>;
@@ -37,6 +39,8 @@ interface AdminState extends AdminSettings {
     setGeminiApiKey: (key: string) => void;
     setNanoBananaApiKey: (key: string) => void;
     setDallEApiKey: (key: string) => void;
+    setNaverClientId: (id: string) => void;
+    setNaverClientSecret: (secret: string) => void;
     setActiveImageProvider: (provider: 'nano' | 'dalle' | 'google' | 'gemini') => void;
     setActiveOccupation: (id: string) => void;
     updateOccupationPrompt: (occupationId: string, type: keyof PromptSet, content: string) => void;
@@ -176,6 +180,8 @@ export const useAdminStore = create<AdminState>()(
             geminiApiKey: '',
             nanoBananaApiKey: '',
             dallEApiKey: '',
+            naverClientId: '',
+            naverClientSecret: '',
             activeImageProvider: 'google', // Using Google Imagen 4
             activeOccupationId: 'oriental_doctor',
 
@@ -208,6 +214,8 @@ export const useAdminStore = create<AdminState>()(
             setGeminiApiKey: (key) => set({ geminiApiKey: key }),
             setNanoBananaApiKey: (key) => set({ nanoBananaApiKey: key }),
             setDallEApiKey: (key) => set({ dallEApiKey: key }),
+            setNaverClientId: (id) => set({ naverClientId: id }),
+            setNaverClientSecret: (secret) => set({ naverClientSecret: secret }),
             setActiveImageProvider: (provider) => set({ activeImageProvider: provider }),
 
             setActiveOccupation: (id) => set({ activeOccupationId: id }),
@@ -269,7 +277,9 @@ export const useAdminStore = create<AdminState>()(
                 activeOccupationId: state.activeOccupationId,
                 occupations: state.occupations,
                 users: state.users,
-                tierConfigs: state.tierConfigs
+                tierConfigs: state.tierConfigs,
+                naverClientId: state.naverClientId,
+                naverClientSecret: state.naverClientSecret
             }),
         }
     )

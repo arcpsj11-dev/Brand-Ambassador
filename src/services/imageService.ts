@@ -139,6 +139,7 @@ export const imageService = {
         }
 
         const data = await response.json();
+        console.log("[ImageService] Google Imagen RAW Response:", JSON.stringify(data, null, 2).substring(0, 1000));
 
 
         if (data.predictions && data.predictions[0]) {
@@ -150,6 +151,12 @@ export const imageService = {
             }
         }
 
-        throw new Error("Invalid response format from Google Imagen API");
+        // Check if images are in a different field (alternate formats)
+        if (data.images && data.images[0]) {
+            console.log("[ImageService] Found image in alternate 'images' field.");
+            return data.images[0].url || data.images[0].bytesBase64Encoded ? `data:image/png;base64,${data.images[0].bytesBase64Encoded}` : "";
+        }
+
+        throw new Error(`Invalid response format from Google Imagen API. Check console for RAW response.`);
     }
 };

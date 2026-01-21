@@ -11,7 +11,7 @@ import { SlotManager } from './features/slot/SlotManager';
 import { ContentArchive } from './features/archive/ContentArchive';
 import { SlotSelector } from './features/slot/SlotSelector';
 import { Step3UnlockOverlay } from './features/dashboard/Step3UnlockOverlay';
-import { BlogHealthCheck } from './features/diagnosis/BlogHealthCheck';
+import { BlogMotivation } from './features/diagnosis/BlogMotivation';
 import { DashboardDiagnosisCard } from './features/dashboard/DashboardDiagnosisCard';
 import { AdminDashboard } from './features/admin/AdminDashboard';
 import { Sparkles, LogOut, LayoutDashboard, Database, LayoutGrid, Activity, ShieldCheck } from 'lucide-react';
@@ -189,7 +189,7 @@ const App: React.FC = () => {
             {activeTab === 'slots' && <SlotManager />}
             {activeTab === 'diagnosis' && (
               <div className="max-w-6xl mx-auto space-y-8">
-                <BlogHealthCheck />
+                <BlogMotivation />
               </div>
             )}
             {activeTab === 'archive' && <ContentArchive />}

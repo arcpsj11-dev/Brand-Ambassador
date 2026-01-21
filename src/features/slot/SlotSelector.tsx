@@ -30,6 +30,11 @@ export const SlotSelector: React.FC = () => {
                     </div>
                     <div className={`text-sm font-black flex items-center gap-2 ${activeSlot ? 'text-white' : 'text-red-500'}`}>
                         {activeSlot?.slotName || 'Select Active Blog'}
+                        {activeSlot?.naverBlogId && (
+                            <span className="text-[10px] font-medium text-gray-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                                @{activeSlot.naverBlogId}
+                            </span>
+                        )}
                         <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                     </div>
                 </div>
@@ -46,7 +51,7 @@ export const SlotSelector: React.FC = () => {
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute top-full left-0 mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                            className="absolute top-full left-0 mt-2 w-72 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
                         >
                             <div className="p-2 space-y-1">
                                 {slots.map((slot: BlogSlot) => (
@@ -64,7 +69,10 @@ export const SlotSelector: React.FC = () => {
                                         <div className={`w-2 h-2 rounded-full ${activeSlotId === slot.slotId ? 'bg-brand-primary animate-pulse' : 'bg-gray-600'
                                             }`} />
                                         <div className="flex-1 text-left">
-                                            <div className="text-sm font-bold">{slot.slotName}</div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-sm font-bold">{slot.slotName}</div>
+                                                <div className="text-[10px] font-medium opacity-40">@{slot.naverBlogId}</div>
+                                            </div>
                                             <div className="text-[10px] opacity-50">{slot.personaSetting.jobTitle} • {slot.currentCluster.currentIndex}/10</div>
                                         </div>
                                         {activeSlotId === slot.slotId && <Check size={14} />}
