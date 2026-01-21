@@ -71,7 +71,7 @@ const App: React.FC = () => {
       <Step3UnlockOverlay />
 
       {/* Mobile Floating Header (Visible only on small screens) */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 z-[100] bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 flex items-center justify-between">
+      <header className="md:hidden fixed top-0 left-0 right-0 h-16 z-[100] bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-neon">
             <Sparkles className="text-black" size={16} />
@@ -103,14 +103,14 @@ const App: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="lg:hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm"
+              className="md:hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm"
             />
             <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="lg:hidden fixed top-0 left-0 bottom-0 w-[280px] z-[120] bg-background border-r border-white/5 flex flex-col pt-4 overflow-y-auto"
+              className="md:hidden fixed top-0 left-0 bottom-0 w-[280px] z-[120] bg-background border-r border-white/5 flex flex-col pt-4 overflow-y-auto"
             >
               {/* Logo / Header Area */}
               <div className="p-8 pb-4 flex items-center gap-3">
@@ -197,7 +197,7 @@ const App: React.FC = () => {
 
       {/* Desktop Sidebar (In-flow / Sticky) */}
       {isNotAdmin && (
-        <aside className="hidden lg:flex sticky top-0 h-screen w-64 border-r border-white/5 bg-background/50 backdrop-blur-xl flex-col shrink-0 overflow-y-auto custom-scrollbar z-[90]">
+        <aside className="hidden md:flex sticky top-0 h-screen w-64 border-r border-white/5 bg-background/50 backdrop-blur-xl flex-col shrink-0 overflow-y-auto custom-scrollbar z-[90]">
           {/* Logo Section */}
           <div className="p-8 pb-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-neon">
@@ -280,7 +280,7 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className={`
         flex-1 min-h-screen relative overflow-x-hidden
-        ${activeTab === 'admin' ? 'p-0 pt-0' : 'p-5 lg:p-10 pt-24 lg:pt-10'}
+        ${activeTab === 'admin' ? 'p-0 pt-0' : 'p-5 md:p-10 pt-24 md:pt-10'}
       `}>
         <AnimatePresence mode="wait">
           <motion.div
@@ -293,11 +293,11 @@ const App: React.FC = () => {
             {activeTab === 'dashboard' && (
               <div className="space-y-8">
                 <header className="space-y-3">
-                  <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-                    <h1 className="text-4xl lg:text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <h1 className="text-4xl md:text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
                       대시보드
                     </h1>
-                    <div className="w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
+                    <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                       <SlotSelector />
                     </div>
                   </div>
