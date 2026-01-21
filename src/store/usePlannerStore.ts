@@ -64,7 +64,7 @@ export const usePlannerStore = create<PlannerState>()(
             }),
         }),
         {
-            name: 'jenny-planner-storage',
+            name: 'brand-ambassador-planner-storage',
         }
     )
 );

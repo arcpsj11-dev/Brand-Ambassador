@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Sparkles, User, Key, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Login: React.FC = () => {
@@ -50,71 +50,69 @@ export const Login: React.FC = () => {
                     <div className="w-16 h-16 bg-brand-primary rounded-2xl flex items-center justify-center shadow-neon mb-6">
                         <Sparkles className="text-black" size={32} />
                     </div>
-                    <h1 className="text-3xl font-black tracking-tight mb-2">JENNY MARKETER</h1>
-                    <p className="text-gray-500 text-sm">{isSignup ? '제니 마케터의 새로운 멤버가 되어보세요' : 'MZ세대 AI 마케팅 비서 제니에 로그인하세요'}</p>
+                    <h1 className="text-3xl font-black tracking-tight mb-2 uppercase italic text-brand-primary leading-none">Brand Ambassador</h1>
+                    <p className="text-gray-500 text-[11px] font-bold uppercase tracking-widest opacity-70">AI Marketing Partner</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                            <User size={12} /> {isSignup ? 'Create ID' : 'User ID'}
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <ArrowRight size={10} className="text-brand-primary" /> {isSignup ? 'NEW ID' : 'USER ID'}
                         </label>
                         <input
                             type="text"
                             value={id}
                             onChange={(e) => setId(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary/50 transition-all text-sm"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary/50 transition-all text-sm font-medium"
                             placeholder="아이디를 입력하세요"
                             required
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                            <Key size={12} /> {isSignup ? 'Create Password' : 'Password'}
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <ArrowRight size={10} className="text-brand-primary" /> {isSignup ? 'NEW PASSWORD' : 'PASSWORD'}
                         </label>
                         <input
                             type="password"
                             value={pw}
                             onChange={(e) => setPw(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary/50 transition-all text-sm"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary/50 transition-all text-sm font-medium placeholder:opacity-30"
                             placeholder="••••••••"
                             required
                         />
                     </div>
 
-                    {error && <p className="text-red-500 text-xs text-center font-medium">{error}</p>}
+                    {error && (
+                        <motion.p
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="text-red-400 text-[10px] text-center font-bold tracking-tight bg-red-400/10 py-2 rounded-lg border border-red-400/20"
+                        >
+                            {error}
+                        </motion.p>
+                    )}
 
-                    <button
-                        type="submit"
-                        className="w-full bg-brand-primary text-black font-black py-4 rounded-xl flex items-center justify-center gap-2 hover:shadow-neon transition-all"
-                    >
-                        {isSignup ? '가입 완료하기' : '로그인 시작하기'} <ArrowRight size={18} />
-                    </button>
+                    <div className="space-y-3 pt-2">
+                        <button
+                            type="submit"
+                            className="w-full bg-brand-primary text-black font-black py-4 rounded-xl flex items-center justify-center gap-2 hover:shadow-neon hover:scale-[1.02] active:scale-[0.98] transition-all text-sm uppercase tracking-tight"
+                        >
+                            {isSignup ? '가입 완료하기' : '로그인 시작하기'}
+                        </button>
 
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setIsSignup(!isSignup);
-                            setError('');
-                        }}
-                        className="w-full bg-white/5 text-gray-400 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 hover:text-white transition-all border border-white/5"
-                    >
-                        <User size={18} /> {isSignup ? '기존 계정으로 로그인' : '회원가입 신청하기'}
-                    </button>
-                </form>
-
-                <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
-                    <div className="bg-white/5 rounded-xl p-4 text-[10px] text-gray-500 space-y-2">
-                        <p className="flex items-center gap-2 text-brand-primary font-bold">
-                            <ShieldCheck size={12} /> 테스트 계정 정보
-                        </p>
-                        <div className="flex justify-between">
-                            <span>다이아: diamond / 1234</span>
-                            <span>일반: user / user123</span>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsSignup(!isSignup);
+                                setError('');
+                            }}
+                            className="w-full bg-white/5 text-gray-400 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 hover:text-white transition-all border border-white/5 text-xs uppercase tracking-widest"
+                        >
+                            {isSignup ? '기존 계정으로 로그인' : '회원가입 신청하기'}
+                        </button>
                     </div>
-                </div>
+                </form>
             </motion.div>
         </div >
     );

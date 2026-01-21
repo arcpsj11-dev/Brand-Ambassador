@@ -51,6 +51,7 @@ interface AdminState extends AdminSettings {
 
     updateUserTier: (userId: string, tier: 'BASIC' | 'PRO' | 'ULTRA') => void;
     updateUserMembership: (userId: string, updates: { expiresAt?: string; autoAdjustment?: boolean }) => void;
+    addUser: (userId: string) => void;
 
     // Helper to get current active occupation
     getActiveOccupation: () => Occupation;
@@ -218,9 +219,6 @@ export const useAdminStore = create<AdminState>()(
             },
 
             users: [
-                { id: 'user', tier: 'BASIC', role: 'user', autoAdjustment: true },
-                { id: 'grow', tier: 'PRO', role: 'user', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), autoAdjustment: true },
-                { id: 'scale', tier: 'ULTRA', role: 'user', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), autoAdjustment: true },
                 { id: 'admin', tier: 'ULTRA', role: 'admin' },
             ],
 
@@ -280,6 +278,24 @@ export const useAdminStore = create<AdminState>()(
             updateUserMembership: (userId, updates) => set((state) => ({
                 users: state.users.map(u => u.id === userId ? { ...u, ...updates } : u)
             })),
+
+            addUser: (userId) => set((state) => {
+                // Prevent duplicate entries
+                if (state.users.some(u => u.id === userId)) return state;
+
+                return {
+                    users: [
+                        ...state.users,
+                        {
+                            id: userId,
+                            tier: 'BASIC',
+                            role: 'user',
+                            autoAdjustment: true,
+                            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // Default 7 days trial
+                        }
+                    ]
+                };
+            }),
 
             resetPrompts: () => set({
                 occupations: {

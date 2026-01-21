@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useAdminStore } from './useAdminStore';
 import { useContentStore } from './useContentStore';
 import { useTopicStore } from './useTopicStore';
 import { useSlotStore } from './useSlotStore';
@@ -90,10 +91,16 @@ export const useAuthStore = create<AuthState>()(
                     id,
                     pw,
                     tier: 'BASIC',
-                    role: 'user'
+                    role: 'user',
+                    autoAdjustment: true,
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // Default 7 days trial
                 };
 
                 set({ registeredUsers: [...registeredUsers, newUser] });
+
+                // Sync with Admin Dashboard
+                useAdminStore.getState().addUser(id);
+
                 return true;
             },
             logout: () => {
