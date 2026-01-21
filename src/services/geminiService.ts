@@ -253,9 +253,14 @@ export const geminiReasoningService = {
                 .replace(/{{title}}/g, input)
                 .replace(/{{persona}}/g, persona)
                 .replace(/{{pillarTitle}}/g, context.pillarTitle || '')
-                .replace(/{{clinicName}}/g, context.clinicName)
+                .replace(/{{clinic_name}}|{{clinicName}}/g, context.clinicName)
                 .replace(/{{address}}/g, context.address)
-                .replace(/{{phoneNumber}}/g, context.phoneNumber) + `\n\n위 설정과 함께 아래 병원 프로파일 정보를 본문에 자연스럽게 녹여내어 신뢰감 있는 글을 작성해 주세요.\n${profileInfo}`;
+                .replace(/{{phoneNumber}}/g, context.phoneNumber)
+                .replace(/{{region}}/g, profile.region || '지역')
+                .replace(/{{topic}}/g, input)
+                .replace(/{{target}}/g, profile.targetDemographic || '환자분들')
+                .replace(/{{department}}/g, profile.mainTopic || '한방 진료')
+                + `\n\n위 설정과 함께 아래 병원 프로파일 정보를 본문에 자연스럽게 녹여내어 신뢰감 있는 글을 작성해 주세요.\n${profileInfo}`;
 
             const result = await model.generateContentStream(prompt);
             for await (const chunk of result.stream) {
@@ -447,9 +452,13 @@ ${contentBody}
                 .replace(/{{pillarTitle}}/g, params.pillarTitle)
                 .replace(/{{persona}}/g, targetPersona || params.persona.jobTitle)
                 .replace(/{{tone}}/g, params.persona.toneAndManner)
-                .replace(/{{clinicName}}/g, params.clinicInfo?.name || '')
+                .replace(/{{clinic_name}}|{{clinicName}}/g, params.clinicInfo?.name || '')
                 .replace(/{{address}}/g, params.clinicInfo?.address || '')
-                .replace(/{{phoneNumber}}/g, params.clinicInfo?.phone || '');
+                .replace(/{{phoneNumber}}/g, params.clinicInfo?.phone || '')
+                .replace(/{{region}}/g, '지역') // Slot content doesn't have profile easy access here, using fallback
+                .replace(/{{topic}}/g, params.currentTitle)
+                .replace(/{{target}}/g, '환자분들')
+                .replace(/{{department}}/g, '진료');
 
             const result = await model.generateContent(finalPrompt);
             return {

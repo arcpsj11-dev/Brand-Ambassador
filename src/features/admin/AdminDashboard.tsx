@@ -95,7 +95,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="flex flex-col">
                         <span className="font-black tracking-tighter text-xl italic uppercase">Admin Panel</span>
-                        <span className="text-[8px] text-brand-primary font-bold opacity-50">PROMPT SYNC v8.3</span>
+                        <span className="text-[8px] text-brand-primary font-bold opacity-50">PROMPT SYNC v8.4</span>
                     </div>
                 </div>
 
