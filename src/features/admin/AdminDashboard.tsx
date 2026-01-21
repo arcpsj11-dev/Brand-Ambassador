@@ -28,7 +28,8 @@ export const AdminDashboard: React.FC = () => {
         activeImageProvider, setActiveImageProvider,
         activeOccupationId, occupations,
         updateOccupationPrompt,
-        users, updateUserTier
+        users, updateUserTier,
+        resetPrompts
     } = adminState;
 
     const [activeTab, setActiveTab] = useState<'prompts' | 'users' | 'settings' | 'image-test'>('prompts');
@@ -54,6 +55,14 @@ export const AdminDashboard: React.FC = () => {
         updateOccupationPrompt(activeOccupationId, 'image', localPrompts.image);
         updateOccupationPrompt(activeOccupationId, 'chat', localPrompts.chat);
         alert('프롬프트 설정이 저장되었습니다.');
+    };
+
+    const handleResetToDefaults = () => {
+        if (window.confirm('모든 직업의 프롬프트를 소스 코드의 기본값으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+            resetPrompts();
+            alert('프롬프트가 초기화되었습니다. 페이지를 새로고침하여 확인해 주세요.');
+            window.location.reload(); // Simplest way to ensure all local states across the app are synced
+        }
     };
 
     const handleSaveSettings = () => {
@@ -197,7 +206,13 @@ export const AdminDashboard: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="flex justify-end pt-4 border-t border-white/5">
+                            <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                                <button
+                                    onClick={handleResetToDefaults}
+                                    className="px-6 py-4 bg-white/5 border border-white/10 text-gray-400 font-bold uppercase tracking-widest rounded-xl hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all"
+                                >
+                                    초기화 (코드 기본값)
+                                </button>
                                 <button
                                     onClick={handleSavePrompts}
                                     className="flex items-center gap-3 px-8 py-4 bg-brand-primary text-black font-black uppercase tracking-widest rounded-xl hover:shadow-neon transition-all"

@@ -45,6 +45,7 @@ interface AdminState extends AdminSettings {
     setActiveOccupation: (id: string) => void;
     updateOccupationPrompt: (occupationId: string, type: keyof PromptSet, content: string) => void;
     addOccupation: (id: string, label: string) => void;
+    resetPrompts: () => void;
 
     updateTierConfig: (tierId: string, updates: Partial<{ maxSlots: number; durationRaw: string }>) => void;
 
@@ -261,6 +262,21 @@ export const useAdminStore = create<AdminState>()(
             updateUserMembership: (userId, updates) => set((state) => ({
                 users: state.users.map(u => u.id === userId ? { ...u, ...updates } : u)
             })),
+
+            resetPrompts: () => set({
+                occupations: {
+                    'oriental_doctor': {
+                        id: 'oriental_doctor',
+                        label: '한의사',
+                        prompts: DEFAULT_PROMPTS_ORIENTAL
+                    },
+                    'doctor': {
+                        id: 'doctor',
+                        label: '의사',
+                        prompts: DEFAULT_PROMPTS_DOCTOR
+                    }
+                }
+            }),
 
             getActiveOccupation: () => {
                 const state = get();
