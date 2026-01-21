@@ -3,7 +3,6 @@ import { useAuthStore } from './store/useAuthStore';
 import { useProfileStore } from './store/useProfileStore';
 import { useUIStore } from './store/useUIStore';
 import type { AppTab } from './store/useUIStore';
-import { migrateToSlotSystem } from './services/migrationService';
 import { Login } from './features/auth/Login';
 import { ProfileSetup } from './features/profile/ProfileSetup';
 import { TodayAction } from './features/dashboard/TodayAction';
