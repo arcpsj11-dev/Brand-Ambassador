@@ -56,9 +56,13 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
             if (data.clusters) {
                 setPreviewClusters(data.clusters);
             }
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error(error);
-            alert('주제 생성 중 오류가 발생했습니다. API 키 설정을 확인해주세요.');
+            if (error?.message === "USAGE_LIMIT_REACHED") {
+                alert("원장님, 이번 달(또는 현재 등급)의 AI 생성 사용 한도에 도달했습니다.\n\n한도 증액이나 등급 상향은 관리자에게 문의해 주세요! 🚀");
+            } else {
+                alert('주제 생성 중 오류가 발생했습니다. API 키 설정을 확인해주세요.');
+            }
         } finally {
             setIsGenerating(false);
         }

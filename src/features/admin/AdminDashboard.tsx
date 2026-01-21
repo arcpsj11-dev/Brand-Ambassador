@@ -243,6 +243,7 @@ export const AdminDashboard: React.FC = () => {
                                         <tr className="border-b border-white/5 bg-white/5 text-gray-400 font-bold uppercase tracking-widest">
                                             <th className="px-8 py-4 text-left">회원 아이디</th>
                                             <th className="px-8 py-4 text-left">역할</th>
+                                            <th className="px-8 py-4 text-left">생성 횟수 (현재/한도)</th>
                                             <th className="px-8 py-4 text-left">등급/기한</th>
                                             <th className="px-8 py-4 text-left">자동조절</th>
                                             <th className="px-8 py-4 text-right">조정</th>
@@ -261,6 +262,20 @@ export const AdminDashboard: React.FC = () => {
                                                         <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${user.role === 'admin' ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30' : 'bg-white/10 text-gray-400'}`}>
                                                             {user.role}
                                                         </span>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                value={user.usageCount}
+                                                                onChange={(e) => adminState.updateUserMembership(user.id, { usageCount: parseInt(e.target.value) || 0 })}
+                                                                className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-xs font-bold focus:border-brand-primary outline-none"
+                                                            />
+                                                            <span className="text-gray-500 font-bold">/</span>
+                                                            <span className="text-brand-primary font-black italic">
+                                                                {adminState.tierConfigs[user.tier]?.maxUsage || 0}
+                                                            </span>
+                                                        </div>
                                                     </td>
                                                     <td className="px-8 py-6">
                                                         <div className="flex flex-col gap-1">
@@ -348,6 +363,19 @@ export const AdminDashboard: React.FC = () => {
                                                                 className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm font-bold focus:border-brand-primary outline-none"
                                                             />
                                                             <span className="text-xs text-gray-500 font-bold whitespace-nowrap">개</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Max AI Generations (생성 한도)</label>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                value={config.maxUsage}
+                                                                onChange={(e) => adminState.updateTierConfig(tier, { maxUsage: parseInt(e.target.value) || 0 })}
+                                                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm font-bold focus:border-brand-primary outline-none"
+                                                            />
+                                                            <span className="text-xs text-gray-500 font-bold whitespace-nowrap">회</span>
                                                         </div>
                                                     </div>
 

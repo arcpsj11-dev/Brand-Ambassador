@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 // [CLEAN] Removed experiment store imports
 import { useAdminStore } from '../store/useAdminStore';
+import { useAuthStore } from '../store/useAuthStore';
 import type { TopicCluster } from '../store/useTopicStore';
 // Helper: A/B 테스트 활성 프롬프트 가져오기
 // [CLEAN] Removed A/B testing helper `getActiveVariantPrompt` to ensure strict Admin Prompt adherence.
@@ -24,13 +25,30 @@ export interface MonthlyTitleResponse {
 }
 
 const getGenAI = () => {
-    const adminKey = useAdminStore.getState().geminiApiKey;
+    const adminStore = useAdminStore.getState();
+    const authUser = useAuthStore.getState().user;
+
+    // Direct Key Access
+    const adminKey = adminStore.geminiApiKey;
     const envKey = import.meta.env.VITE_GEMINI_API_KEY;
     const finalKey = adminKey || envKey;
 
     if (!finalKey) {
         throw new Error("API_KEY_MISSING");
     }
+
+    // Usage Limit Check
+    if (authUser && authUser.role !== 'admin') {
+        const adminUser = adminStore.users.find(u => u.id === authUser.id);
+        const tierConfig = adminStore.tierConfigs[authUser.tier];
+
+        if (adminUser && tierConfig) {
+            if (adminUser.usageCount >= tierConfig.maxUsage) {
+                throw new Error("USAGE_LIMIT_REACHED");
+            }
+        }
+    }
+
     return new GoogleGenerativeAI(finalKey);
 };
 
@@ -224,9 +242,17 @@ export const geminiReasoningService = {
         profile?: any;
     }) {
         try {
-            const genAI = getGenAI();
+            const authUser = useAuthStore.getState().user;
+            const genAI = getGenAI(); // Now checks usage limit
+
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
             const adminState = useAdminStore.getState();
+
+            // Increment usage count on successful start
+            if (authUser && authUser.role !== 'admin') {
+                adminState.incrementUsage(authUser.id);
+            }
+
             const activeOccupation = adminState.getActiveOccupation();
             const persona = activeOccupation.label;
             const bodyPrompt = activeOccupation.prompts.body;
@@ -312,6 +338,7 @@ export const geminiReasoningService = {
     // [나노바나나] 30일 마케팅 타이틀 벌크 생성
     async generateMonthlyTitles(topic: string): Promise<MonthlyTitleResponse> {
         try {
+            const authUser = useAuthStore.getState().user;
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash-exp",
@@ -322,6 +349,11 @@ export const geminiReasoningService = {
             });
 
             const adminState = useAdminStore.getState();
+
+            if (authUser && authUser.role !== 'admin') {
+                adminState.incrementUsage(authUser.id);
+            }
+
             const activeOccupation = adminState.getActiveOccupation();
             const titlePromptTemplate = activeOccupation.prompts.title;
             const persona = activeOccupation.label;
@@ -396,6 +428,7 @@ ${contentBody}
     // [나노바나나] 토픽 클러스터 생성 (Admin Title Prompt 동기화)
     async generateTopicCluster(keyword: string, persona?: { jobTitle: string; toneAndManner: string }): Promise<MonthlyTitleResponse> {
         try {
+            const authUser = useAuthStore.getState().user;
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
                 model: "gemini-2.0-flash-exp",
@@ -407,6 +440,11 @@ ${contentBody}
 
             // Admin Store에서 'Monthly Titles' 프롬프트 가져오기
             const adminState = useAdminStore.getState();
+
+            if (authUser && authUser.role !== 'admin') {
+                adminState.incrementUsage(authUser.id);
+            }
+
             const activeOccupation = adminState.getActiveOccupation();
             const titlePromptTemplate = activeOccupation.prompts.title;
             const targetPersona = persona?.jobTitle || activeOccupation.label;
@@ -437,9 +475,15 @@ ${contentBody}
         clinicInfo?: { name: string; address: string; phone: string };
     }): Promise<{ title: string; body: string }> {
         try {
+            const authUser = useAuthStore.getState().user;
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
             const adminState = useAdminStore.getState();
+
+            if (authUser && authUser.role !== 'admin') {
+                adminState.incrementUsage(authUser.id);
+            }
+
             const activeOccupation = adminState.getActiveOccupation();
             const bodyPromptTemplate = activeOccupation.prompts.body;
             const targetPersona = activeOccupation.label;

@@ -148,9 +148,13 @@ export const MarketingCanvas: React.FC = () => {
                 content: `원장님, 우리 이웃분들께 신뢰를 드릴 수 있는 30일치 제목들을 준비했습니다. 🚀 특히 ${strat} 전략을 녹여 전문가의 통찰력이 돋보이도록 구성했으니, 1번 카드부터 차근차근 검토해 보시지요. ✨`
             });
             chat.setIsOpen(true);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Titles Generation Error:", error);
-            alert("원장님, 제목을 뽑는 중에 제니 회로에 바나나가 꼈나 봐요! 다시 시도해 주세요. 💦");
+            if (error.message === "USAGE_LIMIT_REACHED") {
+                alert("원장님, 이번 달(또는 현재 등급)의 AI 생성 사용 한도에 도달했습니다.\n\n한도 증액이나 등급 상향은 관리자에게 문의해 주세요! 🚀");
+            } else {
+                alert("원장님, 제목을 뽑는 중에 제니 회로에 바나나가 꼈나 봐요! 다시 시도해 주세요. 💦");
+            }
         } finally {
             setIsGeneratingTitles(false);
         }

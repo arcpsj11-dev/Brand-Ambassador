@@ -242,6 +242,8 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             const errorMessage = error instanceof Error ? error.message : String(error);
             if (errorMessage === "API_KEY_MISSING") {
                 alert("관리자 설정에서 Gemini API Key를 먼저 설정해주세요.");
+            } else if (errorMessage === "USAGE_LIMIT_REACHED") {
+                alert("원장님, 이번 달(또는 현재 등급)의 AI 생성 사용 한도에 도달했습니다.\n\n한도 증액이나 등급 상향은 관리자에게 문의해 주세요! 🍌🚀");
             } else {
                 // [DEBUG] 실제 에러 메시지 노출 (사용자 요청)
                 alert(`오류가 발생했습니다: ${errorMessage}\n\n잠시 후 다시 시도해주세요.`);
