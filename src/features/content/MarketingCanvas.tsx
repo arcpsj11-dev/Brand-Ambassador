@@ -233,7 +233,7 @@ export const MarketingCanvas: React.FC = () => {
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 md:grid-cols-7 xl:grid-cols-10 gap-3">
+                <div className="grid grid-cols-10 gap-3">
                     {monthlyPlan.map((plan: any) => (
                         <MarketingCard
                             key={plan.day}

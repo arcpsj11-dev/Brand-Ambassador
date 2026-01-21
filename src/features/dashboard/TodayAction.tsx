@@ -77,7 +77,7 @@ export const TodayAction: React.FC = () => {
                     </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row items-start gap-4">
+                <div className="flex items-start gap-4">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isLocked ? 'bg-gray-800 text-gray-400' : 'bg-brand-primary/20 text-brand-primary shadow-neon-sm'
                         }`}>
                         {isLocked ? <Lock size={24} /> : <Target size={24} />}
@@ -125,11 +125,11 @@ export const TodayAction: React.FC = () => {
                         </p>
                     </div>
                     {!isLocked && (
-                        <div className="w-full sm:w-auto mt-4 sm:mt-0">
+                        <div className="w-auto mt-0">
                             <button
                                 onClick={handleStart}
                                 disabled={!activeSlot}
-                                className={`w-full sm:w-auto px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-2 shadow-neon-sm ${activeSlot
+                                className={`px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-2 shadow-neon-sm ${activeSlot
                                     ? 'bg-brand-primary text-black hover:scale-105'
                                     : 'bg-gray-800 text-gray-500 cursor-not-allowed opacity-50'
                                     }`}
@@ -141,7 +141,7 @@ export const TodayAction: React.FC = () => {
                     )}
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4">
+                <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-3 gap-6">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center">
                             <Trophy size={16} className="text-brand-primary" />
