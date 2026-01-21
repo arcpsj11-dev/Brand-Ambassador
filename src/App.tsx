@@ -24,17 +24,12 @@ const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const { isProfileComplete } = useProfileStore();
   const { activeTab, setActiveTab } = useUIStore();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const adminState = useAdminStore();
 
-  // 앱 로드 시 슬롯 시스템 마이그레이션 실행
   React.useEffect(() => {
     if (isAuthenticated) {
-      // 마이그레이션 후 활성 슬롯이 없다면 첫 슬롯 지정
       useSlotStore.getState().ensureActiveSlot();
-      // 날짜 변경 시 오늘의 액션 상태 초기화 체크
       useContentStore.getState().checkAndResetDailyStatus();
-      // 관리자 실시간 데이터 동기화
       adminState.fetchUsers();
       adminState.fetchSettings();
       if (user?.id) adminState.fetchUserStats(user.id);
@@ -45,8 +40,6 @@ const App: React.FC = () => {
     return <Login />;
   }
 
-  // 관리자는 프로파일 설정 건너뛰기 가능
-  // 일반 사용자는 프로파일 완료 필수
   if (!isProfileComplete && user?.role !== 'admin') {
     return <ProfileSetup />;
   }
@@ -63,171 +56,45 @@ const App: React.FC = () => {
     navItems.push({ id: 'admin' as AppTab, label: '관리자 페이지', icon: ShieldCheck });
   }
 
-  const isNotAdmin = activeTab !== 'admin';
-
   return (
-    <div className="min-h-screen flex bg-background text-white selection:bg-brand-primary/30 text-xs font-medium overflow-x-hidden">
+    <div className="min-h-screen bg-background text-white selection:bg-brand-primary/30 text-xs font-medium overflow-x-hidden">
       <WelcomeModal />
       <Step3UnlockOverlay />
 
-      {/* Mobile Floating Header (Visible only on small screens) */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-16 z-[100] bg-background/80 backdrop-blur-xl border-b border-white/5 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-neon">
-            <Sparkles className="text-black" size={16} />
-          </div>
-          <span className="font-black text-sm tracking-tight">BRAND AMBASSADOR</span>
-        </div>
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 text-gray-400 hover:text-brand-primary transition-colors"
-        >
-          {isMobileMenuOpen ? (
-            <LayoutDashboard className="rotate-45" size={24} />
-          ) : (
-            <div className="space-y-1.5">
-              <div className="w-6 h-0.5 bg-current rounded-full" />
-              <div className="w-6 h-0.5 bg-current rounded-full" />
-              <div className="w-6 h-0.5 bg-current rounded-full" />
-            </div>
-          )}
-        </button>
-      </header>
-
-      {/* Mobile Sidebar (Fixed Slide-over) */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="md:hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm"
-            />
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="md:hidden fixed top-0 left-0 bottom-0 w-[280px] z-[120] bg-background border-r border-white/5 flex flex-col pt-4 overflow-y-auto"
-            >
-              {/* Logo / Header Area */}
-              <div className="p-8 pb-4 flex items-center gap-3">
-                <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-neon">
-                  <Sparkles className="text-black" size={20} />
-                </div>
-                <div>
-                  <span className="font-black text-xl tracking-tight block leading-tight">BRAND<br />AMBASSADOR</span>
-                  <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em] block mt-1">MVP DEMO v2.2</span>
-                </div>
-              </div>
-
-              {/* Navigation Items */}
-              <nav className="flex-1 px-4 space-y-2 mt-4">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive ? 'bg-brand-primary text-black shadow-neon' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
-                    >
-                      <Icon size={18} className={isActive ? 'text-black' : 'text-gray-500 group-hover:text-brand-primary'} />
-                      <span className="font-bold text-sm">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-
-              {/* User Stats & Logout */}
-              <div className="p-4 space-y-3 border-t border-white/5">
-                {user && (
-                  <div className="glass-card px-3 py-3 text-xs space-y-3 font-medium">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">User Stats</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-black italic ${user.tier === 'ULTRA' ? 'bg-brand-primary/20 text-brand-primary' : user.tier === 'PRO' ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-gray-400'}`}>
-                        {user.tier}
-                      </span>
-                    </div>
-                    {(() => {
-                      const currentUserStats = adminState.users.find(u => u.id === user.id);
-                      const currentUsage = currentUserStats?.usageCount || 0;
-                      const maxUsage = adminState.tierConfigs[user.tier]?.maxUsage || 0;
-                      const usagePercentage = Math.min(100, (currentUsage / (maxUsage || 1)) * 100);
-                      const completedCount = useContentStore.getState().completedCount;
-                      return (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-end">
-                              <span className="text-gray-400 font-bold text-[10px]">AI 글 생성</span>
-                              <span className="text-white font-black text-xs">{currentUsage} / {maxUsage}</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
-                              <motion.div initial={{ width: 0 }} animate={{ width: `${usagePercentage}%` }} className={`h-full rounded-full ${usagePercentage >= 100 ? 'bg-red-500' : 'bg-brand-primary'} shadow-neon-sm`} />
-                            </div>
-                          </div>
-                          <div className="pt-2 border-t border-white/5 flex justify-between items-center">
-                            <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">오늘 완료</span>
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                              <span className="text-brand-primary font-black text-xs">{completedCount}</span>
-                              <span className="text-gray-600 text-[8px] font-bold italic">DONE</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-                <button
-                  onClick={logout}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-gray-500 hover:bg-red-500/10 hover:text-red-500 transition-all text-sm font-bold"
-                >
-                  <LogOut size={16} /> 로그아웃
-                </button>
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Desktop Sidebar (In-flow / Sticky) */}
-      {isNotAdmin && (
-        <aside className="hidden md:flex sticky top-0 h-screen w-64 border-r border-white/5 bg-background/50 backdrop-blur-xl flex-col shrink-0 overflow-y-auto custom-scrollbar z-[90]">
-          {/* Logo Section */}
+      {/* Classic Desktop Sidebar: Fixed Position, Always Visible */}
+      {activeTab !== 'admin' && (
+        <aside className="fixed top-0 left-0 h-full w-64 border-r border-white/5 bg-background/50 backdrop-blur-xl flex flex-col z-50">
           <div className="p-8 pb-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-neon">
               <Sparkles className="text-black" size={20} />
             </div>
             <div>
-              <span className="font-black text-xl tracking-tight block leading-tight uppercase italic underline decoration-brand-primary/30">BRAND<br />AMBASSADOR</span>
+              <span className="font-black text-xl tracking-tight block leading-tight">BRAND<br />AMBASSADOR</span>
               <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em] block mt-1">MVP DEMO v2.2</span>
             </div>
           </div>
 
-          {/* Navigation Items */}
           <nav className="flex-1 px-4 space-y-2 mt-4">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive ? 'bg-brand-primary text-black shadow-neon' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive
+                    ? 'bg-brand-primary text-black shadow-neon'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                    }`}
                 >
                   <Icon size={18} className={isActive ? 'text-black' : 'text-gray-500 group-hover:text-brand-primary'} />
-                  <span className="font-bold text-sm tracking-tighter">{item.label}</span>
+                  <span className="font-bold text-sm">{item.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          {/* User Stats Area */}
           <div className="p-4 space-y-3 border-t border-white/5">
             {user && (
               <div className="glass-card px-3 py-3 text-xs space-y-3 font-medium">
@@ -237,23 +104,36 @@ const App: React.FC = () => {
                     {user.tier}
                   </span>
                 </div>
+
                 {(() => {
                   const currentUserStats = adminState.users.find(u => u.id === user.id);
                   const currentUsage = currentUserStats?.usageCount || 0;
                   const maxUsage = adminState.tierConfigs[user.tier]?.maxUsage || 0;
                   const usagePercentage = Math.min(100, (currentUsage / (maxUsage || 1)) * 100);
                   const completedCount = useContentStore.getState().completedCount;
+
                   return (
                     <div className="space-y-4">
+                      {/* AI Generation Usage */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-end">
-                          <span className="text-gray-400 font-bold text-[10px]">AI 글 생성</span>
-                          <span className="text-white font-black text-xs">{currentUsage} / {maxUsage}</span>
+                          <div className="flex flex-col">
+                            <span className="text-gray-400 font-bold text-[10px]">AI 글 생성</span>
+                          </div>
+                          <span className="text-white font-black text-xs">
+                            {currentUsage} / {maxUsage}
+                          </span>
                         </div>
                         <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${usagePercentage}%` }} className={`h-full rounded-full ${usagePercentage >= 100 ? 'bg-red-500' : 'bg-brand-primary'} shadow-neon-sm`} />
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${usagePercentage}%` }}
+                            className={`h-full rounded-full ${usagePercentage >= 100 ? 'bg-red-500' : 'bg-brand-primary'} shadow-neon-sm`}
+                          />
                         </div>
                       </div>
+
+                      {/* Today's Completed Actions */}
                       <div className="pt-2 border-t border-white/5 flex justify-between items-center">
                         <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">오늘 완료</span>
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
@@ -264,23 +144,28 @@ const App: React.FC = () => {
                     </div>
                   );
                 })()}
+
+                <div className="pt-2 border-t border-white/5">
+                  <p className="font-black text-[9px] truncate text-white/50 tracking-wider text-center">{user.id}</p>
+                </div>
               </div>
             )}
-
             <button
               onClick={logout}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-gray-500 hover:bg-red-500/10 hover:text-red-500 transition-all text-sm font-bold"
             >
-              <LogOut size={16} /> 로그아웃
+              <LogOut size={16} />
+              로그아웃
             </button>
           </div>
         </aside>
       )}
 
-      {/* Main Content Area */}
+      {/* Main Content: Explicit Left Margin */}
       <main className={`
-        flex-1 min-h-screen relative overflow-x-hidden
-        ${activeTab === 'admin' ? 'p-0 pt-0' : 'p-5 md:p-10 pt-24 md:pt-10'}
+        min-h-screen relative
+        ${activeTab === 'admin' ? '' : 'ml-64'}
+        ${activeTab === 'admin' ? 'p-0' : 'p-10'}
       `}>
         <AnimatePresence mode="wait">
           <motion.div
@@ -294,10 +179,10 @@ const App: React.FC = () => {
               <div className="space-y-8">
                 <header className="space-y-3">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <h1 className="text-4xl md:text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
+                    <h1 className="text-5xl font-black neon-text uppercase italic tracking-tighter leading-none">
                       대시보드
                     </h1>
-                    <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                    <div className="w-auto">
                       <SlotSelector />
                     </div>
                   </div>
