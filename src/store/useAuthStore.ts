@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useAdminStore } from './useAdminStore';
 import { useContentStore } from './useContentStore';
 import { useTopicStore } from './useTopicStore';
 import { useSlotStore } from './useSlotStore';
 import { usePlannerStore } from './usePlannerStore';
+
+import { supabase } from '../lib/supabaseClient';
 
 export type UserRole = 'admin' | 'user';
 export type MembershipTier = 'BASIC' | 'PRO' | 'ULTRA';
@@ -20,26 +21,18 @@ interface UserInfo {
     expiresAt?: string;
     autoAdjustment?: boolean;
     hasSeenManual?: boolean;
-}
-
-interface RegisteredUser {
-    id: string;
-    pw: string;
-    tier: MembershipTier;
-    role: UserRole;
-    expiresAt?: string;
-    autoAdjustment?: boolean;
+    usageCount: number;
 }
 
 interface AuthState {
     user: UserInfo | null;
     isAuthenticated: boolean;
-    registeredUsers: RegisteredUser[];
-    login: (id: string, pw: string) => boolean;
-    signup: (id: string, pw: string) => boolean;
+    login: (id: string, pw: string) => Promise<boolean>;
+    signup: (id: string, pw: string) => Promise<boolean>;
     logout: () => void;
     updateTier: (tier: MembershipTier) => void;
     setHasSeenManual: (seen: boolean) => void;
+    refreshUser: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -47,61 +40,100 @@ export const useAuthStore = create<AuthState>()(
         (set, get) => ({
             user: null,
             isAuthenticated: false,
-            registeredUsers: [
-                { id: 'admin', pw: 'admin123', tier: 'ULTRA', role: 'admin' },
-                { id: 'user', pw: 'user123', tier: 'BASIC', role: 'user', autoAdjustment: true },
-                { id: 'grow', pw: '1234', tier: 'PRO', role: 'user', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), autoAdjustment: true },
-                { id: 'scale', pw: '1234', tier: 'ULTRA', role: 'user', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), autoAdjustment: true },
-                { id: 'diamond', pw: '1234', tier: 'ULTRA', role: 'user' },
-            ],
-            login: (id, pw) => {
-                const { registeredUsers } = get();
-                const foundUser = registeredUsers.find(u => u.id === id && u.pw === pw);
+            login: async (id, pw) => {
+                const { data: foundUser, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', id)
+                    .eq('pw', pw)
+                    .single();
 
-                if (foundUser) {
+                if (foundUser && !error) {
+                    const isExpired = foundUser.expires_at && new Date() > new Date(foundUser.expires_at);
+                    const finalTier = (isExpired && foundUser.auto_adjustment) ? 'BASIC' : foundUser.tier;
+
                     set({
                         isAuthenticated: true,
                         user: {
                             id: foundUser.id,
                             role: foundUser.role,
-                            tier: (foundUser.expiresAt && new Date() > new Date(foundUser.expiresAt) && foundUser.autoAdjustment) ? 'BASIC' : foundUser.tier,
+                            tier: finalTier as MembershipTier,
                             accountStatus: foundUser.role === 'admin' ? 'TRUSTED' : 'NORMAL',
-                            remainingSearches: foundUser.tier === 'ULTRA' ? 999 : (foundUser.tier === 'PRO' ? 20 : 5),
+                            remainingSearches: finalTier === 'ULTRA' ? 999 : (finalTier === 'PRO' ? 20 : 5),
                             currentStep: foundUser.role === 'admin' ? 3 : 1,
-                            expiresAt: foundUser.expiresAt,
-                            autoAdjustment: foundUser.autoAdjustment,
-                            hasSeenManual: false // Default to false on login
+                            expiresAt: foundUser.expires_at,
+                            autoAdjustment: foundUser.auto_adjustment,
+                            hasSeenManual: foundUser.has_seen_manual || false,
+                            usageCount: foundUser.usage_count || 0
                         },
                     });
 
-                    // Trigger daily reset check immediately after login
-                    useContentStore.getState().checkAndResetDailyStatus();
+                    // Hydrate all data from Supabase
+                    const userId = foundUser.id;
+                    await Promise.all([
+                        useContentStore.getState().fetchContents(userId),
+                        useTopicStore.getState().fetchTopics(userId),
+                        useSlotStore.getState().fetchSlots(userId)
+                    ]);
 
+                    useContentStore.getState().checkAndResetDailyStatus();
                     return true;
                 }
                 return false;
             },
-            signup: (id, pw) => {
-                const { registeredUsers } = get();
-                if (registeredUsers.some(u => u.id === id)) {
-                    return false; // 이미 존재하는 아이디
+            signup: async (id, pw) => {
+                // Check if exists
+                const { data: existing } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('id', id)
+                    .single();
+
+                if (existing) return false;
+
+                const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+                const { error } = await supabase
+                    .from('users')
+                    .insert([{
+                        id,
+                        pw,
+                        tier: 'BASIC',
+                        role: 'user',
+                        auto_adjustment: true,
+                        expires_at: expiresAt,
+                        usage_count: 0
+                    }]);
+
+                if (error) {
+                    console.error("Signup Error:", error);
+                    return false;
                 }
 
-                const newUser: RegisteredUser = {
-                    id,
-                    pw,
-                    tier: 'BASIC',
-                    role: 'user',
-                    autoAdjustment: true,
-                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // Default 7 days trial
-                };
-
-                set({ registeredUsers: [...registeredUsers, newUser] });
-
-                // Sync with Admin Dashboard
-                useAdminStore.getState().addUser(id);
-
                 return true;
+            },
+            refreshUser: async () => {
+                const { user } = get();
+                if (!user) return;
+
+                const { data: foundUser } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                if (foundUser) {
+                    set({
+                        user: {
+                            ...user,
+                            tier: foundUser.tier as MembershipTier,
+                            expiresAt: foundUser.expires_at,
+                            autoAdjustment: foundUser.auto_adjustment,
+                            usageCount: foundUser.usage_count || 0,
+                            hasSeenManual: foundUser.has_seen_manual || false
+                        }
+                    });
+                }
             },
             logout: () => {
                 set({ user: null, isAuthenticated: false });

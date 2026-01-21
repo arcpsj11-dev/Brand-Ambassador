@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { type MembershipTier } from './useAuthStore';
 import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabaseClient';
 
 // 페르소나 설정 인터페이스
 export interface PersonaSetting {
@@ -44,22 +45,23 @@ interface SlotState {
     canCreateSlot: (tier: UserTier) => boolean;
 
     // CRUD
-    createSlot: (config: Partial<BlogSlot>) => string;
-    updateSlot: (id: string, updates: Partial<BlogSlot>) => void;
-    deleteSlot: (id: string) => void;
-    setActiveSlot: (id: string) => void;
+    createSlot: (config: Partial<BlogSlot>) => Promise<string>;
+    updateSlot: (id: string, updates: Partial<BlogSlot>) => Promise<void>;
+    deleteSlot: (id: string) => Promise<void>;
+    setActiveSlot: (id: string) => Promise<void>;
     getSlotById: (id: string) => BlogSlot | undefined;
 
     // Progress
-    advanceSlotIndex: (slotId: string) => void;
-    resetSlotProgress: (slotId: string) => void;
+    advanceSlotIndex: (slotId: string) => Promise<void>;
+    resetSlotProgress: (slotId: string) => Promise<void>;
 
     // Cluster management
-    updateCluster: (slotId: string, cluster: CurrentCluster) => void;
+    updateCluster: (slotId: string, cluster: CurrentCluster) => Promise<void>;
 
     // Safety
     ensureActiveSlot: () => void;
     clearStore: () => void;
+    fetchSlots: (userId: string) => Promise<void>;
 }
 
 // 등급별 슬롯 제한 맵 (Fallback defaults)
@@ -88,7 +90,7 @@ export const useSlotStore = create<SlotState>()(
             },
 
             // 슬롯 생성
-            createSlot: (config) => {
+            createSlot: async (config) => {
                 const newSlot: BlogSlot = {
                     slotId: `slot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     slotName: config.slotName || '새 블로그',
@@ -109,40 +111,70 @@ export const useSlotStore = create<SlotState>()(
                     lastActionDate: config.lastActionDate || new Date().toISOString().split('T')[0]
                 };
 
-                set((state) => ({
-                    slots: [...state.slots, newSlot],
-                    activeSlotId: state.activeSlotId || newSlot.slotId
-                }));
+                const { slots, activeSlotId } = get();
+                const newSlots = [...slots, newSlot];
+                const newActiveId = activeSlotId || newSlot.slotId;
+
+                const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+                if (userId) {
+                    await supabase.from('blog_slots')
+                        .upsert({ user_id: userId, slots: newSlots, active_slot_id: newActiveId, updated_at: new Date() }, { onConflict: 'user_id' });
+                }
+
+                set({
+                    slots: newSlots,
+                    activeSlotId: newActiveId
+                });
 
                 return newSlot.slotId;
             },
 
             // 슬롯 업데이트
-            updateSlot: (id, updates) => {
-                set((state) => ({
-                    slots: state.slots.map((slot) =>
-                        slot.slotId === id ? { ...slot, ...updates } : slot
-                    )
-                }));
+            updateSlot: async (id: string, updates: Partial<BlogSlot>) => {
+                const { slots } = get() as SlotState;
+                const newSlots = slots.map((slot: BlogSlot) =>
+                    slot.slotId === id ? { ...slot, ...updates } : slot
+                );
+
+                const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+                if (userId) {
+                    await supabase.from('blog_slots')
+                        .update({ slots: newSlots, updated_at: new Date() })
+                        .eq('user_id', userId);
+                }
+
+                set({ slots: newSlots });
             },
 
             // 슬롯 삭제
-            deleteSlot: (id) => {
-                set((state) => {
-                    const newSlots = state.slots.filter((slot) => slot.slotId !== id);
-                    const newActiveId = state.activeSlotId === id
-                        ? (newSlots[0]?.slotId || null)
-                        : state.activeSlotId;
+            deleteSlot: async (id: string) => {
+                const { slots, activeSlotId } = get() as SlotState;
+                const newSlots = slots.filter((slot: BlogSlot) => slot.slotId !== id);
+                const newActiveId = activeSlotId === id
+                    ? (newSlots[0]?.slotId || null)
+                    : activeSlotId;
 
-                    return {
-                        slots: newSlots,
-                        activeSlotId: newActiveId
-                    };
+                const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+                if (userId) {
+                    await supabase.from('blog_slots')
+                        .update({ slots: newSlots, active_slot_id: newActiveId, updated_at: new Date() })
+                        .eq('user_id', userId);
+                }
+
+                set({
+                    slots: newSlots,
+                    activeSlotId: newActiveId
                 });
             },
 
             // 활성 슬롯 설정
-            setActiveSlot: (id) => {
+            setActiveSlot: async (id) => {
+                const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+                if (userId) {
+                    await supabase.from('blog_slots')
+                        .update({ active_slot_id: id, updated_at: new Date() })
+                        .eq('user_id', userId);
+                }
                 set({ activeSlotId: id });
             },
 
@@ -152,59 +184,80 @@ export const useSlotStore = create<SlotState>()(
             },
 
             // 슬롯 인덱스 진행 (발행 완료 시)
-            advanceSlotIndex: (slotId) => {
-                set((state) => ({
-                    slots: state.slots.map((slot) => {
-                        if (slot.slotId !== slotId) return slot;
+            advanceSlotIndex: async (slotId) => {
+                const { slots } = get();
+                const newSlots = slots.map((slot) => {
+                    if (slot.slotId !== slotId) return slot;
 
-                        let nextIndex = slot.currentCluster.currentIndex + 1;
+                    let nextIndex = slot.currentCluster.currentIndex + 1;
+                    const maxIndex = 1 + (slot.currentCluster.satelliteTitles?.length || 9);
 
-                        // Dynamic limit based on actual content length (1 pillar + satellites)
-                        const maxIndex = 1 + (slot.currentCluster.satelliteTitles?.length || 9);
+                    if (nextIndex > maxIndex) {
+                        nextIndex = 1;
+                    }
 
-                        // Reset after completion
-                        if (nextIndex > maxIndex) {
-                            nextIndex = 1;
-                        }
+                    return {
+                        ...slot,
+                        currentCluster: {
+                            ...slot.currentCluster,
+                            currentIndex: nextIndex
+                        },
+                        lastActionDate: new Date().toISOString().split('T')[0]
+                    };
+                });
 
-                        return {
-                            ...slot,
-                            currentCluster: {
-                                ...slot.currentCluster,
-                                currentIndex: nextIndex
-                            },
-                            lastActionDate: new Date().toISOString().split('T')[0]
-                        };
-                    })
-                }));
+                const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+                if (userId) {
+                    await supabase.from('blog_slots')
+                        .update({ slots: newSlots, updated_at: new Date() })
+                        .eq('user_id', userId);
+                }
+
+                set({ slots: newSlots });
             },
 
             // 슬롯 진행도 초기화
-            resetSlotProgress: (slotId) => {
-                set((state) => ({
-                    slots: state.slots.map((slot) =>
-                        slot.slotId === slotId
-                            ? {
-                                ...slot,
-                                currentCluster: {
-                                    ...slot.currentCluster,
-                                    currentIndex: 1
-                                }
+            resetSlotProgress: async (slotId) => {
+                const { slots } = get();
+                const newSlots = slots.map((slot) =>
+                    slot.slotId === slotId
+                        ? {
+                            ...slot,
+                            currentCluster: {
+                                ...slot.currentCluster,
+                                currentIndex: 1
                             }
-                            : slot
-                    )
-                }));
+                        }
+                        : slot
+                );
+
+                const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+                if (userId) {
+                    await supabase.from('blog_slots')
+                        .update({ slots: newSlots, updated_at: new Date() })
+                        .eq('user_id', userId);
+                }
+
+                set({ slots: newSlots });
             },
 
             // 클러스터 업데이트
-            updateCluster: (slotId, cluster) => {
-                set((state) => ({
-                    slots: state.slots.map((slot) =>
-                        slot.slotId === slotId
-                            ? { ...slot, currentCluster: cluster }
-                            : slot
-                    )
-                }));
+            updateCluster: async (slotId: string, cluster: CurrentCluster) => {
+                const { slots } = get() as SlotState;
+                const newSlots = slots.map((slot: BlogSlot) =>
+                    slot.slotId === slotId
+                        ? { ...slot, currentCluster: cluster }
+                        : slot
+                );
+
+                const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+                if (userId) {
+                    await supabase.from('blog_slots')
+                        .update({ slots: newSlots, updated_at: new Date() })
+                        .eq('user_id', userId);
+                }
+
+                set({ slots: newSlots });
             },
 
             // 안전장치: 슬롯이 있는데 활성 슬롯이 없으면 첫 번째 선택
@@ -214,7 +267,22 @@ export const useSlotStore = create<SlotState>()(
                     set({ activeSlotId: slots[0].slotId });
                 }
             },
-            clearStore: () => set({ slots: [], activeSlotId: null })
+            clearStore: () => set({ slots: [], activeSlotId: null }),
+
+            fetchSlots: async (userId: string) => {
+                const { data, error } = await supabase
+                    .from('blog_slots')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (data && !error) {
+                    set({
+                        slots: data.slots || [],
+                        activeSlotId: data.active_slot_id || (data.slots && data.slots[0]?.slotId) || null
+                    });
+                }
+            }
         }),
         {
             name: 'brand-ambassador-slot-storage'

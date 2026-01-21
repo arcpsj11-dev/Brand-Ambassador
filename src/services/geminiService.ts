@@ -250,7 +250,7 @@ export const geminiReasoningService = {
 
             // Increment usage count on successful start
             if (authUser && authUser.role !== 'admin') {
-                adminState.incrementUsage(authUser.id);
+                await adminState.incrementUsage(authUser.id);
             }
 
             const activeOccupation = adminState.getActiveOccupation();
@@ -351,7 +351,7 @@ export const geminiReasoningService = {
             const adminState = useAdminStore.getState();
 
             if (authUser && authUser.role !== 'admin') {
-                adminState.incrementUsage(authUser.id);
+                await adminState.incrementUsage(authUser.id);
             }
 
             const activeOccupation = adminState.getActiveOccupation();
@@ -442,7 +442,7 @@ ${contentBody}
             const adminState = useAdminStore.getState();
 
             if (authUser && authUser.role !== 'admin') {
-                adminState.incrementUsage(authUser.id);
+                await adminState.incrementUsage(authUser.id);
             }
 
             const activeOccupation = adminState.getActiveOccupation();
@@ -481,7 +481,7 @@ ${contentBody}
             const adminState = useAdminStore.getState();
 
             if (authUser && authUser.role !== 'admin') {
-                adminState.incrementUsage(authUser.id);
+                await adminState.incrementUsage(authUser.id);
             }
 
             const activeOccupation = adminState.getActiveOccupation();

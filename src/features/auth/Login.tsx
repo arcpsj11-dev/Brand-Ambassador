@@ -8,30 +8,40 @@ export const Login: React.FC = () => {
     const [pw, setPw] = useState('');
     const [isSignup, setIsSignup] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const login = useAuthStore((state) => state.login);
     const signup = useAuthStore((state) => state.signup);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
-        if (isSignup) {
-            if (id.length < 2 || pw.length < 4) {
-                setError('아이디는 2자 이상, 비밀번호는 4자 이상 입력해주세요.');
-                return;
-            }
-            const success = signup(id, pw);
-            if (success) {
-                alert('🎉 회원가입이 완료되었습니다! 이제 로그인해 주세요.');
-                setIsSignup(false);
+        try {
+            if (isSignup) {
+                if (id.length < 2 || pw.length < 4) {
+                    setError('아이디는 2자 이상, 비밀번호는 4자 이상 입력해주세요.');
+                    setIsLoading(false);
+                    return;
+                }
+                const success = await signup(id, pw);
+                if (success) {
+                    alert('🎉 회원가입이 완료되었습니다! 이제 로그인해 주세요.');
+                    setIsSignup(false);
+                } else {
+                    setError('이미 존재하는 아이디입니다.');
+                }
             } else {
-                setError('이미 존재하는 아이디입니다.');
+                const success = await login(id, pw);
+                if (!success) {
+                    setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+                }
             }
-        } else {
-            const success = login(id, pw);
-            if (!success) {
-                setError('아이디 또는 비밀번호가 올바르지 않습니다.');
-            }
+        } catch (err) {
+            console.error(err);
+            setError('서버 연결 중 오류가 발생했습니다.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -96,18 +106,20 @@ export const Login: React.FC = () => {
                     <div className="space-y-3 pt-2">
                         <button
                             type="submit"
-                            className="w-full bg-brand-primary text-black font-black py-4 rounded-xl flex items-center justify-center gap-2 hover:shadow-neon hover:scale-[1.02] active:scale-[0.98] transition-all text-sm uppercase tracking-tight"
+                            disabled={isLoading}
+                            className="w-full bg-brand-primary text-black font-black py-4 rounded-xl flex items-center justify-center gap-2 hover:shadow-neon hover:scale-[1.02] active:scale-[0.98] transition-all text-sm uppercase tracking-tight disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSignup ? '가입 완료하기' : '로그인 시작하기'}
+                            {isLoading ? '처리 중...' : (isSignup ? '가입 완료하기' : '로그인 시작하기')}
                         </button>
 
                         <button
                             type="button"
+                            disabled={isLoading}
                             onClick={() => {
                                 setIsSignup(!isSignup);
                                 setError('');
                             }}
-                            className="w-full bg-white/5 text-gray-400 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 hover:text-white transition-all border border-white/5 text-xs uppercase tracking-widest"
+                            className="w-full bg-white/5 text-gray-400 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 hover:text-white transition-all border border-white/5 text-xs uppercase tracking-widest disabled:opacity-30"
                         >
                             {isSignup ? '기존 계정으로 로그인' : '회원가입 신청하기'}
                         </button>

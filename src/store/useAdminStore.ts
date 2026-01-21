@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabaseClient';
 
 export interface PromptSet {
     title: string;
@@ -57,10 +58,14 @@ interface AdminState extends AdminSettings {
 
     updateTierConfig: (tierId: string, updates: Partial<{ maxSlots: number; maxUsage: number; durationRaw: string }>) => void;
 
-    updateUserTier: (userId: string, tier: 'BASIC' | 'PRO' | 'ULTRA') => void;
-    updateUserMembership: (userId: string, updates: { expiresAt?: string; autoAdjustment?: boolean; usageCount?: number }) => void;
-    addUser: (userId: string) => void;
-    incrementUsage: (userId: string) => void;
+    updateUserTier: (userId: string, tier: 'BASIC' | 'PRO' | 'ULTRA') => Promise<void>;
+    updateUserMembership: (userId: string, updates: { expiresAt?: string; autoAdjustment?: boolean; usageCount?: number }) => Promise<void>;
+    addUser: (userId: string) => Promise<void>;
+    incrementUsage: (userId: string) => Promise<void>;
+    fetchUserStats: (userId: string) => Promise<void>;
+    fetchUsers: () => Promise<void>;
+    fetchSettings: () => Promise<void>;
+    saveSettings: () => Promise<void>;
 
     // Helper to get current active occupation
     getActiveOccupation: () => Occupation;
@@ -237,16 +242,34 @@ export const useAdminStore = create<AdminState>()(
                 'ULTRA': { maxSlots: 5, maxUsage: 5, durationRaw: '30일', label: 'ULTRA' }
             },
 
-            setGeminiApiKey: (key) => set({ geminiApiKey: key }),
-            setNanoBananaApiKey: (key) => set({ nanoBananaApiKey: key }),
-            setDallEApiKey: (key) => set({ dallEApiKey: key }),
-            setNaverClientId: (id) => set({ naverClientId: id }),
-            setNaverClientSecret: (secret) => set({ naverClientSecret: secret }),
-            setActiveImageProvider: (provider) => set({ activeImageProvider: provider }),
+            setGeminiApiKey: (key: string) => {
+                set({ geminiApiKey: key });
+                get().saveSettings();
+            },
+            setNanoBananaApiKey: (key: string) => {
+                set({ nanoBananaApiKey: key });
+                get().saveSettings();
+            },
+            setDallEApiKey: (key: string) => {
+                set({ dallEApiKey: key });
+                get().saveSettings();
+            },
+            setNaverClientId: (id: string) => {
+                set({ naverClientId: id });
+                get().saveSettings();
+            },
+            setNaverClientSecret: (secret: string) => {
+                set({ naverClientSecret: secret });
+                get().saveSettings();
+            },
+            setActiveImageProvider: (provider: any) => {
+                set({ activeImageProvider: provider });
+                get().saveSettings();
+            },
 
-            setActiveOccupation: (id) => set({ activeOccupationId: id }),
+            setActiveOccupation: (id: string) => set({ activeOccupationId: id }),
 
-            addOccupation: (id, label) => set((state) => ({
+            addOccupation: (id: string, label: string) => set((state: any) => ({
                 occupations: {
                     ...state.occupations,
                     [id]: {
@@ -257,17 +280,17 @@ export const useAdminStore = create<AdminState>()(
                 }
             })),
 
-            updateTierConfig: (tierId, updates) => set((state) => ({
+            updateTierConfig: (tierId: string, updates: any) => set((state: any) => ({
                 tierConfigs: {
                     ...state.tierConfigs,
                     [tierId]: {
-                        ...state.tierConfigs[tierId],
+                        ...state.tierConfigs[tierId as keyof typeof state.tierConfigs],
                         ...updates
                     }
                 }
             })),
 
-            updateOccupationPrompt: (occupationId, type, content) => set((state) => ({
+            updateOccupationPrompt: (occupationId: string, type: string, content: string) => set((state: any) => ({
                 occupations: {
                     ...state.occupations,
                     [occupationId]: {
@@ -280,36 +303,203 @@ export const useAdminStore = create<AdminState>()(
                 }
             })),
 
-            updateUserTier: (userId, tier) => set((state) => ({
-                users: state.users.map(u => u.id === userId ? { ...u, tier } : u)
-            })),
+            updateUserTier: async (userId: string, tier: 'BASIC' | 'PRO' | 'ULTRA') => {
+                const { error } = await supabase
+                    .from('users')
+                    .update({ tier })
+                    .eq('id', userId);
 
-            updateUserMembership: (userId, updates) => set((state) => ({
-                users: state.users.map(u => u.id === userId ? { ...u, ...updates } : u)
-            })),
+                if (!error) {
+                    set((state) => ({
+                        users: state.users.map(u => u.id === userId ? { ...u, tier } : u)
+                    }));
+                }
+            },
 
-            addUser: (userId) => set((state) => {
-                // Prevent duplicate entries
-                if (state.users.some(u => u.id === userId)) return state;
+            updateUserMembership: async (userId: string, updates: { expiresAt?: string; autoAdjustment?: boolean; usageCount?: number }) => {
+                const dbUpdates: any = {};
+                if (updates.expiresAt !== undefined) dbUpdates.expires_at = updates.expiresAt;
+                if (updates.autoAdjustment !== undefined) dbUpdates.auto_adjustment = updates.autoAdjustment;
+                if (updates.usageCount !== undefined) dbUpdates.usage_count = updates.usageCount;
 
-                return {
-                    users: [
-                        ...state.users,
-                        {
-                            id: userId,
-                            tier: 'BASIC',
-                            role: 'user',
-                            autoAdjustment: true,
-                            usageCount: 0,
-                            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // Default 7 days trial
-                        }
-                    ]
-                };
-            }),
+                const { error } = await supabase
+                    .from('users')
+                    .update(dbUpdates)
+                    .eq('id', userId);
 
-            incrementUsage: (userId) => set((state) => ({
-                users: state.users.map(u => u.id === userId ? { ...u, usageCount: u.usageCount + 1 } : u)
-            })),
+                if (!error) {
+                    set((state) => ({
+                        users: state.users.map(u => u.id === userId ? { ...u, ...updates } : u)
+                    }));
+                }
+            },
+
+            addUser: async (userId: string) => {
+                // Check locally first
+                const { users } = get();
+                if (users.some(u => u.id === userId)) return;
+
+                const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+                const { error } = await supabase
+                    .from('users')
+                    .insert([{
+                        id: userId,
+                        pw: '1234', // Default for manual addition
+                        tier: 'BASIC',
+                        role: 'user',
+                        auto_adjustment: true,
+                        usage_count: 0,
+                        expires_at: expiresAt
+                    }]);
+
+                if (!error) {
+                    set((state) => ({
+                        users: [
+                            ...state.users,
+                            {
+                                id: userId,
+                                tier: 'BASIC',
+                                role: 'user',
+                                autoAdjustment: true,
+                                usageCount: 0,
+                                expiresAt
+                            }
+                        ]
+                    }));
+                }
+            },
+
+            incrementUsage: async (userId: string) => {
+                const { users } = get();
+                let user = users.find(u => u.id === userId);
+
+                let currentCount = 0;
+
+                if (!user) {
+                    const { data } = await supabase.from('users').select('usage_count').eq('id', userId).single();
+                    if (data) currentCount = data.usage_count || 0;
+                } else {
+                    currentCount = user.usageCount;
+                }
+
+                const newCount = currentCount + 1;
+
+                const { error } = await supabase
+                    .from('users')
+                    .update({ usage_count: newCount })
+                    .eq('id', userId);
+
+                if (!error) {
+                    set((state) => ({
+                        users: state.users.some(u => u.id === userId)
+                            ? state.users.map(u => u.id === userId ? { ...u, usageCount: newCount } : u)
+                            : [...state.users, { id: userId, usageCount: newCount } as any]
+                    }));
+
+                    const authStore = (await import('./useAuthStore')).useAuthStore;
+                    const authUser = authStore.getState().user;
+                    if (authUser && authUser.id === userId) {
+                        authStore.setState({
+                            user: { ...authUser, usageCount: newCount }
+                        });
+                    }
+                }
+            },
+
+            fetchUserStats: async (userId: string) => {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+
+                if (data && !error) {
+                    const mappedUser = {
+                        id: data.id,
+                        tier: data.tier as 'BASIC' | 'PRO' | 'ULTRA',
+                        role: data.role as 'user' | 'admin',
+                        expiresAt: data.expires_at,
+                        autoAdjustment: data.auto_adjustment,
+                        usageCount: data.usage_count || 0
+                    };
+
+                    set((state) => ({
+                        users: state.users.some(u => u.id === userId)
+                            ? state.users.map(u => u.id === userId ? mappedUser : u)
+                            : [...state.users, mappedUser]
+                    }));
+
+                    const authStore = (await import('./useAuthStore')).useAuthStore;
+                    const authUser = authStore.getState().user;
+                    if (authUser && authUser.id === userId) {
+                        authStore.setState({
+                            user: { ...authUser, usageCount: data.usage_count || 0 }
+                        });
+                    }
+                }
+            },
+
+            fetchUsers: async () => {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (data && !error) {
+                    set({
+                        users: data.map(u => ({
+                            id: u.id,
+                            tier: u.tier as 'BASIC' | 'PRO' | 'ULTRA',
+                            role: u.role as 'user' | 'admin',
+                            expiresAt: u.expires_at,
+                            autoAdjustment: u.auto_adjustment,
+                            usageCount: u.usage_count || 0
+                        }))
+                    });
+                }
+            },
+
+            fetchSettings: async () => {
+                const { data, error } = await supabase
+                    .from('admin_settings')
+                    .select('*');
+
+                if (data && !error) {
+                    const settings: any = {};
+                    data.forEach(item => {
+                        settings[item.key] = item.value;
+                    });
+
+                    set({
+                        geminiApiKey: settings.geminiApiKey || get().geminiApiKey,
+                        naverClientId: settings.naverClientId || get().naverClientId,
+                        naverClientSecret: settings.naverClientSecret || get().naverClientSecret,
+                        dallEApiKey: settings.dallEApiKey || get().dallEApiKey,
+                        nanoBananaApiKey: settings.nanoBananaApiKey || get().nanoBananaApiKey,
+                        activeImageProvider: settings.activeImageProvider || get().activeImageProvider,
+                        tierConfigs: settings.tierConfigs || get().tierConfigs
+                    });
+                }
+            },
+
+            saveSettings: async () => {
+                const state = get();
+                const settingsToSave = [
+                    { key: 'geminiApiKey', value: state.geminiApiKey },
+                    { key: 'naverClientId', value: state.naverClientId },
+                    { key: 'naverClientSecret', value: state.naverClientSecret },
+                    { key: 'dallEApiKey', value: state.dallEApiKey },
+                    { key: 'nanoBananaApiKey', value: state.nanoBananaApiKey },
+                    { key: 'activeImageProvider', value: state.activeImageProvider },
+                    { key: 'tierConfigs', value: state.tierConfigs }
+                ];
+
+                for (const item of settingsToSave) {
+                    await supabase
+                        .from('admin_settings')
+                        .upsert([{ key: item.key, value: item.value }], { onConflict: 'key' });
+                }
+            },
 
             resetPrompts: () => set({
                 occupations: {

@@ -17,12 +17,14 @@ import { Sparkles, LogOut, LayoutDashboard, Database, LayoutGrid, Activity, Shie
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSlotStore } from './store/useSlotStore';
 import { useContentStore } from './store/useContentStore';
+import { useAdminStore } from './store/useAdminStore';
 import { WelcomeModal } from './features/onboarding/WelcomeModal';
 
 const App: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const { isProfileComplete } = useProfileStore();
   const { activeTab, setActiveTab } = useUIStore();
+  const adminState = useAdminStore();
 
   // 앱 로드 시 슬롯 시스템 마이그레이션 실행
   React.useEffect(() => {
@@ -31,8 +33,12 @@ const App: React.FC = () => {
       useSlotStore.getState().ensureActiveSlot();
       // 날짜 변경 시 오늘의 액션 상태 초기화 체크
       useContentStore.getState().checkAndResetDailyStatus();
+      // 관리자 실시간 데이터 동기화
+      adminState.fetchUsers();
+      adminState.fetchSettings();
+      if (user?.id) adminState.fetchUserStats(user.id);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   if (!isAuthenticated) {
     return <Login />;
@@ -94,13 +100,60 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 space-y-3 border-t border-white/5">
-          <div className="glass-card px-3 py-2 text-xs">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">User</span>
+          {user && (
+            <div className="glass-card px-3 py-3 text-xs space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">User Stats</span>
+                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black italic ${user.tier === 'ULTRA' ? 'bg-brand-primary/20 text-brand-primary' : user.tier === 'PRO' ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-gray-400'}`}>
+                  {user.tier}
+                </span>
+              </div>
+
+              {(() => {
+                const currentUserStats = adminState.users.find(u => u.id === user.id);
+                const currentUsage = currentUserStats?.usageCount || 0;
+                const maxUsage = adminState.tierConfigs[user.tier]?.maxUsage || 0;
+                const usagePercentage = Math.min(100, (currentUsage / (maxUsage || 1)) * 100);
+                const completedCount = useContentStore.getState().completedCount;
+
+                return (
+                  <div className="space-y-3">
+                    {/* AI Generation Usage */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-end">
+                        <div className="flex flex-col">
+                          <span className="text-gray-400 font-bold text-[10px]">AI 글 생성</span>
+                        </div>
+                        <span className="text-white font-black text-xs">
+                          {currentUsage} / {maxUsage}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${usagePercentage}%` }}
+                          className={`h-full ${usagePercentage >= 100 ? 'bg-red-500' : 'bg-brand-primary'} shadow-neon-sm`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Today's Completed Actions */}
+                    <div className="pt-2 border-t border-white/5 flex justify-between items-center">
+                      <span className="text-gray-500 font-bold text-[9px] uppercase tracking-widest">오늘의 액션 완료</span>
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                        <span className="text-brand-primary font-black text-xs">{completedCount}</span>
+                        <span className="text-gray-600 text-[9px] font-bold italic">DONE</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="pt-2 border-t border-white/5">
+                <p className="font-black text-xs truncate text-white/70">{user.id}</p>
+              </div>
             </div>
-            <p className="font-black text-sm truncate">{user?.id}</p>
-            <p className="text-[10px] text-brand-primary mt-0.5">{user?.tier} PLAN</p>
-          </div>
+          )}
           <button
             onClick={logout}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-500 transition-all text-sm font-bold"

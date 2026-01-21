@@ -29,7 +29,7 @@ export const AdminDashboard: React.FC = () => {
         activeOccupationId, occupations,
         updateOccupationPrompt,
         users, updateUserTier,
-        resetPrompts
+        resetPrompts, fetchUsers, fetchSettings,
     } = adminState;
 
     const [activeTab, setActiveTab] = useState<'prompts' | 'users' | 'settings' | 'image-test'>('prompts');
@@ -40,6 +40,12 @@ export const AdminDashboard: React.FC = () => {
     const [localDalleKey, setLocalDalleKey] = useState(dallEApiKey);
     const [localNanoKey, setLocalNanoKey] = useState(nanoBananaApiKey);
     const [localProvider, setLocalProvider] = useState(activeImageProvider);
+
+    // Initial fetch from Supabase
+    useEffect(() => {
+        fetchUsers();
+        fetchSettings();
+    }, []);
 
     // Sync local prompts when active occupation changes
     useEffect(() => {
@@ -268,7 +274,7 @@ export const AdminDashboard: React.FC = () => {
                                                             <input
                                                                 type="number"
                                                                 value={user.usageCount}
-                                                                onChange={(e) => adminState.updateUserMembership(user.id, { usageCount: parseInt(e.target.value) || 0 })}
+                                                                onChange={async (e) => await adminState.updateUserMembership(user.id, { usageCount: parseInt(e.target.value) || 0 })}
                                                                 className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-xs font-bold focus:border-brand-primary outline-none"
                                                             />
                                                             <span className="text-gray-500 font-bold">/</span>
@@ -305,7 +311,7 @@ export const AdminDashboard: React.FC = () => {
                                                     </td>
                                                     <td className="px-8 py-6">
                                                         <button
-                                                            onClick={() => adminState.updateUserMembership(user.id, { autoAdjustment: !user.autoAdjustment })}
+                                                            onClick={async () => await adminState.updateUserMembership(user.id, { autoAdjustment: !user.autoAdjustment })}
                                                             className={`w-10 h-5 rounded-full relative transition-all ${user.autoAdjustment ? 'bg-brand-primary' : 'bg-white/10'}`}
                                                         >
                                                             <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${user.autoAdjustment ? 'right-1' : 'left-1'}`} />
@@ -316,7 +322,7 @@ export const AdminDashboard: React.FC = () => {
                                                             {(['BASIC', 'PRO', 'ULTRA'] as const).map((t) => (
                                                                 <button
                                                                     key={t}
-                                                                    onClick={() => updateUserTier(user.id, t)}
+                                                                    onClick={async () => await updateUserTier(user.id, t)}
                                                                     className={`px-3 py-1.5 rounded-lg font-bold text-[10px] transition-all ${user.tier === t ? 'bg-brand-primary text-black shadow-neon' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`}
                                                                 >
                                                                     {t}
