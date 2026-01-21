@@ -68,8 +68,8 @@ const App: React.FC = () => {
       <WelcomeModal />
       <Step3UnlockOverlay />
 
-      {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 w-full z-[60] bg-background/80 backdrop-blur-xl border-b border-white/5 p-4 flex items-center justify-between">
+      {/* Mobile Header (Floating) */}
+      <header className="md:hidden fixed top-0 w-full z-[80] bg-background/80 backdrop-blur-xl border-b border-white/5 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-neon">
             <Sparkles className="text-black" size={16} />
@@ -88,7 +88,7 @@ const App: React.FC = () => {
         </button>
       </header>
 
-      {/* Sidebar Overlay (Mobile) */}
+      {/* Sidebar Overlay (Mobile Only) */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -96,16 +96,16 @@ const App: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsMobileMenuOpen(false)}
-            className="md:hidden fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm"
+            className="md:hidden fixed inset-0 z-[85] bg-black/60 backdrop-blur-sm"
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
+      {/* Sidebar (Desktop: Sticky Flex | Mobile: Fixed Slide-over) */}
       {activeTab !== 'admin' && (
         <aside className={`
-          fixed md:sticky top-0 h-full md:h-screen bg-background/50 backdrop-blur-xl z-[58] md:z-0 border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out
-          w-72 md:w-64 shrink-0
+          shrink-0 border-r border-white/5 flex flex-col bg-background/50 backdrop-blur-xl transition-all duration-300 ease-in-out
+          fixed md:sticky top-0 h-full md:h-screen w-72 md:w-64 z-[90]
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}>
           <div className="p-8 pb-4 md:p-8 flex items-center gap-3">
@@ -114,7 +114,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <span className="font-black text-xl tracking-tight block">BRAND AMBASSADOR</span>
-              <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em] block">MVP DEMO v2.2 (Admin Update)</span>
+              <span className="text-[10px] text-brand-primary opacity-80 tracking-[0.3em] block">MVP DEMO v2.2</span>
             </div>
           </div>
 
@@ -208,10 +208,10 @@ const App: React.FC = () => {
         </aside>
       )}
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <main className={`
-        flex-1 min-h-screen relative
-        ${activeTab === 'admin' ? 'p-0 pt-0' : 'p-5 md:p-10 pt-24 md:pt-10'}
+        flex-1 min-h-screen relative overflow-x-hidden
+        ${activeTab === 'admin' ? 'p-0 pt-0' : 'p-5 md:p-10 pt-28 md:pt-10'}
       `}>
         <AnimatePresence mode="wait">
           <motion.div
