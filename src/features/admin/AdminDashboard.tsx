@@ -57,11 +57,21 @@ export const AdminDashboard: React.FC = () => {
         alert('프롬프트 설정이 저장되었습니다.');
     };
 
-    const handleResetToDefaults = () => {
+    const handleResetToDefaults = async () => {
         if (window.confirm('모든 직업의 프롬프트를 소스 코드의 기본값으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
             resetPrompts();
-            alert('프롬프트가 초기화되었습니다. 페이지를 새로고침하여 확인해 주세요.');
-            window.location.reload(); // Simplest way to ensure all local states across the app are synced
+
+            // Immediately sync local state to show feedback before reload
+            if (occupations[activeOccupationId]) {
+                setLocalPrompts(occupations[activeOccupationId].prompts);
+            }
+
+            alert('프롬프트가 소스 코드의 기본값으로 초기화되었습니다.');
+
+            // Small delay to ensure Zustand persist has finished writing to localStorage
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         }
     };
 
@@ -85,7 +95,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="flex flex-col">
                         <span className="font-black tracking-tighter text-xl italic uppercase">Admin Panel</span>
-                        <span className="text-[8px] text-brand-primary font-bold opacity-50">PROMPT SYNC v8.2</span>
+                        <span className="text-[8px] text-brand-primary font-bold opacity-50">PROMPT SYNC v8.3</span>
                     </div>
                 </div>
 
