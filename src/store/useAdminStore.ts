@@ -39,7 +39,9 @@ interface AdminSettings {
     tierConfigs: Record<string, {
         maxSlots: number;
         maxUsage: number; // Max AI generation count
-        durationRaw: string; // e.g., "1개월", "무제한"
+        durationRaw: string; // e.g., "1개월", "무제한" (Legacy display)
+        durationValue: number;
+        durationUnit: 'day' | 'week' | 'month' | 'year';
         label: string;
     }>;
 }
@@ -56,7 +58,7 @@ interface AdminState extends AdminSettings {
     addOccupation: (id: string, label: string) => void;
     resetPrompts: () => void;
 
-    updateTierConfig: (tierId: string, updates: Partial<{ maxSlots: number; maxUsage: number; durationRaw: string }>) => void;
+    updateTierConfig: (tierId: string, updates: Partial<{ maxSlots: number; maxUsage: number; durationRaw: string; durationValue: number; durationUnit: 'day' | 'week' | 'month' | 'year' }>) => void;
 
     updateUserTier: (userId: string, tier: 'BASIC' | 'PRO' | 'ULTRA') => Promise<void>;
     updateUserMembership: (userId: string, updates: { expiresAt?: string; autoAdjustment?: boolean; usageCount?: number }) => Promise<void>;
@@ -237,9 +239,9 @@ export const useAdminStore = create<AdminState>()(
             ],
 
             tierConfigs: {
-                'BASIC': { maxSlots: 1, maxUsage: 1, durationRaw: '7일 체험', label: 'BASIC' },
-                'PRO': { maxSlots: 3, maxUsage: 3, durationRaw: '30일', label: 'PRO' },
-                'ULTRA': { maxSlots: 5, maxUsage: 5, durationRaw: '30일', label: 'ULTRA' }
+                'BASIC': { maxSlots: 1, maxUsage: 1, durationRaw: '7일 체험', durationValue: 1, durationUnit: 'week', label: 'BASIC' },
+                'PRO': { maxSlots: 3, maxUsage: 3, durationRaw: '30일', durationValue: 1, durationUnit: 'month', label: 'PRO' },
+                'ULTRA': { maxSlots: 5, maxUsage: 5, durationRaw: '30일', durationValue: 1, durationUnit: 'month', label: 'ULTRA' }
             },
 
             setGeminiApiKey: (key: string) => {
