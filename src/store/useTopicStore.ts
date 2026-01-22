@@ -19,49 +19,69 @@ export interface TopicCluster {
     topics: Topic[];
 }
 
-interface TopicStoreState {
+// Slot-specific data structure
+export interface SlotTopicData {
     clusters: TopicCluster[];
     currentClusterIndex: number;
     currentTopicIndex: number;
+}
+
+interface TopicStoreState {
+    // Master storage: slotId -> Data
+    slotStats: Record<string, SlotTopicData>;
 
     // Actions
-    setClusters: (clusters: TopicCluster[]) => Promise<void>;
-    getNextTopic: () => { topic: Topic; clusterId: string; pillarTitle?: string } | null;
-    markAsPublished: (day: number) => Promise<void>;
-    setCurrentTopic: (clusterIdx: number, topicIdx: number) => void;
-    resetTopics: () => Promise<void>;
+    setClusters: (slotId: string, clusters: TopicCluster[]) => Promise<void>;
+    getNextTopic: (slotId: string) => { topic: Topic; clusterId: string; pillarTitle?: string } | null;
+    markAsPublished: (slotId: string, day: number) => Promise<void>;
+    setCurrentTopic: (slotId: string, clusterIdx: number, topicIdx: number) => void;
+    resetTopics: (slotId: string) => Promise<void>;
+    clearAllTopics: () => Promise<void>;
     fetchTopics: (userId: string) => Promise<void>;
+    getSlotData: (slotId: string) => SlotTopicData | undefined;
 }
 
 export const useTopicStore = create<TopicStoreState>()(
     persist(
         (set, get) => ({
-            clusters: [],
-            currentClusterIndex: 0,
-            currentTopicIndex: 0,
+            slotStats: {}, // [NEW] Master storage: slotId -> Data
 
-            setClusters: async (clusters) => {
+            setClusters: async (slotId, clusters) => {
                 const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+
+                // Update Local State
+                set((state) => ({
+                    slotStats: {
+                        ...state.slotStats,
+                        [slotId]: {
+                            clusters,
+                            currentClusterIndex: 0,
+                            currentTopicIndex: 1 // Start from Day 2 (Skip Pillar)
+                        }
+                    }
+                }));
+
+                // Update DB
                 if (userId) {
                     await supabase.from('blog_topics')
-                        .upsert({ user_id: userId, clusters, updated_at: new Date() }, { onConflict: 'user_id' });
+                        .upsert({
+                            user_id: userId,
+                            slot_stats: get().slotStats, // Persist full object
+                            updated_at: new Date()
+                        }, { onConflict: 'user_id' });
                 }
-
-                set({
-                    clusters,
-                    currentClusterIndex: 0,
-                    currentTopicIndex: 1 // [User Request] Start from 2nd topic (Skip Pillar/Day 1 initially)
-                });
             },
 
-            getNextTopic: () => {
-                const { clusters, currentClusterIndex, currentTopicIndex } = get();
-                if (clusters.length === 0) return null;
+            getNextTopic: (slotId) => {
+                const slotData = get().slotStats[slotId];
+                if (!slotData || !slotData.clusters || slotData.clusters.length === 0) return null;
+
+                const { clusters, currentClusterIndex, currentTopicIndex } = slotData;
 
                 const currentCluster = clusters[currentClusterIndex];
                 if (!currentCluster) return null;
 
-                // [FIX] Safety check for malformed AI data
+                // Safety check
                 if (!currentCluster.topics || !Array.isArray(currentCluster.topics)) {
                     console.error("Malformed Cluster Data:", currentCluster);
                     return null;
@@ -70,7 +90,7 @@ export const useTopicStore = create<TopicStoreState>()(
                 const topic = currentCluster.topics[currentTopicIndex];
                 if (!topic) return null;
 
-                // Find pillar title for internal link (if current is supporting)
+                // Find pillar title for internal link
                 const pillar = currentCluster.topics.find(t => t.type === 'pillar');
 
                 return {
@@ -80,8 +100,12 @@ export const useTopicStore = create<TopicStoreState>()(
                 };
             },
 
-            markAsPublished: async (day) => {
-                const { clusters, currentClusterIndex, currentTopicIndex } = get();
+            markAsPublished: async (slotId, day) => {
+                const slotData = get().slotStats[slotId];
+                if (!slotData) return;
+
+                const { clusters, currentClusterIndex, currentTopicIndex } = slotData;
+
                 const newClusters = clusters.map((cluster, cIdx) => {
                     if (cIdx !== currentClusterIndex) return cluster;
 
@@ -102,31 +126,65 @@ export const useTopicStore = create<TopicStoreState>()(
                     nextClusterIdx = (currentClusterIndex + 1) % clusters.length;
                 }
 
+                const newSlotData = {
+                    ...slotData,
+                    clusters: newClusters,
+                    currentClusterIndex: nextClusterIdx,
+                    currentTopicIndex: nextTopicIdx
+                };
+
+                set((state) => ({
+                    slotStats: {
+                        ...state.slotStats,
+                        [slotId]: newSlotData
+                    }
+                }));
+
                 const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
                 if (userId) {
                     await supabase.from('blog_topics')
-                        .update({ clusters: newClusters, updated_at: new Date() })
+                        .update({ slot_stats: get().slotStats, updated_at: new Date() })
                         .eq('user_id', userId);
                 }
+            },
 
-                set({
-                    clusters: newClusters,
-                    currentTopicIndex: nextTopicIdx,
-                    currentClusterIndex: nextClusterIdx
+            setCurrentTopic: (slotId, clusterIdx, topicIdx) => {
+                set((state) => {
+                    const slotData = state.slotStats[slotId];
+                    if (!slotData) return state;
+
+                    return {
+                        slotStats: {
+                            ...state.slotStats,
+                            [slotId]: {
+                                ...slotData,
+                                currentClusterIndex: clusterIdx,
+                                currentTopicIndex: topicIdx
+                            }
+                        }
+                    };
                 });
             },
 
-            // [NEW] Manual Jump
-            setCurrentTopic: (clusterIdx: number, topicIdx: number) => {
-                set({ currentClusterIndex: clusterIdx, currentTopicIndex: topicIdx });
+            resetTopics: async (slotId) => {
+                const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+
+                set((state) => {
+                    const newStats = { ...state.slotStats };
+                    delete newStats[slotId]; // Remove data for this slot
+                    return { slotStats: newStats };
+                });
+
+                if (userId) {
+                    await supabase.from('blog_topics')
+                        .update({ slot_stats: get().slotStats, updated_at: new Date() })
+                        .eq('user_id', userId);
+                }
             },
 
-            resetTopics: async () => {
-                const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
-                if (userId) {
-                    await supabase.from('blog_topics').delete().eq('user_id', userId);
-                }
-                set({ clusters: [], currentClusterIndex: 0, currentTopicIndex: 0 });
+            // Clear ALL topics (e.g. on logout or full reset)
+            clearAllTopics: async () => {
+                set({ slotStats: {} });
             },
 
             fetchTopics: async (userId: string) => {
@@ -137,15 +195,40 @@ export const useTopicStore = create<TopicStoreState>()(
                     .single();
 
                 if (data && !error) {
-                    set({
-                        clusters: data.clusters,
-                        // We might want to persist current index too in DB, but for now just topics
-                    });
+                    // [MIGRATION] Handle legacy format (clusters array) vs new format (slot_stats object)
+                    if (data.slot_stats) {
+                        set({ slotStats: data.slot_stats });
+                    } else if (data.clusters) {
+                        // Legacy data found. Assign to a temporary 'legacy' slot or try to migrate if we had access to activeSlotId
+                        // Since we don't know the slot ID here, we might just store it in a 'default' slot
+                        // or just ignore it if we want a clean slate.
+                        // Let's store in 'default' so user doesn't lose data immediately, 
+                        // but they will likely need to regenerate if they use proper slots.
+                        console.warn("Legacy topic data found. Migrating to 'default' slot.");
+                        set({
+                            slotStats: {
+                                'default': {
+                                    clusters: data.clusters,
+                                    currentClusterIndex: 0,
+                                    currentTopicIndex: 1
+                                }
+                            }
+                        });
+                    } else {
+                        set({ slotStats: {} });
+                    }
                 }
-            }
+            },
+
+            // Helper to get raw data for UI
+            getSlotData: (slotId) => get().slotStats[slotId]
         }),
         {
             name: 'brand-ambassador-topic-storage',
+            // Note: Zutsand persist will try to load 'clusters' from local storage if we don't clear it.
+            // But since we changed the interface, typescript will complain if we don't match.
+            // The storage structure changes, so existing local storage data might be invalid.
+            // It's acceptable to reset in dev.
         }
     )
 );

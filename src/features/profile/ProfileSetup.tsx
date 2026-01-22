@@ -230,7 +230,13 @@ const Step3: React.FC<StepProps> = ({ localData, setLocalData }) => {
 };
 
 // STEP 4: 병원 원내 사진
+import { storageService } from '../../services/storageService'; // [NEW]
+import { useAuthStore } from '../../store/useAuthStore'; // [NEW]
+
 const Step4: React.FC<StepProps> = ({ localData, setLocalData }) => {
+    const { user } = useAuthStore();
+    const [uploadingState, setUploadingState] = useState<Record<string, boolean>>({}); // [NEW] Track upload status per category
+
     const photoCategories = [
         { id: 'entrance', label: '현관 (입구)' },
         { id: 'desk', label: '데스크' },
@@ -242,20 +248,32 @@ const Step4: React.FC<StepProps> = ({ localData, setLocalData }) => {
         { id: 'chuna', label: '추나하는 모습' },
     ];
 
-    const handleFileChange = (id: string, file: File | null) => {
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                setLocalData({
-                    ...localData,
-                    clinicPhotos: {
-                        ...localData.clinicPhotos,
-                        [id]: base64String
-                    }
-                });
-            };
-            reader.readAsDataURL(file);
+    const handleFileChange = async (id: string, file: File | null) => {
+        if (!file) return;
+        if (!user) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+
+        // Set uploading state for this category
+        setUploadingState(prev => ({ ...prev, [id]: true }));
+
+        try {
+            // [NEW] Use storageService to convert & upload
+            const publicUrl = await storageService.uploadImage(file, user.id, id);
+
+            setLocalData({
+                ...localData,
+                clinicPhotos: {
+                    ...localData.clinicPhotos,
+                    [id]: publicUrl
+                }
+            });
+        } catch (error) {
+            console.error("Upload failed:", error);
+            alert("이미지 업로드에 실패했습니다. (용량 제한 없음)");
+        } finally {
+            setUploadingState(prev => ({ ...prev, [id]: false }));
         }
     };
 
@@ -267,36 +285,49 @@ const Step4: React.FC<StepProps> = ({ localData, setLocalData }) => {
             className="space-y-6"
         >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {photoCategories.map((cat) => (
-                    <div key={cat.id} className="space-y-2">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
-                            {cat.label}
-                            {localData.clinicPhotos?.[cat.id] && <span className="text-brand-primary text-[10px] flex items-center gap-1"><Check size={10} /> Saved</span>}
-                        </label>
-                        <div className={`relative group transition-all rounded-xl border ${localData.clinicPhotos?.[cat.id] ? 'border-brand-primary/50 bg-brand-primary/5' : 'border-white/10 bg-white/5'}`}>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleFileChange(cat.id, e.target.files?.[0] || null)}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                            />
-                            <div className="p-4 flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${localData.clinicPhotos?.[cat.id] ? 'bg-brand-primary text-black' : 'bg-white/10 text-gray-500'}`}>
-                                    <ImageIcon size={20} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className={`text-sm font-bold truncate ${localData.clinicPhotos?.[cat.id] ? 'text-white' : 'text-gray-500'}`}>
-                                        {localData.clinicPhotos?.[cat.id] || '사진 업로드...'}
+                {photoCategories.map((cat) => {
+                    const isUploading = uploadingState[cat.id];
+                    const hasImage = !!localData.clinicPhotos?.[cat.id];
+
+                    return (
+                        <div key={cat.id} className="space-y-2">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                                {cat.label}
+                                {hasImage && !isUploading && <span className="text-brand-primary text-[10px] flex items-center gap-1"><Check size={10} /> Saved</span>}
+                            </label>
+                            <div className={`relative group transition-all rounded-xl border ${hasImage ? 'border-brand-primary/50 bg-brand-primary/5' : 'border-white/10 bg-white/5'}`}>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleFileChange(cat.id, e.target.files?.[0] || null)}
+                                    disabled={isUploading}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
+                                />
+                                <div className="p-4 flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasImage ? 'bg-brand-primary text-black' : 'bg-white/10 text-gray-500'}`}>
+                                        {isUploading ? (
+                                            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            <ImageIcon size={20} />
+                                        )}
                                     </div>
-                                    <div className="text-[10px] text-gray-600">클릭하여 파일 선택</div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className={`text-sm font-bold truncate ${hasImage ? 'text-white' : 'text-gray-500'}`}>
+                                            {isUploading ? '업로드 중 (WebP 변환)...' : (localData.clinicPhotos?.[cat.id] ? '사진 등록됨' : '사진 업로드...')}
+                                        </div>
+                                        <div className="text-[10px] text-gray-600">
+                                            {isUploading ? '잠시만 기다려주세요' : '클릭하여 파일 선택 (자동 최적화)'}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
-            <p className="text-[10px] text-gray-500 mt-2 text-center">
-                * 업로드된 사진은 콘텐츠 생성 시 해당 주제('병원 내부', '치료 과정' 등)가 나올 때 자동으로 삽입됩니다.
+            <p className="text-[10px] text-gray-500 mt-2 text-center text-balance">
+                * 업로드된 사진은 <strong>자동으로 WebP 포맷으로 최적화</strong>되어 클라우드에 영구 저장됩니다.<br />
+                * 콘텐츠 생성 시 해당 주제('병원 내부', '치료 과정' 등)가 나올 때 자동으로 삽입됩니다.
             </p>
         </motion.div>
     );

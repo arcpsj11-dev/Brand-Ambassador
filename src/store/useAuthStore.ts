@@ -148,7 +148,7 @@ export const useAuthStore = create<AuthState>()(
                 set({ user: null, isAuthenticated: false });
                 // Clear other stores to prevent session leakage
                 useContentStore.getState().clearStore();
-                useTopicStore.getState().resetTopics();
+                useTopicStore.getState().clearAllTopics();
                 useSlotStore.getState().clearStore();
                 usePlannerStore.getState().clearPlanner();
             },

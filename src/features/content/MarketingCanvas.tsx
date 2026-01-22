@@ -80,17 +80,22 @@ const MarketingCard: React.FC<{ plan: any; onClick: () => void }> = ({ plan, onC
     );
 };
 
+import { useSlotStore } from '../../store/useSlotStore'; // [NEW]
+
+// ... (MarketingCard component remains unchanged)
+
 export const MarketingCanvas: React.FC = () => {
     const brand = useBrandStore();
     const { monthlyPlan, isScouted, persona, topic, setMonthlyPlan, setPersona, setTopic, clearPlanner } = usePlannerStore();
     const { setClusters, resetTopics } = useTopicStore();
+    const { activeSlotId } = useSlotStore(); // [NEW]
     const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
 
     // [나노바나나] 데이터 초기화 (Reset)
     const handleClearAll = () => {
         if (window.confirm("지금까지 생성된 모든 기획 내용과 주제를 삭제하시겠습니까? \n(되돌릴 수 없습니다)")) {
             clearPlanner();
-            resetTopics();
+            if (activeSlotId) resetTopics(activeSlotId); // [FIX]
             alert("모든 기획 데이터가 초기화되었습니다.");
         }
     };
@@ -99,6 +104,11 @@ export const MarketingCanvas: React.FC = () => {
     const generateChameleonStrategy = async () => {
         if (!persona.trim() || !topic.trim()) {
             alert('원장님, 페르소나와 주제를 먼저 입력해주세요! 🍌');
+            return;
+        }
+
+        if (!activeSlotId) {
+            alert('활성화된 슬롯이 없습니다.');
             return;
         }
 
@@ -139,8 +149,9 @@ export const MarketingCanvas: React.FC = () => {
                         ...(cluster.satellites || []).map((t: any) => ({ ...t, type: 'supporting', status: 'ready' }))
                     ]
                 }));
-                setClusters(formattedClusters);
+                setClusters(activeSlotId, formattedClusters); // [FIX]
             }
+
 
             const chat = useChatStore.getState();
             chat.addMessage({

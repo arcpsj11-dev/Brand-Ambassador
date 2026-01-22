@@ -21,7 +21,20 @@ interface TopicClusterGeneratorProps {
 
 export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ slotId, onComplete }) => {
     const { slots, updateSlot } = useSlotStore();
-    const { clusters, currentClusterIndex, currentTopicIndex, setClusters, setCurrentTopic, resetTopics } = useTopicStore(); // [NEW] Use persistent state
+    // [NEW] Use persistent state with slot isolation
+    const {
+        setClusters,
+        setCurrentTopic,
+        resetTopics,
+        getSlotData
+    } = useTopicStore();
+
+    // Derived state for this slot
+    const slotStats = getSlotData(slotId);
+    const clusters = slotStats?.clusters || [];
+    const currentClusterIndex = slotStats?.currentClusterIndex || 0;
+    const currentTopicIndex = slotStats?.currentTopicIndex || 0;
+
     const { clearPlanner } = usePlannerStore(); // [NEW]
     const slot = slots.find(s => s.slotId === slotId);
 
@@ -59,7 +72,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
         } catch (error: any) {
             console.error(error);
             if (error?.message === "USAGE_LIMIT_REACHED") {
-                alert("원장님, 이번 달(또는 현재 등급)의 AI 생성 사용 한도에 도달했습니다.\n\n한도 증액이나 등급 상향은 관리자에게 문의해 주세요! 🚀");
+                alert("원장님, 이번 달(또는 현재 등급)의 AI 생성 사용 한도에 도달했습니다.\n\n한도 증액이나 등급 상향은 관리자에게 문의해 주세요! 🍌🚀");
             } else {
                 alert('주제 생성 중 오류가 발생했습니다. API 키 설정을 확인해주세요.');
             }
@@ -88,7 +101,8 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
         });
 
         // 2. [SYNC] Update Topic Store (Full 30-day Plan / All Clusters)
-        setClusters(previewClusters);
+        // [FIX] Pass slotId
+        setClusters(slotId, previewClusters);
 
         if (onComplete) onComplete();
         // alert(`성공적으로 30일치 플랜(${previewClusters.length}개 클러스터)이 생성되었습니다.\n대시보드에서 순차적으로 글쓰기를 시작하세요!`);
@@ -104,7 +118,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
             setPreviewClusters(null);
 
             // 2. Clear Topic Store (The 30-day list)
-            resetTopics();
+            resetTopics(slotId); // [FIX] Pass slotId
 
             // 3. Clear Slot Store (The 'Active Strategy' reference)
             updateSlot(slotId, {
@@ -195,7 +209,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                                     <div
                                         onClick={() => {
                                             if (!isPreview) {
-                                                setCurrentTopic(cIdx, 0); // Pillar is always index 0
+                                                setCurrentTopic(slotId, cIdx, 0); // [FIX] Pass slotId
                                                 updateSlot(slotId, {
                                                     currentCluster: {
                                                         ...slot.currentCluster,
@@ -263,7 +277,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                                                     onClick={() => {
                                                         // [SYNC] Set global current topic on click
                                                         if (!isPreview) {
-                                                            setCurrentTopic(cIdx, topicRealIndex);
+                                                            setCurrentTopic(slotId, cIdx, topicRealIndex); // [FIX] Added slotId
                                                             // Also update Slot Store visual (optional, but good for consistency)
                                                             updateSlot(slotId, {
                                                                 currentCluster: {
