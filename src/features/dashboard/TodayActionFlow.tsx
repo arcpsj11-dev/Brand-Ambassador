@@ -225,7 +225,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             setCurrentContent(newContentData);
 
             // [자동 저장] 생성 즉시 아카이브에 DRAFT 상태로 저장
-            const id = addContent({
+            const id = await addContent({
                 title: newContentData.title,
                 body: newContentData.body,
                 status: 'DRAFT',
