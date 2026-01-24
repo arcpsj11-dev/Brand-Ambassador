@@ -435,8 +435,12 @@ export const useSlotStore = create<SlotState>()(
                     // [ZOMBIE PURGE] One-time cleanup of legacy data
                     try {
                         console.log("Zombie Purge: Sweeping away legacy data for", userId);
-                        // 1. Delete legacy blog_topics table data for this user
-                        await supabase.from('blog_topics').delete().eq('user_id', userId);
+
+                        // 1. Delete legacy blog_topics table data (Ignore 404 if table missing)
+                        const { error: topicError } = await supabase.from('blog_topics').delete().eq('user_id', userId);
+                        if (topicError && topicError.code !== 'PGRST205' && topicError.message?.indexOf('not find') === -1) {
+                            console.warn("Zombie Purge Topic Warning:", topicError);
+                        }
 
                         // 2. Clear old localStorage keys
                         localStorage.removeItem('brand-ambassador-topic-storage');
@@ -456,8 +460,11 @@ export const useSlotStore = create<SlotState>()(
                         }
 
                         console.log("Zombie Purge: Successfully cleaned up all zombie materials.");
-                    } catch (purgeError) {
-                        console.error("Zombie Purge Error:", purgeError);
+                    } catch (purgeError: any) {
+                        // Completely silence 404 or table missing errors
+                        if (purgeError?.code !== 'PGRST205' && purgeError?.message?.indexOf('not find') === -1) {
+                            console.warn("Zombie Purge Error (Non-Critical):", purgeError);
+                        }
                     }
                 }
             }

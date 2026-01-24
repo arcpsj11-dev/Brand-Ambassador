@@ -23,17 +23,19 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
     const { slots, updateSlot } = useSlotStore();
     // [NEW] Use persistent state with slot isolation
     const {
+        clusters,
+        currentClusterIndex,
+        currentTopicIndex,
         setClusters,
         setCurrentTopic,
         resetTopics,
-        getSlotData
     } = useTopicStore();
 
-    // Derived state for this slot
-    const slotStats = getSlotData(slotId);
-    const clusters = slotStats?.clusters || [];
-    const currentClusterIndex = slotStats?.currentClusterIndex || 0;
-    const currentTopicIndex = slotStats?.currentTopicIndex || 0;
+    // Derived state for this slot (Not using getSlotData anymore)
+    // const slotStats = getSlotData(slotId);
+    // const clusters = slotStats?.clusters || [];
+    // const currentClusterIndex = slotStats?.currentClusterIndex || 0;
+    // const currentTopicIndex = slotStats?.currentTopicIndex || 0;
 
     const { clearPlanner } = usePlannerStore(); // [NEW]
     const slot = slots.find(s => s.slotId === slotId);
@@ -194,7 +196,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                                     <div
                                         onClick={() => {
                                             if (!isPreview) {
-                                                setCurrentTopic(slotId, cIdx, 0); // [FIX] Pass slotId
+                                                setCurrentTopic(cIdx, 0); // Pillar is always index 0
                                                 updateSlot(slotId, {
                                                     currentCluster: {
                                                         ...slot.currentCluster,
@@ -262,7 +264,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                                                     onClick={() => {
                                                         // [SYNC] Set global current topic on click
                                                         if (!isPreview) {
-                                                            setCurrentTopic(slotId, cIdx, topicRealIndex); // [FIX] Added slotId
+                                                            setCurrentTopic(cIdx, topicRealIndex);
                                                             // Also update Slot Store visual (optional, but good for consistency)
                                                             updateSlot(slotId, {
                                                                 currentCluster: {
