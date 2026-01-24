@@ -16,56 +16,58 @@ export interface NaverBlogSearchResponse {
 
 /**
  * Naver Blog Data Collection Service
- * [HYBRID STRATEGY] RSS (Best) -> Search API (Backup) -> Mock (Final Fallback)
+ * [ULTIMATE HYBRID] RSS (via AllOrigins) -> Search API (Official) -> Mock
  */
 export const naverBlogService = {
     async fetchBlogPosts(blogId: string): Promise<NaverBlogSearchResponse> {
-        console.log(`[NaverBlogService] 🚀 Starting Hybrid Fetch for: ${blogId}`);
+        console.log(`[NaverBlogService] 🚀 Starting Ultimate Hybrid Fetch for: ${blogId}`);
 
-        // 1. Try RSS Strategy First (High Fidelity, no indexing delay)
+        // 1. Try RSS Strategy (High Accuracy)
+        // [UPGRADE] Use AllOrigins 'raw' to avoid proxy redirect/CORS issues
         try {
             const rssResult = await this.fetchViaRSS(blogId);
             if (rssResult && rssResult.items.length > 0) {
-                console.log(`[NaverBlogService] ✅ RSS Success with ${rssResult.items.length} items.`);
+                console.log(`[NaverBlogService] ✅ RSS Success (${rssResult.items.length} items)`);
                 return rssResult;
             }
         } catch (e) {
-            console.warn(`[NaverBlogService] ⚠️ RSS Strategy failed:`, e);
+            console.warn(`[NaverBlogService] ⚠️ RSS Strategy failed or returned 0 items.`, e);
         }
 
-        // 2. Try Search API Strategy (Official Auth, highly reliable bypass for data center blocks)
+        // 2. Try Search API Strategy (Official Auth)
         try {
-            console.log(`[NaverBlogService] 🔄 RSS yielded no items. Falling back to Search API...`);
+            console.log(`[NaverBlogService] 🔄 Falling back to official Search API...`);
             const apiResult = await this.fetchViaSearchAPI(blogId);
             if (apiResult && apiResult.items.length > 0) {
-                console.log(`[NaverBlogService] ✅ Search API Success with ${apiResult.items.length} items.`);
+                console.log(`[NaverBlogService] ✅ Search API Success (${apiResult.items.length} items)`);
                 return apiResult;
             }
         } catch (e) {
-            console.warn(`[NaverBlogService] ⚠️ Search API Strategy failed:`, e);
+            console.warn(`[NaverBlogService] ⚠️ Search API Strategy failed.`, e);
         }
 
-        // 3. Final Fallback: Mock Data
-        console.warn(`[NaverBlogService] 🛑 All real data strategies failed. Using Mock data.`);
+        // 3. Last Resort: Mock Data
+        console.warn(`[NaverBlogService] 🛑 All real data attempts failed. Providing realistic Mock data.`);
         return this.generateMockData(blogId);
     },
 
     /**
-     * Strategy A: RSS Feed Fetching
+     * Strategy A: RSS via AllOrigins (Proven to bypass CORS)
      */
     async fetchViaRSS(blogId: string): Promise<NaverBlogSearchResponse | null> {
-        const rssUrl = `/api/rss/${blogId}.xml?t=${Date.now()}`;
-        const response = await fetch(rssUrl);
+        const rssTarget = `https://rss.blog.naver.com/${blogId}.xml?t=${Date.now()}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rssTarget)}`;
 
-        if (!response.ok) throw new Error(`RSS HTTP Error: ${response.status}`);
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const xmlText = await response.text();
-        if (!xmlText || xmlText.includes("<!DOCTYPE html")) throw new Error("Invalid RSS response (HTML/Empty)");
+        if (!xmlText || xmlText.includes("<!DOCTYPE html")) return null;
 
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlText, "text/xml");
 
-        // Case-insensitive search for <item>
+        // Find items case-insensitively
         const allElements = xmlDoc.querySelectorAll("*");
         const items = Array.from(allElements).filter(el =>
             el.nodeName.toLowerCase() === 'item' || el.localName?.toLowerCase() === 'item'
@@ -90,10 +92,12 @@ export const naverBlogService = {
                 postdate = new Date().toISOString().slice(0, 10).replace(/-/g, "");
             }
 
+            const cleanText = (text: string) => text.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '');
+
             return {
-                title: title.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/<[^>]*>/g, ''),
+                title: cleanText(title),
                 link: link,
-                description: description.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').substring(0, 200) + "...",
+                description: cleanText(description).substring(0, 200) + "...",
                 postdate: postdate
             };
         });
@@ -102,14 +106,14 @@ export const naverBlogService = {
     },
 
     /**
-     * Strategy B: Naver Search API (Official Authorized Backup)
+     * Strategy B: Official Naver Search API (Authorized)
      */
     async fetchViaSearchAPI(blogId: string): Promise<NaverBlogSearchResponse | null> {
         const { naverClientId, naverClientSecret } = useAdminStore.getState();
         if (!naverClientId || !naverClientSecret) return null;
 
-        // Search by Blog ID as query
-        const searchQuery = `${blogId}`;
+        // Try searching for the blog URL specifically
+        const searchQuery = `blog.naver.com/${blogId}`;
         const url = `/api/naver/v1/search/blog.json?query=${encodeURIComponent(searchQuery)}&display=20&sort=date`;
 
         const response = await fetch(url, {
@@ -120,16 +124,14 @@ export const naverBlogService = {
         });
 
         if (!response.ok) return null;
-
         const data = await response.json();
 
-        // Filter specifically for this blogger to avoid mixed results from other blogs mentioning the ID
-        const filteredItems = (data.items || []).filter((item: any) => {
-            const bloggerLink = item.bloggerlink || '';
-            const postLink = item.link || '';
-            const lowerId = blogId.toLowerCase();
-            return bloggerLink.toLowerCase().includes(lowerId) || postLink.toLowerCase().includes(lowerId);
-        });
+        // Ensure items belong to this blogger
+        const lowerId = blogId.toLowerCase();
+        const filteredItems = (data.items || []).filter((item: any) =>
+            (item.bloggerlink || '').toLowerCase().includes(lowerId) ||
+            (item.link || '').toLowerCase().includes(lowerId)
+        );
 
         if (filteredItems.length === 0) return null;
 
@@ -144,11 +146,10 @@ export const naverBlogService = {
     },
 
     /**
-     * Strategy C: Mock Data (Final Safety Net)
+     * Strategy C: Mock Data
      */
     generateMockData(blogId: string): NaverBlogSearchResponse {
-        const { subjects, clinicName = '원장님' } = (window as any).useProfileStore?.getState() || {};
-
+        const { clinicName = '저희' } = (window as any).useProfileStore?.getState() || {};
         const baseTitles = [
             '📌 블로그 운영의 핵심은 꾸준함입니다',
             '🌿 건강한 생활 습관, 오늘부터 시작하세요',
@@ -159,7 +160,7 @@ export const naverBlogService = {
 
         const items: NaverBlogPost[] = baseTitles.map((title: string, index: number) => ({
             title,
-            description: `안녕하세요, ${blogId} 블로그입니다. ${title}에 대해 자세히 알아보겠습니다. ${clinicName}만의 특별한 노하우와 진심을 담은 진료 철학을 소개합니다...`,
+            description: `안녕하세요, ${blogId} 블로그입니다. ${title}에 대해 자세히 알아보겠습니다. ${clinicName}만의 특별한 철학을 소개합니다...`,
             postdate: this.getRecentDate(index),
             link: `https://blog.naver.com/${blogId}/${220000 + index}`
         }));
@@ -170,14 +171,17 @@ export const naverBlogService = {
     getRecentDate(daysAgo: number): string {
         const date = new Date();
         date.setDate(date.getDate() - daysAgo);
-        return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}${m}${d}`;
     },
 
     formatForAnalysis(response: NaverBlogSearchResponse): string {
         let context = `블로그 최근 게시물 정보:\n`;
         response.items.forEach((item, index) => {
-            const formattedDate = `${item.postdate.slice(0, 4)}-${item.postdate.slice(4, 6)}-${item.postdate.slice(6, 8)}`;
-            context += `${index + 1}. 제목: ${item.title}\n   요약: ${item.description}\n   날짜: ${formattedDate}\n\n`;
+            const fd = `${item.postdate.slice(0, 4)}-${item.postdate.slice(4, 6)}-${item.postdate.slice(6, 8)}`;
+            context += `${index + 1}. 제목: ${item.title}\n   요약: ${item.description}\n   날짜: ${fd}\n\n`;
         });
         return context;
     }
