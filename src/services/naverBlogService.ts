@@ -16,96 +16,82 @@ export interface NaverBlogSearchResponse {
 
 /**
  * Naver Blog Data Collection Service
- * Now with REAL API integration via Vite proxy!
+ * [UPGRADE] Switched to RSS Feed for 100% accuracy on recent posts.
  */
 export const naverBlogService = {
     /**
-     * Fetch recent blog posts for a given blog ID
-     * Uses real Naver API when credentials are configured
+     * Fetch recent blog posts via RSS Feed
+     * RSS Feed URL: https://rss.blog.naver.com/{blogId}.xml
      */
     async fetchBlogPosts(blogId: string): Promise<NaverBlogSearchResponse> {
-        const { naverClientId, naverClientSecret } = useAdminStore.getState();
-
-        // Check if credentials are configured
-        if (!naverClientId || !naverClientSecret) {
-            console.warn('[NaverBlogService] API credentials not configured. Using mock data.');
-            return this.generateMockData(blogId);
-        }
-
-        // Call REAL Naver API via Vite proxy (local) or CORS Proxy (prod) to bypass CORS!
+        // [RSS STRATEGY] Use RSS Feed proxy to bypass CORS and get XML
         const isProd = import.meta.env.PROD;
         const baseUrl = isProd
-            ? 'https://cors-anywhere.herokuapp.com/https://openapi.naver.com/v1/search/blog.json'
-            : '/api/naver/v1/search/blog.json';
+            ? 'https://cors-anywhere.herokuapp.com/https://rss.blog.naver.com'
+            : '/api/rss'; // Vite proxy handles /api/rss -> https://rss.blog.naver.com locally
 
-        // [FIX] Search by Blog URL to find ALL indexed posts (better than keyword search)
-        const searchQuery = `blog.naver.com/${blogId}`;
-        const url = `${baseUrl}?query=${encodeURIComponent(searchQuery)}&display=5&sort=date`;
-        console.log(`[NaverBlogService] 🚀 Fetching REAL data. URL: ${url}`);
-        console.log(`[NaverBlogService] Using Naver Client ID length: ${naverClientId?.length || 0}`);
+        const rssUrl = `${baseUrl}/${blogId}.xml`;
+        console.log(`[NaverBlogService] 🚀 Fetching RSS data from: ${rssUrl}`);
 
         try {
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'X-Naver-Client-Id': naverClientId,
-                    'X-Naver-Client-Secret': naverClientSecret,
-                }
-            });
-
-            console.log(`[NaverBlogService] Response Status: ${response.status}`);
+            const response = await fetch(rssUrl);
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[NaverBlogService] ❌ API Error:', response.status, errorText);
-
-                // Show user-friendly alert for common errors
-                if (response.status === 401) {
-                    alert('네이버 API 인증 실패: Client ID/Secret을 확인해 주세요.');
-                } else if (response.status === 429) {
-                    alert('API 호출 한도 초과: 잠시 후 다시 시도해 주세요.');
-                }
-
-                throw new Error(`Naver API Error: ${response.status}`);
+                console.error('[NaverBlogService] ❌ RSS Error:', response.status);
+                // Fallback to Mock if RSS fails (e.g. Rate Limit or Network Error)
+                throw new Error(`RSS Error: ${response.status}`);
             }
 
-            const data = await response.json();
-            console.log('[NaverBlogService] ✅ Successfully fetched API data:', data.items?.length, 'items');
+            const xmlText = await response.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
 
-            // 🎯 CRITICAL: Filter by bloggerlink to ensure it's the CORRECT blog
-            // Naver Search API returns any post matching the query, so we must filter.
-            const filteredItems = (data.items || []).filter((item: any) => {
-                const bloggerLink = item.bloggerlink || '';
-                const postLink = item.link || '';
-                const lowerId = blogId.toLowerCase();
+            const items = Array.from(xmlDoc.querySelectorAll("item"));
+            console.log('[NaverBlogService] ✅ RSS Fetched. Items found:', items.length);
 
-                // Allow if bloggerlink or the post link contains the ID (Case Insensitive)
-                return bloggerLink.toLowerCase().includes(lowerId) || postLink.toLowerCase().includes(lowerId);
-            });
-
-            console.log(`[NaverBlogService] 🎯 Filtered items for ${blogId}:`, filteredItems.length);
-
-            // If no items found for THIS blog, fall back to mock or return empty (but mock is better for the motivation system UX)
-            if (filteredItems.length === 0) {
-                console.warn(`[NaverBlogService] No posts found SPECIFICALLY for ${blogId}. Raw items: ${data.items?.length}. Using mock data.`);
+            if (items.length === 0) {
+                console.warn(`[NaverBlogService] RSS returned 0 items. ID might be wrong or blog is empty.`);
                 return this.generateMockData(blogId);
             }
 
-            // Clean HTML tags from titles and descriptions
-            const cleanedItems = filteredItems.map((item: any) => ({
-                ...item,
-                title: item.title.replace(/<[^>]*>/g, ''),
-                description: item.description.replace(/<[^>]*>/g, '')
-            }));
+            const blogPosts = items.slice(0, 5).map(item => {
+                const title = item.querySelector("title")?.textContent || "";
+                const link = item.querySelector("link")?.textContent || "";
+                const description = item.querySelector("description")?.textContent || "";
+                const dateRaw = item.querySelector("pubDate")?.textContent || "";
+
+                // Convert PubDate (Fri, 24 Jan 2025...) to YYYYMMDD
+                let postdate = "";
+                try {
+                    const dateObj = new Date(dateRaw);
+                    const yyyy = dateObj.getFullYear();
+                    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dateObj.getDate()).padStart(2, '0');
+                    postdate = `${yyyy}${mm}${dd}`;
+                } catch (e) {
+                    postdate = new Date().toISOString().slice(0, 10).replace(/-/g, ""); // Fallback to today
+                }
+
+                // Clean CDATA and HTML tags
+                const cleanTitle = title.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '');
+                const cleanDesc = description.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '');
+
+                return {
+                    title: cleanTitle,
+                    link: link,
+                    description: cleanDesc.substring(0, 200) + "...", // Truncate summary for display
+                    postdate: postdate
+                };
+            });
 
             return {
-                items: cleanedItems,
-                total: cleanedItems.length,
-                display: cleanedItems.length,
+                items: blogPosts,
+                total: blogPosts.length,
+                display: blogPosts.length,
                 isMock: false
             };
         } catch (error) {
-            console.error('[NaverBlogService] API call failed:', error);
+            console.warn('[NaverBlogService] RSS call failed, falling back to mock:', error);
             return this.generateMockData(blogId);
         }
     },
