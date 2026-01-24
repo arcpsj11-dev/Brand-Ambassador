@@ -46,7 +46,7 @@ const getRandomUserAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGE
  */
 export async function searchNaverView(keyword: string): Promise<{ title: string; url: string }[]> {
     try {
-        // Naver Search API: Blog (Proxy via Vite)
+        // Naver Search API: Blog (Unified Proxy)
         const searchUrl = `/api/naver/v1/search/blog.json?query=${encodeURIComponent(keyword)}&display=3&sort=sim`;
 
         const response = await fetch(searchUrl, {
