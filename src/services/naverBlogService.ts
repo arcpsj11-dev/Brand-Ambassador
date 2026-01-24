@@ -26,8 +26,9 @@ export const naverBlogService = {
     async fetchBlogPosts(blogId: string): Promise<NaverBlogSearchResponse> {
         // [RSS STRATEGY] Switch to RSS Feed for 100% accuracy on recent posts
         // RSS URL: https://rss.blog.naver.com/{blogId}.xml
-        const rssUrl = `https://rss.blog.naver.com/${blogId}.xml`;
-        console.log(`[NaverBlogService] 🚀 Fetching RSS data from: ${rssUrl}`);
+        // [FIX] Add timestamp to bypass proxy caching
+        const rssUrl = `https://rss.blog.naver.com/${blogId}.xml?t=${Date.now()}`;
+        console.log(`[NaverBlogService] 🚀 Fetching fresh RSS data from: ${rssUrl}`);
 
         try {
             // Use allorigins.win to bypass CORS (Returning JSON with stringified XML)
