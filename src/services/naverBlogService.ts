@@ -47,13 +47,15 @@ export const naverBlogService = {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlText, "text/xml");
 
-            // Use getElementsByTagName for better compatibility
-            let items = Array.from(xmlDoc.getElementsByTagName("item"));
+            // Diagnostic: Check channel title to verify if we hit the right blog
+            const channelTitle = xmlDoc.querySelector("channel > title")?.textContent || "Unknown Nav Channel";
+            console.log(`[NaverBlogService] RSS Channel Title: ${channelTitle}`);
 
-            // If empty, try searching without namespace
-            if (items.length === 0) {
-                items = Array.from(xmlDoc.querySelectorAll("item"));
-            }
+            // Use more robust search for <item> tags (Case Insensitive for nodeName/localName)
+            const allElements = xmlDoc.querySelectorAll("*");
+            const items = Array.from(allElements).filter(el =>
+                el.nodeName.toLowerCase() === 'item' || el.localName?.toLowerCase() === 'item'
+            );
 
             console.log('[NaverBlogService] ✅ RSS Parsed. Items found:', items.length);
 
