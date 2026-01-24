@@ -27,8 +27,8 @@ interface UserInfo {
 interface AuthState {
     user: UserInfo | null;
     isAuthenticated: boolean;
-    login: (id: string, pw: string) => Promise<boolean>;
-    signup: (id: string, pw: string) => Promise<boolean>;
+    login: (id: string, pw: string) => Promise<{ success: boolean; error?: string }>;
+    signup: (id: string, pw: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
     updateTier: (tier: MembershipTier) => void;
     setHasSeenManual: (seen: boolean) => void;
@@ -48,7 +48,12 @@ export const useAuthStore = create<AuthState>()(
                     .eq('pw', pw)
                     .single();
 
-                if (foundUser && !error) {
+                if (error) {
+                    console.error("Login Error:", error);
+                    return { success: false, error: error.message };
+                }
+
+                if (foundUser) {
                     const isExpired = foundUser.expires_at && new Date() > new Date(foundUser.expires_at);
                     const finalTier = (isExpired && foundUser.auto_adjustment) ? 'BASIC' : foundUser.tier;
 
@@ -73,19 +78,23 @@ export const useAuthStore = create<AuthState>()(
                     await useSlotStore.getState().fetchSlots(userId);
 
                     useContentStore.getState().checkAndResetDailyStatus();
-                    return true;
+                    return { success: true };
                 }
-                return false;
+                return { success: false, error: '아이디 또는 비밀번호가 일치하지 않습니다.' };
             },
             signup: async (id, pw) => {
                 // Check if exists
-                const { data: existing } = await supabase
+                const { data: existing, error: checkError } = await supabase
                     .from('users')
                     .select('id')
                     .eq('id', id)
                     .single();
 
-                if (existing) return false;
+                if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "Row not found" (which is good)
+                    return { success: false, error: `중복 확인 중 오류: ${checkError.message}` };
+                }
+
+                if (existing) return { success: false, error: '이미 존재하는 아이디입니다.' };
 
                 const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -103,10 +112,10 @@ export const useAuthStore = create<AuthState>()(
 
                 if (error) {
                     console.error("Signup Error:", error);
-                    return false;
+                    return { success: false, error: error.message };
                 }
 
-                return true;
+                return { success: true };
             },
             refreshUser: async () => {
                 const { user } = get();
@@ -135,7 +144,7 @@ export const useAuthStore = create<AuthState>()(
                 set({ user: null, isAuthenticated: false });
                 // Clear other stores to prevent session leakage
                 useContentStore.getState().clearStore();
-                useTopicStore.getState().resetTopics();
+                useTopicStore.getState().clearAllTopics();
                 useSlotStore.getState().clearStore();
                 usePlannerStore.getState().clearPlanner();
             },

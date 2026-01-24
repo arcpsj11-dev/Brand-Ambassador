@@ -24,26 +24,29 @@ export const Login: React.FC = () => {
                     setIsLoading(false);
                     return;
                 }
-                const success = await signup(id, pw);
+                const { success, error: signupError } = await signup(id, pw);
                 if (success) {
                     alert('🎉 회원가입이 완료되었습니다! 이제 로그인해 주세요.');
                     setIsSignup(false);
                 } else {
-                    setError('이미 존재하는 아이디입니다.');
+                    setError(signupError || '회원가입 실패 (알 수 없는 오류)');
                 }
             } else {
-                const success = await login(id, pw);
+                const { success, error: loginError } = await login(id, pw);
                 if (!success) {
-                    setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+                    setError(loginError || '아이디 또는 비밀번호가 올바르지 않습니다.');
                 }
             }
         } catch (err) {
             console.error(err);
-            setError('서버 연결 중 오류가 발생했습니다.');
+            const msg = err instanceof Error ? err.message : String(err);
+            setError(`치명적 오류: ${msg}`);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
@@ -125,6 +128,19 @@ export const Login: React.FC = () => {
                         </button>
                     </div>
                 </form>
+
+                {/* DB Connection Debug Status */}
+                <div className="mt-8 pt-4 border-t border-white/5 flex flex-col items-center gap-1">
+                    <div className={`text-[10px] font-bold flex items-center gap-2 ${isSupabaseConfigured ? 'text-green-500/50' : 'text-red-500'}`}>
+                        <div className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
+                        {isSupabaseConfigured ? 'System Connected' : 'DB Configuration Missing'}
+                    </div>
+                    {!isSupabaseConfigured && (
+                        <p className="text-[9px] text-red-400 text-center">
+                            Environment variables (VITE_SUPABASE_URL) not detected.
+                        </p>
+                    )}
+                </div>
             </motion.div>
         </div >
     );

@@ -80,17 +80,22 @@ const MarketingCard: React.FC<{ plan: any; onClick: () => void }> = ({ plan, onC
     );
 };
 
+import { useSlotStore } from '../../store/useSlotStore'; // [NEW]
+
+// ... (MarketingCard component remains unchanged)
+
 export const MarketingCanvas: React.FC = () => {
     const brand = useBrandStore();
     const { monthlyPlan, isScouted, persona, topic, setMonthlyPlan, setPersona, setTopic, clearPlanner } = usePlannerStore();
     const { setClusters, resetTopics } = useTopicStore();
+    const { activeSlotId } = useSlotStore(); // [NEW]
     const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
 
     // [나노바나나] 데이터 초기화 (Reset)
     const handleClearAll = () => {
         if (window.confirm("지금까지 생성된 모든 기획 내용과 주제를 삭제하시겠습니까? \n(되돌릴 수 없습니다)")) {
             clearPlanner();
-            resetTopics();
+            if (activeSlotId) resetTopics(activeSlotId); // [FIX]
             alert("모든 기획 데이터가 초기화되었습니다.");
         }
     };
@@ -99,6 +104,11 @@ export const MarketingCanvas: React.FC = () => {
     const generateChameleonStrategy = async () => {
         if (!persona.trim() || !topic.trim()) {
             alert('원장님, 페르소나와 주제를 먼저 입력해주세요! 🍌');
+            return;
+        }
+
+        if (!activeSlotId) {
+            alert('활성화된 슬롯이 없습니다.');
             return;
         }
 
@@ -116,6 +126,7 @@ export const MarketingCanvas: React.FC = () => {
                 // [SYNC] Update Store (which handles Slot persistence)
                 setClusters(titlesData.clusters);
 
+<<<<<<< HEAD
                 // [INTERNAL SYNC] Planner Store needs flat plan for visualization
                 const flatPlan = titlesData.clusters.flatMap(cluster =>
                     cluster.topics.map(t => ({
@@ -127,7 +138,28 @@ export const MarketingCanvas: React.FC = () => {
                     }))
                 );
                 setMonthlyPlan(flatPlan);
+=======
+            const planWithStatus = allTopics.map((t: any) => ({
+                ...t,
+                status: 'ready' as const
+            }));
+            setMonthlyPlan(planWithStatus);
+
+            // [SYNC] Execution Store 동기화 (30일치 데이터)
+            if (titlesData.clusters) {
+                // TopicStore가 기대하는 형식(Topic[])으로 변환
+                const formattedClusters = titlesData.clusters.map((cluster: any, idx: number) => ({
+                    id: `cluster-${Date.now()}-${idx}`,
+                    category: cluster.pillar?.title || `Cluster ${idx + 1}`,
+                    topics: [
+                        { ...cluster.pillar, type: 'pillar', status: 'ready' },
+                        ...(cluster.satellites || []).map((t: any) => ({ ...t, type: 'supporting', status: 'ready' }))
+                    ]
+                }));
+                setClusters(activeSlotId, formattedClusters); // [FIX]
+>>>>>>> e33e671853f8cf0dcc7a35fa61f20608dc39e942
             }
+
 
             const chat = useChatStore.getState();
             chat.addMessage({

@@ -15,6 +15,8 @@ import { useTopicStore } from '../../store/useTopicStore';
 import { imageService } from '../../services/imageService';
 import { videoService } from '../../services/videoService';
 
+import { useSlotStore } from '../../store/useSlotStore'; // [NEW]
+
 interface TodayActionFlowProps {
     onClose: () => void;
 }
@@ -33,9 +35,14 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     const { checkAndUpgrade } = useStepStore();
     const { user } = useAuthStore();
     const { keyKeywords } = useProfileStore();
-    const { clusters, setClusters, getNextTopic, markAsPublished } = useTopicStore();
+    const { setClusters, getNextTopic, markAsPublished, getSlotData } = useTopicStore(); // [Modified] Removed clusters from destructure, use getSlotData
+    const { activeSlotId } = useSlotStore(); // [NEW] Use active slot
     const { updateDayStatus } = usePlannerStore();
     const brand = useBrandStore();
+
+    // Derived clusters
+    const slotTopicData = getSlotData(activeSlotId || '');
+    const clusters = slotTopicData?.clusters || [];
 
     const [flowState, setFlowState] = useState<FlowState>('ENTRY');
     const [currentContent, setCurrentContent] = useState<{
@@ -71,11 +78,11 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     const handleGenerateVideo = async (index: number, imageUrl: string) => {
         setIsGeneratingVideo(index);
         try {
-            const videoBlob = await videoService.generateVideoFromImage(imageUrl);
-            videoService.downloadBlob(videoBlob, `blog_video_${index + 1}.mp4`);
+            const { blob, extension } = await videoService.generateVideoFromImage(imageUrl);
+            videoService.downloadBlob(blob, `blog_video_${index + 1}.${extension}`);
         } catch (error) {
             console.error('Video generation failed:', error);
-            alert('동영상 생성에 실패했습니다.');
+            alert('동영상 생성에 실패했습니다. (콘솔 확인 필요)');
         } finally {
             setIsGeneratingVideo(null);
         }
@@ -90,11 +97,11 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
 
         setIsGeneratingSlideshow(true);
         try {
-            const videoBlob = await videoService.generateSlideshowVideo(imageUrls, 4000); // 4sec per image
-            videoService.downloadBlob(videoBlob, `blog_slideshow_full.mp4`);
+            const { blob, extension } = await videoService.generateSlideshowVideo(imageUrls, 4000); // 4sec per image
+            videoService.downloadBlob(blob, `blog_slideshow_full.${extension}`);
         } catch (error) {
             console.error('Slideshow generation failed:', error);
-            alert('동영상 생성에 실패했습니다.');
+            alert('동영상 생성에 실패했습니다. (콘솔 확인 필요)');
         } finally {
             setIsGeneratingSlideshow(false);
         }
@@ -127,18 +134,11 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
 
         for (const [index, url] of imageEntries) {
             try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = blobUrl;
-                link.download = `blog_image_${Number(index) + 1}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(blobUrl);
+                // Convert and download as WebP
+                await videoService.downloadImageAsWebP(url, `blog_image_${Number(index) + 1}.webp`);
+
                 // Add a small delay between downloads to prevent browser blocking
-                await new Promise(r => setTimeout(r, 300));
+                await new Promise(r => setTimeout(r, 500));
             } catch (error) {
                 console.error(`Failed to download image ${index}:`, error);
             }
@@ -158,6 +158,11 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     // 자동 프로세스 실행
     const startProcess = async () => {
         if (flowState !== 'ENTRY') return;
+        if (!activeSlotId) {
+            alert("활성화된 슬롯이 없습니다.");
+            return;
+        }
+
         setFlowState('PROCESSING');
         setActionStatus('STEP_GENERATING');
 
@@ -178,14 +183,14 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                         mainTopic
                     );
                     if (clusteredData && clusteredData.clusters) {
-                        setClusters(clusteredData.clusters);
+                        setClusters(activeSlotId, clusteredData.clusters); // [FIX] Added activeSlotId
                     }
                 }
 
                 // 2. 다음 주제 가져오기
-                const nextData = getNextTopic();
+                const nextData = getNextTopic(activeSlotId); // [FIX] Added activeSlotId
                 if (!nextData) {
-                    setClusters([]); // [RESET] 잘못된 데이터일 수 있으므로 초기화
+                    setClusters(activeSlotId, []); // [RESET] 잘못된 데이터일 수 있으므로 초기화
                     throw new Error("분석된 주제가 없습니다. (데이터 형식 오류)");
                 }
 
@@ -255,7 +260,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
     // 네이버 글쓰기 바로가기 (발행 프로세스)
     const handleNaverPublish = async () => {
         if (!currentContent) return;
-        if (!currentContent) return;
+        if (!activeSlotId) return;
 
         // [수정] 네이버 아이디 체크 로직 제거 (사용자 요청)
         // const targetBlogId = selectedBlogId;
@@ -275,7 +280,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             updateStatus(currentContentId, 'PUBLISHED');
         }
         completeTodayAction();
-        markAsPublished(currentContent.day);
+        markAsPublished(activeSlotId, currentContent.day); // [FIX] Added activeSlotId
         updateDayStatus(currentContent.day, 'done'); // [SYNC] 마케팅 캔버스 상태 업데이트
         setActionStatus('COMPLETED');
         setFlowState('END');
@@ -517,15 +522,15 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                                                         <div className="flex gap-2">
                                                             <button
                                                                 onClick={() => {
-                                                                    const link = document.createElement('a');
-                                                                    link.href = generatedImages[idx];
-                                                                    link.download = `blog_image_${idx + 1}.png`;
-                                                                    link.click();
+                                                                    videoService.downloadImageAsWebP(
+                                                                        generatedImages[idx],
+                                                                        `blog_image_${idx + 1}.webp`
+                                                                    );
                                                                 }}
                                                                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all text-xs font-bold"
                                                             >
                                                                 <Download size={16} />
-                                                                이미지 다운로드
+                                                                이미지 다운로드 (WebP)
                                                             </button>
                                                             <button
                                                                 onClick={() => handleGenerateVideo(idx, generatedImages[idx])}

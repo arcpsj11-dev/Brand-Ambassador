@@ -302,22 +302,49 @@ export const AdminDashboard: React.FC = () => {
                                                         <span className={`font-black tracking-tighter italic ${user.tier === 'ULTRA' ? 'text-brand-primary' : user.tier === 'PRO' ? 'text-purple-400' : 'text-gray-400'}`}>
                                                             {user.tier}
                                                         </span>
-                                                        <div className="flex items-center gap-2">
-                                                            <input
-                                                                type="number"
-                                                                placeholder="개월"
-                                                                className="w-12 bg-black/40 border border-white/10 rounded px-1 py-0.5 text-[10px] focus:border-brand-primary outline-none"
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter') {
-                                                                        const months = parseInt((e.target as HTMLInputElement).value);
-                                                                        if (!isNaN(months)) {
-                                                                            const expiresAt = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
+                                                        <div className="flex items-center gap-1">
+                                                            {/* User Duration Editor */}
+                                                            <div className="flex items-center bg-black/40 border border-white/10 rounded overflow-hidden">
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="0"
+                                                                    className="w-8 bg-transparent px-1 py-0.5 text-[10px] text-center focus:outline-none"
+                                                                    id={`duration-val-${user.id}`}
+                                                                />
+                                                                <select
+                                                                    className="bg-white/5 text-[9px] px-1 py-0.5 border-l border-white/10 focus:outline-none focus:bg-white/10 text-gray-400"
+                                                                    id={`duration-unit-${user.id}`}
+                                                                    defaultValue="month"
+                                                                >
+                                                                    <option value="week">주</option>
+                                                                    <option value="month">개월</option>
+                                                                    <option value="year">년</option>
+                                                                </select>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const valInput = document.getElementById(`duration-val-${user.id}`) as HTMLInputElement;
+                                                                        const unitInput = document.getElementById(`duration-unit-${user.id}`) as HTMLSelectElement;
+                                                                        const val = parseInt(valInput.value);
+                                                                        const unit = unitInput.value;
+
+                                                                        if (!isNaN(val) && val > 0) {
+                                                                            let multiplier = 0;
+                                                                            if (unit === 'week') multiplier = 7 * 24 * 60 * 60 * 1000;
+                                                                            if (unit === 'month') multiplier = 30 * 24 * 60 * 60 * 1000;
+                                                                            if (unit === 'year') multiplier = 365 * 24 * 60 * 60 * 1000;
+
+                                                                            const expiresAt = new Date(Date.now() + val * multiplier).toISOString();
                                                                             adminState.updateUserMembership(user.id, { expiresAt });
+                                                                            valInput.value = ''; // Reset
+                                                                            alert(`${user.id}님의 이용 기간이 ${val}${unit === 'week' ? '주' : unit === 'month' ? '개월' : '년'} 연장되었습니다.`);
                                                                         }
-                                                                    }
-                                                                }}
-                                                            />
-                                                            <span className={`text-[9px] font-bold ${isExpired ? 'text-red-500' : 'text-gray-500'}`}>
+                                                                    }}
+                                                                    className="px-2 py-0.5 bg-brand-primary/20 hover:bg-brand-primary text-brand-primary hover:text-black text-[9px] font-bold transition-all"
+                                                                >
+                                                                    적용
+                                                                </button>
+                                                            </div>
+                                                            <span className={`text-[9px] font-bold ml-1 ${isExpired ? 'text-red-500' : 'text-gray-500'}`}>
                                                                 {user.expiresAt ? new Date(user.expiresAt).toLocaleDateString() : '무제한'}
                                                             </span>
                                                         </div>
@@ -399,15 +426,28 @@ export const AdminDashboard: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                <div>
-                                                    <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Duration (이용 기간)</label>
-                                                    <input
-                                                        type="text"
-                                                        value={config.durationRaw}
-                                                        onChange={(e) => adminState.updateTierConfig(tier, { durationRaw: e.target.value })}
-                                                        className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm font-bold focus:border-brand-primary outline-none"
-                                                        placeholder="예: 30일"
-                                                    />
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] text-gray-500 font-bold uppercase block">Duration (기본 기간)</label>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="number"
+                                                            value={config.durationValue || 0}
+                                                            onChange={(e) => {
+                                                                const val = parseInt(e.target.value) || 0;
+                                                                adminState.updateTierConfig(tier, { durationValue: val });
+                                                            }}
+                                                            className="w-16 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm font-bold focus:border-brand-primary outline-none"
+                                                        />
+                                                        <select
+                                                            value={config.durationUnit || 'month'}
+                                                            onChange={(e) => adminState.updateTierConfig(tier, { durationUnit: e.target.value as any })}
+                                                            className="bg-black/30 border border-white/10 rounded-lg px-2 py-2 text-xs font-bold focus:border-brand-primary outline-none text-gray-300"
+                                                        >
+                                                            <option value="week">주 (Weeks)</option>
+                                                            <option value="month">개월 (Months)</option>
+                                                            <option value="year">년 (Years)</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
