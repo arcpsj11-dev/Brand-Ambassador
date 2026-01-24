@@ -245,7 +245,7 @@ export const geminiReasoningService = {
             const authUser = useAuthStore.getState().user;
             const genAI = getGenAI(); // Now checks usage limit
 
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+            const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
             const adminState = useAdminStore.getState();
 
             // Increment usage count on successful start
@@ -303,7 +303,7 @@ export const geminiReasoningService = {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-3-flash-preview",
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: KEYWORD_ANALYSIS_SCHEMA as any
@@ -341,7 +341,7 @@ export const geminiReasoningService = {
             const authUser = useAuthStore.getState().user;
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-3-flash-preview",
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: TOPIC_CLUSTER_SCHEMA as any
@@ -370,11 +370,23 @@ export const geminiReasoningService = {
             const result = await model.generateContent(finalPrompt);
             const data = cleanAndParseJSON(result.response.text());
 
-            // 30개 생성 보장 확인 (부족하면 클라이언트 측에서 처리하거나 로그)
-            if (data.clusters && data.clusters.length < 3) {
-
+            // [VALIDATION] Ensure exactly 3 clusters were generated
+            if (!data.clusters || data.clusters.length !== 3) {
+                console.error(`[generateMonthlyTitles] Expected 3 clusters, got ${data.clusters?.length || 0}`);
+                console.error("AI Response:", data);
+                throw new Error(`AI가 ${data.clusters?.length || 0}개의 클러스터만 생성했습니다. 3개가 필요합니다. 다시 시도해주세요.`);
             }
 
+            // Verify each cluster has 10 topics
+            for (let i = 0; i < data.clusters.length; i++) {
+                const cluster = data.clusters[i];
+                if (!cluster.topics || cluster.topics.length !== 10) {
+                    console.error(`[generateMonthlyTitles] Cluster ${i + 1} has ${cluster.topics?.length || 0} topics, expected 10`);
+                    throw new Error(`클러스터 ${i + 1}에 ${cluster.topics?.length || 0}개의 주제만 있습니다. 10개가 필요합니다.`);
+                }
+            }
+
+            console.log(`[generateMonthlyTitles] Successfully generated 3 clusters with 30 topics total`);
             return data;
         } catch (error) {
             console.error("Bulk Title Error:", error);
@@ -387,7 +399,7 @@ export const geminiReasoningService = {
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-3-flash-preview",
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: IMAGE_PROMPT_SCHEMA as any
@@ -431,7 +443,7 @@ ${contentBody}
             const authUser = useAuthStore.getState().user;
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-3-flash-preview",
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: TOPIC_CLUSTER_SCHEMA as any
@@ -459,6 +471,98 @@ ${contentBody}
             const result = await model.generateContent(prompt);
             const data = cleanAndParseJSON(result.response.text()) as MonthlyTitleResponse;
 
+            // [FALLBACK MECHANISM] If AI generates fewer than 3 clusters, generate more
+            if (!data.clusters || data.clusters.length < 3) {
+                console.warn(`[generateTopicCluster] AI generated ${data.clusters?.length || 0} clusters. Generating additional clusters...`);
+
+                const allClusters = data.clusters || [];
+                let startDay = allClusters.length > 0 ? allClusters[allClusters.length - 1].topics[allClusters[allClusters.length - 1].topics.length - 1].day + 1 : 1;
+
+                // Generate remaining clusters one by one
+                while (allClusters.length < 3) {
+                    const clusterNumber = allClusters.length + 1;
+                    const singleClusterPrompt = `Generate 1 topic cluster (10 topics: 1 pillar + 9 supporting) for "${keyword}".
+                    
+Cluster ID: "${clusterNumber}"
+Start day number: ${startDay}
+Category: Specific sub-theme ${clusterNumber} of "${keyword}" (e.g., for "교통사고 후유증": "근골격계 통증", "심리적 트라우마", "재활 치료")
+
+Output JSON format:
+{
+  "clusters": [{
+    "id": "${clusterNumber}",
+    "category": "[Specific medical aspect of ${keyword}]",
+    "topics": [
+      {"day": ${startDay}, "type": "pillar", "title": "..."},
+      {"day": ${startDay + 1}, "type": "supporting", "title": "..."},
+      ... (total 10 topics)
+    ]
+  }]
+}`;
+
+                    const singleResult = await model.generateContent(singleClusterPrompt);
+                    const singleData = cleanAndParseJSON(singleResult.response.text()) as MonthlyTitleResponse;
+
+                    if (singleData.clusters && singleData.clusters.length > 0) {
+                        allClusters.push(singleData.clusters[0]);
+                        startDay += 10;
+                        console.log(`[generateTopicCluster] Generated cluster ${clusterNumber}/3`);
+                    } else {
+                        throw new Error(`클러스터 ${clusterNumber} 생성 실패`);
+                    }
+                }
+
+                data.clusters = allClusters;
+                console.log(`[generateTopicCluster] Successfully generated 3 clusters via fallback mechanism`);
+            }
+
+            // [TOPIC COUNT FALLBACK] Verify each cluster has 10 topics, regenerate if needed
+            for (let i = 0; i < data.clusters.length; i++) {
+                const cluster = data.clusters[i];
+                if (!cluster.topics || cluster.topics.length !== 10) {
+                    console.warn(`[generateTopicCluster] Cluster ${i + 1} has ${cluster.topics?.length || 0} topics (expected 10). Regenerating...`);
+
+                    const startDay = (i * 10) + 1;
+                    const clusterNumber = i + 1;
+
+                    const singleClusterPrompt = `Generate Cluster ${clusterNumber} (10 topics: 1 pillar + 9 supporting) for "${keyword}".
+                    
+Cluster ID: "${clusterNumber}"
+Start day number: ${startDay}
+Category: Specific sub-theme ${clusterNumber} of "${keyword}"
+
+Output JSON format (PURE JSON):
+{
+  "clusters": [{
+    "id": "${clusterNumber}",
+    "category": "[Specific medical aspect]",
+    "topics": [
+      {"day": ${startDay}, "type": "pillar", "title": "..."},
+      {"day": ${startDay + 1}, "type": "supporting", "title": "..."},
+      ... (generates exact 10 topics)
+    ]
+  }]
+}`;
+
+                    try {
+                        const singleResult = await model.generateContent(singleClusterPrompt);
+                        const singleData = cleanAndParseJSON(singleResult.response.text()) as MonthlyTitleResponse;
+
+                        if (singleData.clusters && singleData.clusters.length > 0 && singleData.clusters[0].topics.length === 10) {
+                            data.clusters[i] = singleData.clusters[0]; // Replace with valid cluster
+                            console.log(`[generateTopicCluster] Successfully repaired Cluster ${i + 1}`);
+                        } else {
+                            throw new Error(`Failed to regenerate valid cluster ${i + 1}`);
+                        }
+                    } catch (retryError) {
+                        console.error(`[generateTopicCluster] Failed to repair Cluster ${i + 1}:`, retryError);
+                        // We will allow it to fail here if retry fails, or throw
+                        throw new Error(`클러스터 ${i + 1} 생성 실패 (주제 개수 부족)`);
+                    }
+                }
+            }
+
+            console.log(`[generateTopicCluster] Successfully generated 3 clusters with 30 topics total`);
             return data; // Return full response (clusters array)
         } catch (error) {
             console.error("Cluster Gen Error (Synced):", error);
@@ -477,7 +581,7 @@ ${contentBody}
         try {
             const authUser = useAuthStore.getState().user;
             const genAI = getGenAI();
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+            const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
             const adminState = useAdminStore.getState();
 
             if (authUser && authUser.role !== 'admin') {
@@ -534,7 +638,7 @@ ${contentBody}
         try {
             const genAI = getGenAI();
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-3-flash-preview",
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: COACHING_SCHEMA as any

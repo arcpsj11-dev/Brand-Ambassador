@@ -72,26 +72,81 @@ interface AdminState extends AdminSettings {
 }
 
 const DEFAULT_PROMPTS_ORIENTAL: PromptSet = {
-    title: `Generate 30 blog titles for medical clustering strategy based on "{{topic}}".
-    
-[Structure Rules]
-- You MUST generate exactly 3 distinct clusters.
-- Each cluster MUST contain 1 Pillar Post + 9 Supporting Posts.
-- Total: 30 Topics (3 Clusters x 10 Topics).
+    title: `You are a medical content strategist. Generate EXACTLY 3 topic clusters for "{{topic}}".
 
-[Category Naming Rules]
-- The 'category' field must be a specific sub-theme of '{{topic}}'.
-- EXTREMELY IMPORTANT: DO NOT use generic names like "Major Symptoms 1", "Cluster A", "Part 1", or "General Info".
-- DO NOT use fixed example categories like "Major Symptoms", "Mental Health", or "Lifestyle Habits" UNLESS they are highly relevant to '{{topic}}'.
-- Example Categories for 'Traffic Accident': "Musculoskeletal Pain", "Psychological Trauma", "Rehabilitation Process".
+CRITICAL REQUIREMENTS:
+1. Generate EXACTLY 3 clusters (no more, no less)
+2. Each cluster MUST have EXACTLY 10 topics (1 pillar + 9 supporting)
+3. Total output: 30 topics across 3 clusters
 
-[Title Formula]
-- Formula: "[증상/상황] + 왜/어떻게/무엇을 + 설명/정리/이해/관점"
-- Tone: Professional yet catchy (MZ style).
+STRUCTURE TEMPLATE (FOLLOW EXACTLY):
+{
+  "clusters": [
+    {
+      "id": "1",
+      "category": "[Specific Sub-Theme 1 of {{topic}}]",
+      "topics": [
+        {"day": 1, "type": "pillar", "title": "[Main pillar title for cluster 1]"},
+        {"day": 2, "type": "supporting", "title": "[Supporting topic 1]"},
+        {"day": 3, "type": "supporting", "title": "[Supporting topic 2]"},
+        {"day": 4, "type": "supporting", "title": "[Supporting topic 3]"},
+        {"day": 5, "type": "supporting", "title": "[Supporting topic 4]"},
+        {"day": 6, "type": "supporting", "title": "[Supporting topic 5]"},
+        {"day": 7, "type": "supporting", "title": "[Supporting topic 6]"},
+        {"day": 8, "type": "supporting", "title": "[Supporting topic 7]"},
+        {"day": 9, "type": "supporting", "title": "[Supporting topic 8]"},
+        {"day": 10, "type": "supporting", "title": "[Supporting topic 9]"}
+      ]
+    },
+    {
+      "id": "2",
+      "category": "[Specific Sub-Theme 2 of {{topic}}]",
+      "topics": [
+        {"day": 11, "type": "pillar", "title": "[Main pillar title for cluster 2]"},
+        {"day": 12, "type": "supporting", "title": "[Supporting topic 1]"},
+        {"day": 13, "type": "supporting", "title": "[Supporting topic 2]"},
+        {"day": 14, "type": "supporting", "title": "[Supporting topic 3]"},
+        {"day": 15, "type": "supporting", "title": "[Supporting topic 4]"},
+        {"day": 16, "type": "supporting", "title": "[Supporting topic 5]"},
+        {"day": 17, "type": "supporting", "title": "[Supporting topic 6]"},
+        {"day": 18, "type": "supporting", "title": "[Supporting topic 7]"},
+        {"day": 19, "type": "supporting", "title": "[Supporting topic 8]"},
+        {"day": 20, "type": "supporting", "title": "[Supporting topic 9]"}
+      ]
+    },
+    {
+      "id": "3",
+      "category": "[Specific Sub-Theme 3 of {{topic}}]",
+      "topics": [
+        {"day": 21, "type": "pillar", "title": "[Main pillar title for cluster 3]"},
+        {"day": 22, "type": "supporting", "title": "[Supporting topic 1]"},
+        {"day": 23, "type": "supporting", "title": "[Supporting topic 2]"},
+        {"day": 24, "type": "supporting", "title": "[Supporting topic 3]"},
+        {"day": 25, "type": "supporting", "title": "[Supporting topic 4]"},
+        {"day": 26, "type": "supporting", "title": "[Supporting topic 5]"},
+        {"day": 27, "type": "supporting", "title": "[Supporting topic 6]"},
+        {"day": 28, "type": "supporting", "title": "[Supporting topic 7]"},
+        {"day": 29, "type": "supporting", "title": "[Supporting topic 8]"},
+        {"day": 30, "type": "supporting", "title": "[Supporting topic 9]"}
+      ]
+    }
+  ]
+}
 
-Result MUST be JSON with "clusters" array.
-JSON Format: { "clusters": [ { "id": "1", "category": "...", "topics": [ { "day": 1, "type": "pillar", "title": "..." } ] } ] }
-[STRICT CONSTRAINT]: OUTPUT ONLY PURE JSON. NO MARKDOWN. NO CONVERSATIONAL TEXT. START WITH "{".`,
+CATEGORY NAMING:
+- Use specific medical/treatment aspects of {{topic}}
+- Example for "교통사고 후유증": "근골격계 통증", "심리적 트라우마", "재활 치료 과정"
+- NO generic names like "Cluster 1", "Part A", "General Info"
+
+TITLE FORMULA:
+- Pattern: [증상/상황] + 왜/어떻게/무엇을 + 설명/정리/이해
+- Tone: Professional yet engaging (MZ-friendly)
+- Example: "교통사고 후 목 통증, 왜 생기고 어떻게 치료할까?"
+
+OUTPUT RULES:
+- Start with "{" (no markdown, no explanation)
+- Pure JSON only
+- Verify: clusters.length === 3 && each cluster has 10 topics`,
 
     body: `## Role
 너는 {{region}} 지역 기반의 의료 마케팅 전문가이자,

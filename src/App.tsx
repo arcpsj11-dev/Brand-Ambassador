@@ -27,12 +27,14 @@ const App: React.FC = () => {
   const adminState = useAdminStore();
 
   React.useEffect(() => {
-    if (isAuthenticated) {
-      useSlotStore.getState().ensureActiveSlot();
+    if (isAuthenticated && user?.id) {
+      useSlotStore.getState().fetchSlots(user.id).then(() => {
+        useSlotStore.getState().ensureActiveSlot();
+      });
       useContentStore.getState().checkAndResetDailyStatus();
       adminState.fetchUsers();
       adminState.fetchSettings();
-      if (user?.id) adminState.fetchUserStats(user.id);
+      adminState.fetchUserStats(user.id);
     }
   }, [isAuthenticated, user?.id]);
 

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { type MembershipTier } from './useAuthStore';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabaseClient';
+import { type TopicCluster } from './useTopicStore';
+import { type DailyPlan, type StrategyType } from './usePlannerStore';
 
 // 페르소나 설정 인터페이스
 export interface PersonaSetting {
@@ -27,9 +29,27 @@ export interface BlogSlot {
     personaSetting: PersonaSetting;
     currentCluster: CurrentCluster;
 
+    // [Unified Data] Slot-specific topics and planning
+    clusters: TopicCluster[];
+    currentClusterIndex: number;
+    currentTopicIndex: number;
+
+    plannerData: {
+        strategy: StrategyType;
+        monthlyPlan: DailyPlan[];
+        persona: string;
+        topic: string;
+        isScouted: boolean;
+    };
+
+    // [Unified Data] Daily Action Progress
+    actionStatus: 'IDLE' | 'STEP_GENERATING' | 'STEP_RISK_CHECK' | 'STEP_SCHEDULING' | 'COMPLETED';
+    lastActionDate: string | null;
+    completedCount: number;
+    regenerationTopic: string | null;
+
     isActive: boolean;
     createdAt: string;
-    lastActionDate?: string; // YYYY-MM-DD
 }
 
 // 사용자 등급 타입 (Align with useAuthStore)
@@ -106,9 +126,27 @@ export const useSlotStore = create<SlotState>()(
                         satelliteTitles: [],
                         currentIndex: 1
                     },
+                    clusters: config.clusters || [],
+                    currentClusterIndex: config.currentClusterIndex || 0,
+                    currentTopicIndex: config.currentTopicIndex || 0,
+                    plannerData: config.plannerData || {
+                        strategy: null,
+                        monthlyPlan: Array.from({ length: 30 }, (_, i) => ({
+                            day: i + 1,
+                            topic: '',
+                            description: '',
+                            status: 'lock' as const
+                        })),
+                        persona: '',
+                        topic: '',
+                        isScouted: false
+                    },
+                    actionStatus: config.actionStatus || 'IDLE',
+                    lastActionDate: config.lastActionDate || null,
+                    completedCount: config.completedCount || 0,
+                    regenerationTopic: config.regenerationTopic || null,
                     isActive: config.isActive !== undefined ? config.isActive : true,
-                    createdAt: new Date().toISOString(),
-                    lastActionDate: config.lastActionDate || new Date().toISOString().split('T')[0]
+                    createdAt: new Date().toISOString()
                 };
 
                 const { slots, activeSlotId } = get();
@@ -117,8 +155,16 @@ export const useSlotStore = create<SlotState>()(
 
                 const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
                 if (userId) {
-                    await supabase.from('blog_slots')
-                        .upsert({ user_id: userId, slots: newSlots, active_slot_id: newActiveId, updated_at: new Date() }, { onConflict: 'user_id' });
+                    try {
+                        const { error } = await supabase.from('blog_slots')
+                            .upsert({ user_id: userId, slots: newSlots, active_slot_id: newActiveId, updated_at: new Date() }, { onConflict: 'user_id' });
+                        if (error) throw error;
+                    } catch (err: any) {
+                        // Ignore 'Table not found' error to allow local-only mode
+                        if (err.code !== 'PGRST205' && err.message?.indexOf('not find the table') === -1) {
+                            console.error('[useSlotStore] Sync Error:', err);
+                        }
+                    }
                 }
 
                 set({
@@ -130,6 +176,7 @@ export const useSlotStore = create<SlotState>()(
             },
 
             // 슬롯 업데이트
+            // 슬롯 업데이트
             updateSlot: async (id: string, updates: Partial<BlogSlot>) => {
                 const { slots } = get() as SlotState;
                 const newSlots = slots.map((slot: BlogSlot) =>
@@ -138,9 +185,16 @@ export const useSlotStore = create<SlotState>()(
 
                 const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
                 if (userId) {
-                    await supabase.from('blog_slots')
-                        .update({ slots: newSlots, updated_at: new Date() })
-                        .eq('user_id', userId);
+                    try {
+                        const { error } = await supabase.from('blog_slots')
+                            .update({ slots: newSlots, updated_at: new Date() })
+                            .eq('user_id', userId);
+                        if (error) throw error;
+                    } catch (err: any) {
+                        if (err.code !== 'PGRST205' && err.message?.indexOf('not find the table') === -1) {
+                            console.error('[useSlotStore] Sync Error:', err);
+                        }
+                    }
                 }
 
                 set({ slots: newSlots });
@@ -154,11 +208,22 @@ export const useSlotStore = create<SlotState>()(
                     ? (newSlots[0]?.slotId || null)
                     : activeSlotId;
 
+                // [DEEP PURGE] Delete all associated contents
+                const { useContentStore } = await import('./useContentStore');
+                await useContentStore.getState().purgeSlotArticles(id);
+
                 const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
                 if (userId) {
-                    await supabase.from('blog_slots')
-                        .update({ slots: newSlots, active_slot_id: newActiveId, updated_at: new Date() })
-                        .eq('user_id', userId);
+                    try {
+                        const { error } = await supabase.from('blog_slots')
+                            .update({ slots: newSlots, active_slot_id: newActiveId, updated_at: new Date() })
+                            .eq('user_id', userId);
+                        if (error) throw error;
+                    } catch (err: any) {
+                        if (err.code !== 'PGRST205' && err.message?.indexOf('not find the table') === -1) {
+                            console.error('[useSlotStore] Sync Error:', err);
+                        }
+                    }
                 }
 
                 set({
@@ -170,12 +235,42 @@ export const useSlotStore = create<SlotState>()(
             // 활성 슬롯 설정
             setActiveSlot: async (id) => {
                 const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
+                console.log(`[useSlotStore] setActiveSlot called with ID: ${id}`);
+
                 if (userId) {
-                    await supabase.from('blog_slots')
-                        .update({ active_slot_id: id, updated_at: new Date() })
-                        .eq('user_id', userId);
+                    try {
+                        const { error } = await supabase.from('blog_slots')
+                            .update({ active_slot_id: id, updated_at: new Date() })
+                            .eq('user_id', userId);
+                        if (error) throw error;
+                    } catch (err: any) {
+                        if (err.code !== 'PGRST205' && err.message?.indexOf('not find the table') === -1) {
+                            console.error('[useSlotStore] Sync Error:', err);
+                        }
+                    }
                 }
                 set({ activeSlotId: id });
+
+                // [SYNC] Sync other stores when slot changes
+                const slot = get().slots.find(s => s.slotId === id);
+                if (slot) {
+                    console.log(`[useSlotStore] Found slot ${slot.slotName}, importing stores...`);
+                    const { useTopicStore } = await import('./useTopicStore');
+                    const { usePlannerStore } = await import('./usePlannerStore');
+                    const { useContentStore } = await import('./useContentStore');
+
+                    console.log(`[useSlotStore] Calling syncWithSlot for useTopicStore...`);
+                    useTopicStore.getState().syncWithSlot(slot);
+                    usePlannerStore.getState().syncWithSlot(slot);
+                    useContentStore.getState().syncWithSlot(slot);
+                    if (userId) {
+                        await useContentStore.getState().fetchContents(userId, id);
+                    } else {
+                        console.warn('[useSlotStore] userId missing, skipping fetchContents');
+                    }
+                } else {
+                    console.warn(`[useSlotStore] Slot with ID ${id} not found in local state!`);
+                }
             },
 
             // ID로 슬롯 조회
@@ -208,9 +303,16 @@ export const useSlotStore = create<SlotState>()(
 
                 const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
                 if (userId) {
-                    await supabase.from('blog_slots')
-                        .update({ slots: newSlots, updated_at: new Date() })
-                        .eq('user_id', userId);
+                    try {
+                        const { error } = await supabase.from('blog_slots')
+                            .update({ slots: newSlots, updated_at: new Date() })
+                            .eq('user_id', userId);
+                        if (error) throw error;
+                    } catch (err: any) {
+                        if (err.code !== 'PGRST205' && err.message?.indexOf('not find the table') === -1) {
+                            console.error('[useSlotStore] Sync Error:', err);
+                        }
+                    }
                 }
 
                 set({ slots: newSlots });
@@ -233,9 +335,16 @@ export const useSlotStore = create<SlotState>()(
 
                 const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
                 if (userId) {
-                    await supabase.from('blog_slots')
-                        .update({ slots: newSlots, updated_at: new Date() })
-                        .eq('user_id', userId);
+                    try {
+                        const { error } = await supabase.from('blog_slots')
+                            .update({ slots: newSlots, updated_at: new Date() })
+                            .eq('user_id', userId);
+                        if (error) throw error;
+                    } catch (err: any) {
+                        if (err.code !== 'PGRST205' && err.message?.indexOf('not find the table') === -1) {
+                            console.error('[useSlotStore] Sync Error:', err);
+                        }
+                    }
                 }
 
                 set({ slots: newSlots });
@@ -252,40 +361,119 @@ export const useSlotStore = create<SlotState>()(
 
                 const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
                 if (userId) {
-                    await supabase.from('blog_slots')
-                        .update({ slots: newSlots, updated_at: new Date() })
-                        .eq('user_id', userId);
+                    try {
+                        const { error } = await supabase.from('blog_slots')
+                            .update({ slots: newSlots, updated_at: new Date() })
+                            .eq('user_id', userId);
+                        if (error) throw error;
+                    } catch (err: any) {
+                        if (err.code !== 'PGRST205' && err.message?.indexOf('not find the table') === -1) {
+                            console.error('[useSlotStore] Sync Error:', err);
+                        }
+                    }
                 }
 
                 set({ slots: newSlots });
             },
 
             // 안전장치: 슬롯이 있는데 활성 슬롯이 없으면 첫 번째 선택
-            ensureActiveSlot: () => {
-                const { slots, activeSlotId } = get();
+            ensureActiveSlot: async () => {
+                const { slots, activeSlotId, setActiveSlot } = get();
                 if (slots.length > 0 && !activeSlotId) {
-                    set({ activeSlotId: slots[0].slotId });
+                    await setActiveSlot(slots[0].slotId);
                 }
             },
             clearStore: () => set({ slots: [], activeSlotId: null }),
 
             fetchSlots: async (userId: string) => {
-                const { data, error } = await supabase
-                    .from('blog_slots')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .single();
+                let data = null;
+                let error = null;
+
+                try {
+                    const result = await supabase
+                        .from('blog_slots')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .maybeSingle(); // Use maybeSingle to avoid 406/JSON error if no row
+
+                    data = result.data;
+                    error = result.error;
+
+                    if (error) throw error;
+                } catch (err: any) {
+                    // Ignore 406 (Not Acceptable) or Table Missing errors
+                    if (err.code !== 'PGRST205' && err.code !== 'PGRST116' && err.message?.indexOf('not find the table') === -1 && err.code !== '406') {
+                        console.warn('[useSlotStore] Fetch Error (Ignored):', err);
+                    }
+                    return; // Stop if fetch fails (fallback to local state)
+                }
 
                 if (data && !error) {
+                    const slots = data.slots || [];
+                    const activeSlotId = data.active_slot_id || (slots[0]?.slotId) || null;
+
                     set({
-                        slots: data.slots || [],
-                        activeSlotId: data.active_slot_id || (data.slots && data.slots[0]?.slotId) || null
+                        slots,
+                        activeSlotId
                     });
+
+                    // Sync if we have an active slot
+                    if (activeSlotId) {
+                        const slot = slots.find((s: BlogSlot) => s.slotId === activeSlotId);
+                        if (slot) {
+                            const { useTopicStore } = await import('./useTopicStore');
+                            const { usePlannerStore } = await import('./usePlannerStore');
+                            const { useContentStore } = await import('./useContentStore');
+
+                            useTopicStore.getState().syncWithSlot(slot);
+                            usePlannerStore.getState().syncWithSlot(slot);
+                            useContentStore.getState().syncWithSlot(slot);
+                            await useContentStore.getState().fetchContents(userId, activeSlotId);
+                        }
+                    }
+
+                    // [ZOMBIE PURGE] One-time cleanup of legacy data
+                    try {
+                        console.log("Zombie Purge: Sweeping away legacy data for", userId);
+                        // 1. Delete legacy blog_topics table data for this user
+                        await supabase.from('blog_topics').delete().eq('user_id', userId);
+
+                        // 2. Clear old localStorage keys
+                        localStorage.removeItem('brand-ambassador-topic-storage');
+                        localStorage.removeItem('brand-ambassador-planner-storage');
+
+                        // 3. Clear unassigned contents (Zombie articles without slot_id)
+                        await supabase.from('blog_contents').delete().eq('user_id', userId).is('slot_id', null);
+
+                        // 4. [NEW] Clear contents belonging to slots that no longer exist
+                        if (slots.length > 0) {
+                            const activeSlotIds = slots.map((s: BlogSlot) => s.slotId);
+                            // Delete articles where slot_id is NOT in the list of active slots
+                            await supabase.from('blog_contents')
+                                .delete()
+                                .eq('user_id', userId)
+                                .not('slot_id', 'in', `(${activeSlotIds.join(',')})`);
+                        }
+
+                        console.log("Zombie Purge: Successfully cleaned up all zombie materials.");
+                    } catch (purgeError) {
+                        console.error("Zombie Purge Error:", purgeError);
+                    }
                 }
             }
         }),
         {
-            name: 'brand-ambassador-slot-storage'
+            name: 'brand-ambassador-slot-storage',
+            onRehydrateStorage: () => (state) => {
+                if (state && state.activeSlotId) {
+                    const slot = state.slots.find(s => s.slotId === state.activeSlotId);
+                    if (slot) {
+                        // Use delayed import or global access if needed, but since it's inside a function it's fine
+                        import('./useTopicStore').then(m => m.useTopicStore.getState().syncWithSlot(slot));
+                        import('./usePlannerStore').then(m => m.usePlannerStore.getState().syncWithSlot(slot));
+                    }
+                }
+            }
         }
     )
 );

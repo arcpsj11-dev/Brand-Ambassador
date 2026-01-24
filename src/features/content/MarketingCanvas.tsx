@@ -111,35 +111,22 @@ export const MarketingCanvas: React.FC = () => {
 
         try {
             const titlesData = await geminiReasoningService.generateMonthlyTitles(topic);
-            const allTopics: any[] = [];
 
             if (titlesData.clusters && Array.isArray(titlesData.clusters)) {
-                titlesData.clusters.forEach((cluster: any) => {
-                    if (cluster.pillar) allTopics.push({ ...cluster.pillar, type: 'pillar' });
-                    if (cluster.satellites) {
-                        allTopics.push(...cluster.satellites.map((s: any) => ({ ...s, type: 'supporting' })));
-                    }
-                });
-            }
+                // [SYNC] Update Store (which handles Slot persistence)
+                setClusters(titlesData.clusters);
 
-            const planWithStatus = allTopics.map((t: any) => ({
-                ...t,
-                status: 'ready' as const
-            }));
-            setMonthlyPlan(planWithStatus);
-
-            // [SYNC] Execution Store 동기화 (30일치 데이터)
-            if (titlesData.clusters) {
-                // TopicStore가 기대하는 형식(Topic[])으로 변환
-                const formattedClusters = titlesData.clusters.map((cluster: any, idx: number) => ({
-                    id: `cluster-${Date.now()}-${idx}`,
-                    category: cluster.pillar?.title || `Cluster ${idx + 1}`,
-                    topics: [
-                        { ...cluster.pillar, type: 'pillar', status: 'ready' },
-                        ...(cluster.satellites || []).map((t: any) => ({ ...t, type: 'supporting', status: 'ready' }))
-                    ]
-                }));
-                setClusters(formattedClusters);
+                // [INTERNAL SYNC] Planner Store needs flat plan for visualization
+                const flatPlan = titlesData.clusters.flatMap(cluster =>
+                    cluster.topics.map(t => ({
+                        day: t.day,
+                        topic: t.title,
+                        description: t.description || '',
+                        type: t.type,
+                        status: 'ready' as const
+                    }))
+                );
+                setMonthlyPlan(flatPlan);
             }
 
             const chat = useChatStore.getState();

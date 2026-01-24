@@ -30,6 +30,12 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
     // Remove local preview state, rely on store (or use local just for confirmation)
     const [previewClusters, setPreviewClusters] = useState<any[] | null>(null);
 
+    // [FIX] Reset local state when slot changes
+    React.useEffect(() => {
+        setPreviewClusters(null);
+        setKeyword('');
+    }, [slotId]);
+
     // If we have clusters in store, we show the persistent list.
     // If we just generated new ones (preview), we show that instead.
     const activeClusters = previewClusters || (clusters.length > 0 ? clusters : null);
@@ -71,23 +77,7 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
     const handleApply = () => {
         if (!previewClusters || previewClusters.length === 0) return;
 
-        // 1. Update Slot Store
-        const allTopics = previewClusters.flatMap((cluster: any) =>
-            cluster.topics.map((t: any) => t.title)
-        );
-
-        const mainPillar = allTopics[0] || '';
-        const otherTopics = allTopics.slice(1);
-
-        updateSlot(slotId, {
-            currentCluster: {
-                pillarTitle: mainPillar,
-                satelliteTitles: otherTopics,
-                currentIndex: 1
-            }
-        });
-
-        // 2. [SYNC] Update Topic Store (Full 30-day Plan / All Clusters)
+        // All persistence now handled inside setClusters(previewClusters)
         setClusters(previewClusters);
 
         if (onComplete) onComplete();
@@ -96,26 +86,21 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
         setKeyword('');
     };
 
-    const handleReset = (e?: React.MouseEvent) => {
+    const handleReset = async (e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
 
         if (window.confirm("현재 진행 중인 30일 플랜을 초기화하시겠습니까?\n(작성 중인 데이터와 매칭된 주제 리스트가 모두 삭제됩니다.)")) {
             // 1. Clear Local Preview
             setPreviewClusters(null);
 
-            // 2. Clear Topic Store (The 30-day list)
+            // 2. [DEEP PURGE] Delete all articles for this slot
+            const { useContentStore } = await import('../../store/useContentStore');
+            await useContentStore.getState().purgeSlotArticles(slotId);
+
+            // 3. Reset Topics (Now handles Slot Store reset too)
             resetTopics();
 
-            // 3. Clear Slot Store (The 'Active Strategy' reference)
-            updateSlot(slotId, {
-                currentCluster: {
-                    pillarTitle: '',
-                    satelliteTitles: [],
-                    currentIndex: 1
-                }
-            });
-
-            // 4. Clear Planner Store (The Marketing Canvas visualization)
+            // 4. Clear Planner Store (Now handles Slot Store reset too)
             clearPlanner();
 
             alert("모든 플랜 데이터가 초기화되었습니다. 새로운 키워드로 전략을 생성해보세요.");

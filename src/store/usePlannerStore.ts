@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { useSlotStore, type BlogSlot } from './useSlotStore';
 
 export type StrategyType = 'A-READ+' | 'A-READ' | 'PASONA' | null;
 
@@ -25,32 +25,34 @@ interface PlannerState {
     setActiveDraft: (plan: DailyPlan | null) => void;
     updateDayStatus: (day: number, status: 'lock' | 'ready' | 'done') => void;
     clearPlanner: () => void;
+    syncWithSlot: (slot: BlogSlot) => void;
 }
 
-export const usePlannerStore = create<PlannerState>()(
-    persist(
-        (set) => ({
-            strategy: null,
-            monthlyPlan: Array.from({ length: 30 }, (_, i) => ({
-                day: i + 1,
-                topic: '',
-                description: '',
-                status: 'lock' as const
-            })),
-            persona: '',
-            topic: '',
-            isScouted: false,
-            activeDraft: null,
-            setStrategy: (strategy) => set({ strategy }),
-            setMonthlyPlan: (monthlyPlan) => set({ monthlyPlan }),
-            setPersona: (persona) => set({ persona }),
-            setTopic: (topic) => set({ topic }),
-            setIsScouted: (isScouted) => set({ isScouted }),
-            setActiveDraft: (activeDraft) => set({ activeDraft }),
-            updateDayStatus: (day, status) => set((state) => ({
-                monthlyPlan: state.monthlyPlan.map(p => p.day === day ? { ...p, status } : p)
-            })),
-            clearPlanner: () => set({
+export const usePlannerStore = create<PlannerState>()((set, get) => ({
+    strategy: null,
+    monthlyPlan: Array.from({ length: 30 }, (_, i) => ({
+        day: i + 1,
+        topic: '',
+        description: '',
+        status: 'lock' as const
+    })),
+    persona: '',
+    topic: '',
+    isScouted: false,
+    activeDraft: null,
+
+    syncWithSlot: (slot: BlogSlot) => {
+        if (slot.plannerData) {
+            set({
+                strategy: slot.plannerData.strategy,
+                monthlyPlan: slot.plannerData.monthlyPlan,
+                persona: slot.plannerData.persona,
+                topic: slot.plannerData.topic,
+                isScouted: slot.plannerData.isScouted
+            });
+        } else {
+            // [SYNC] Clear state if slot has no planner data
+            set({
                 strategy: null,
                 persona: '',
                 topic: '',
@@ -61,10 +63,110 @@ export const usePlannerStore = create<PlannerState>()(
                     description: '',
                     status: 'lock' as const
                 }))
-            }),
-        }),
-        {
-            name: 'brand-ambassador-planner-storage',
+            });
         }
-    )
-);
+    },
+
+    setStrategy: (strategy) => {
+        const activeSlotId = useSlotStore.getState().activeSlotId;
+        if (activeSlotId) {
+            const slot = useSlotStore.getState().getSlotById(activeSlotId);
+            if (slot) {
+                useSlotStore.getState().updateSlot(activeSlotId, {
+                    plannerData: { ...slot.plannerData, strategy }
+                });
+            }
+        }
+        set({ strategy });
+    },
+
+    setMonthlyPlan: (monthlyPlan) => {
+        const activeSlotId = useSlotStore.getState().activeSlotId;
+        if (activeSlotId) {
+            const slot = useSlotStore.getState().getSlotById(activeSlotId);
+            if (slot) {
+                useSlotStore.getState().updateSlot(activeSlotId, {
+                    plannerData: { ...slot.plannerData, monthlyPlan }
+                });
+            }
+        }
+        set({ monthlyPlan });
+    },
+
+    setPersona: (persona) => {
+        const activeSlotId = useSlotStore.getState().activeSlotId;
+        if (activeSlotId) {
+            const slot = useSlotStore.getState().getSlotById(activeSlotId);
+            if (slot) {
+                useSlotStore.getState().updateSlot(activeSlotId, {
+                    plannerData: { ...slot.plannerData, persona }
+                });
+            }
+        }
+        set({ persona });
+    },
+
+    setTopic: (topic) => {
+        const activeSlotId = useSlotStore.getState().activeSlotId;
+        if (activeSlotId) {
+            const slot = useSlotStore.getState().getSlotById(activeSlotId);
+            if (slot) {
+                useSlotStore.getState().updateSlot(activeSlotId, {
+                    plannerData: { ...slot.plannerData, topic }
+                });
+            }
+        }
+        set({ topic });
+    },
+
+    setIsScouted: (isScouted) => {
+        const activeSlotId = useSlotStore.getState().activeSlotId;
+        if (activeSlotId) {
+            const slot = useSlotStore.getState().getSlotById(activeSlotId);
+            if (slot) {
+                useSlotStore.getState().updateSlot(activeSlotId, {
+                    plannerData: { ...slot.plannerData, isScouted }
+                });
+            }
+        }
+        set({ isScouted });
+    },
+
+    setActiveDraft: (activeDraft) => set({ activeDraft }),
+
+    updateDayStatus: (day, status) => {
+        const activeSlotId = useSlotStore.getState().activeSlotId;
+        const newPlan = get().monthlyPlan.map(p => p.day === day ? { ...p, status } : p);
+        if (activeSlotId) {
+            const slot = useSlotStore.getState().getSlotById(activeSlotId);
+            if (slot) {
+                useSlotStore.getState().updateSlot(activeSlotId, {
+                    plannerData: { ...slot.plannerData, monthlyPlan: newPlan }
+                });
+            }
+        }
+        set({ monthlyPlan: newPlan });
+    },
+
+    clearPlanner: () => {
+        const activeSlotId = useSlotStore.getState().activeSlotId;
+        const clearedData = {
+            strategy: null as StrategyType,
+            persona: '',
+            topic: '',
+            isScouted: false,
+            monthlyPlan: Array.from({ length: 30 }, (_, i) => ({
+                day: i + 1,
+                topic: '',
+                description: '',
+                status: 'lock' as const
+            }))
+        };
+        if (activeSlotId) {
+            useSlotStore.getState().updateSlot(activeSlotId, {
+                plannerData: clearedData
+            });
+        }
+        set({ ...clearedData });
+    },
+}));

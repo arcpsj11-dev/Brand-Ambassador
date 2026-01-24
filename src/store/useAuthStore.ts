@@ -68,13 +68,9 @@ export const useAuthStore = create<AuthState>()(
                         },
                     });
 
-                    // Hydrate all data from Supabase
+                    // Hydrate all data from Supabase - CENTRALIZED in Slot Store
                     const userId = foundUser.id;
-                    await Promise.all([
-                        useContentStore.getState().fetchContents(userId),
-                        useTopicStore.getState().fetchTopics(userId),
-                        useSlotStore.getState().fetchSlots(userId)
-                    ]);
+                    await useSlotStore.getState().fetchSlots(userId);
 
                     useContentStore.getState().checkAndResetDailyStatus();
                     return true;

@@ -309,6 +309,7 @@ export const SlotManager: React.FC = () => {
                                             </div>
                                         )}
                                         <TopicClusterGenerator
+                                            key={editingSlot?.slotId} // Force re-render on slot change
                                             slotId={editingSlot?.slotId || ''}
                                             onComplete={() => { setIsEditing(false); setActiveTab('basic'); }}
                                         />
