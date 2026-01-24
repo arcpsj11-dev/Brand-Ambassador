@@ -436,11 +436,8 @@ export const useSlotStore = create<SlotState>()(
                     try {
                         console.log("Zombie Purge: Sweeping away legacy data for", userId);
 
-                        // 1. Delete legacy blog_topics table data (Ignore 404 if table missing)
-                        const { error: topicError } = await supabase.from('blog_topics').delete().eq('user_id', userId);
-                        if (topicError && topicError.code !== 'PGRST205' && topicError.message?.indexOf('not find') === -1) {
-                            console.warn("Zombie Purge Topic Warning:", topicError);
-                        }
+                        // 1. [REMOVED] blog_topics table is deprecated. No need to delete.
+                        // const { error: topicError } = await supabase.from('blog_topics').delete().eq('user_id', userId);
 
                         // 2. Clear old localStorage keys
                         localStorage.removeItem('brand-ambassador-topic-storage');
