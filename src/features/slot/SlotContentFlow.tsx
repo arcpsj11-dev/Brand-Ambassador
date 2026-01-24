@@ -94,6 +94,7 @@ export const SlotContentFlow: React.FC<SlotContentFlowProps> = ({ slotId, onComp
         // 2. Save to Content Store (Archive)
         const { addContent } = useContentStore.getState();
         addContent({
+            slotId: slotId,
             title: currentContent.title,
             body: currentContent.body,
             status: 'PUBLISHED',

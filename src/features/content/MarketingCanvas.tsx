@@ -126,7 +126,6 @@ export const MarketingCanvas: React.FC = () => {
                 // [SYNC] Update Store (which handles Slot persistence)
                 setClusters(titlesData.clusters);
 
-<<<<<<< HEAD
                 // [INTERNAL SYNC] Planner Store needs flat plan for visualization
                 const flatPlan = titlesData.clusters.flatMap(cluster =>
                     cluster.topics.map(t => ({
@@ -138,28 +137,7 @@ export const MarketingCanvas: React.FC = () => {
                     }))
                 );
                 setMonthlyPlan(flatPlan);
-=======
-            const planWithStatus = allTopics.map((t: any) => ({
-                ...t,
-                status: 'ready' as const
-            }));
-            setMonthlyPlan(planWithStatus);
-
-            // [SYNC] Execution Store 동기화 (30일치 데이터)
-            if (titlesData.clusters) {
-                // TopicStore가 기대하는 형식(Topic[])으로 변환
-                const formattedClusters = titlesData.clusters.map((cluster: any, idx: number) => ({
-                    id: `cluster-${Date.now()}-${idx}`,
-                    category: cluster.pillar?.title || `Cluster ${idx + 1}`,
-                    topics: [
-                        { ...cluster.pillar, type: 'pillar', status: 'ready' },
-                        ...(cluster.satellites || []).map((t: any) => ({ ...t, type: 'supporting', status: 'ready' }))
-                    ]
-                }));
-                setClusters(activeSlotId, formattedClusters); // [FIX]
->>>>>>> e33e671853f8cf0dcc7a35fa61f20608dc39e942
             }
-
 
             const chat = useChatStore.getState();
             chat.addMessage({

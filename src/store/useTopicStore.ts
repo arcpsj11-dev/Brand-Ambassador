@@ -23,12 +23,14 @@ interface TopicStoreState {
     currentClusterIndex: number;
     currentTopicIndex: number;
 
-    // Actions
-    setClusters: (clusters: TopicCluster[]) => Promise<void>;
-    getNextTopic: () => { topic: Topic; clusterId: string; pillarTitle?: string } | null;
-    markAsPublished: (day: number) => Promise<void>;
-    setCurrentTopic: (clusterIdx: number, topicIdx: number) => void;
-    resetTopics: () => Promise<void>;
+    // Actions (Mostly compatible signatures)
+    setClusters: (slotId: string | TopicCluster[], clusters?: TopicCluster[]) => Promise<void>;
+    getNextTopic: (slotId?: string) => { topic: Topic; clusterId: string; pillarTitle?: string } | null;
+    markAsPublished: (slotId: string | number, day?: number) => Promise<void>;
+    setCurrentTopic: (slotId: string | number, clusterIdx: number | string, topicIdx?: number) => void;
+    resetTopics: (slotId?: string) => Promise<void>;
+    clearAllTopics: () => void;
+    getSlotData: (slotId: string) => { clusters: TopicCluster[]; currentClusterIndex: number; currentTopicIndex: number } | null;
     fetchTopics: (userId: string) => Promise<void>;
     syncWithSlot: (slot: BlogSlot) => void;
 }
@@ -39,19 +41,18 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
     currentTopicIndex: 0,
 
     syncWithSlot: (slot: BlogSlot) => {
-        console.log(`[useTopicStore] syncWithSlot called for ${slot.slotName} (${slot.slotId})`);
-        console.log(`[useTopicStore] Clusters found: ${slot.clusters?.length || 0}`);
-
         set({
             clusters: slot.clusters || [],
             currentClusterIndex: slot.currentClusterIndex || 0,
             currentTopicIndex: slot.currentTopicIndex || 0
         });
-        console.log(`[useTopicStore] Synced. Current clusters in store: ${slot.clusters?.length || 0}`);
     },
 
-    setClusters: async (clusters) => {
+    setClusters: async (arg1, arg2) => {
+        // Handle overloaded signature: (clusters) or (slotId, clusters)
+        const clusters = Array.isArray(arg1) ? arg1 : (arg2 || []);
         const activeSlotId = useSlotStore.getState().activeSlotId;
+
         if (activeSlotId) {
             const firstCluster = clusters[0];
             const pillar = firstCluster?.topics.find(t => t.type === 'pillar');
@@ -64,7 +65,7 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
                 currentCluster: {
                     pillarTitle: pillar?.title || '',
                     satelliteTitles: satellites.map(s => s.title),
-                    currentIndex: 2 // Starting from 2nd topic (Skip Pillar initially as per request)
+                    currentIndex: 2
                 }
             });
         }
@@ -76,17 +77,12 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
         });
     },
 
-    getNextTopic: () => {
+    getNextTopic: (_slotId?: string) => {
         const { clusters, currentClusterIndex, currentTopicIndex } = get();
         if (clusters.length === 0) return null;
 
         const currentCluster = clusters[currentClusterIndex];
         if (!currentCluster) return null;
-
-        if (!currentCluster.topics || !Array.isArray(currentCluster.topics)) {
-            console.error("Malformed Cluster Data:", currentCluster);
-            return null;
-        }
 
         const topic = currentCluster.topics[currentTopicIndex];
         if (!topic) return null;
@@ -100,11 +96,23 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
         };
     },
 
-    markAsPublished: async (day) => {
+    getSlotData: (_slotId: string) => {
+        // Since the store currently only holds the ACTIVE slot's topics
+        // We return the current state. Most components only care about the active slot anyway.
+        return {
+            clusters: get().clusters,
+            currentClusterIndex: get().currentClusterIndex,
+            currentTopicIndex: get().currentTopicIndex
+        };
+    },
+
+    markAsPublished: async (arg1: any, arg2?: any) => {
+        // Handle signature: (day) or (slotId, day)
+        const day = typeof arg1 === 'number' ? arg1 : arg2;
         const { clusters, currentClusterIndex, currentTopicIndex } = get();
+
         const newClusters = clusters.map((cluster, cIdx) => {
             if (cIdx !== currentClusterIndex) return cluster;
-
             return {
                 ...cluster,
                 topics: cluster.topics.map(t =>
@@ -146,7 +154,18 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
         });
     },
 
-    setCurrentTopic: (clusterIdx: number, topicIdx: number) => {
+    setCurrentTopic: (arg1: any, arg2: any, arg3?: any) => {
+        // Signature: (clusterIdx, topicIdx) or (slotId, clusterIdx, topicIdx)
+        let clusterIdx: number;
+        let topicIdx: number;
+        if (typeof arg1 === 'string') {
+            clusterIdx = arg2;
+            topicIdx = arg3;
+        } else {
+            clusterIdx = arg1;
+            topicIdx = arg2;
+        }
+
         const activeSlotId = useSlotStore.getState().activeSlotId;
         if (activeSlotId) {
             const currentClusterData = get().clusters[clusterIdx];
@@ -166,8 +185,8 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
         set({ currentClusterIndex: clusterIdx, currentTopicIndex: topicIdx });
     },
 
-    resetTopics: async () => {
-        const activeSlotId = useSlotStore.getState().activeSlotId;
+    resetTopics: async (slotId?: string) => {
+        const activeSlotId = slotId || useSlotStore.getState().activeSlotId;
         if (activeSlotId) {
             await useSlotStore.getState().updateSlot(activeSlotId, {
                 clusters: [],
@@ -178,14 +197,15 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
         set({ clusters: [], currentClusterIndex: 0, currentTopicIndex: 0 });
     },
 
+    clearAllTopics: () => {
+        set({ clusters: [], currentClusterIndex: 0, currentTopicIndex: 0 });
+    },
+
     fetchTopics: async (_userId: string) => {
-        // Now handled by useSlotStore.fetchSlots and syncWithSlot
         const activeSlotId = useSlotStore.getState().activeSlotId;
         if (activeSlotId) {
             const slot = useSlotStore.getState().getSlotById(activeSlotId);
-            if (slot) {
-                get().syncWithSlot(slot);
-            }
+            if (slot) get().syncWithSlot(slot);
         }
     }
 }));

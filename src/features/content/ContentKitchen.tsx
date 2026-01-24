@@ -3,6 +3,7 @@ import { usePlannerStore } from '../../store/usePlannerStore';
 import { useBrandStore } from '../../store/useBrandStore';
 import { useChatStore } from '../../store/useChatStore';
 import { useContentStore } from '../../store/useContentStore';
+import { useSlotStore } from '../../store/useSlotStore';
 import { useStepStore } from '../../store/useStepStore';
 import { Wand2, ArrowLeft, Target, FileText, CheckCircle2, Lock, Bot, ImageIcon, Send, Rocket } from 'lucide-react';
 import { geminiReasoningService } from '../../services/geminiService';
@@ -313,7 +314,14 @@ export const ContentKitchen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                                 <SchedulePublish
                                     onSchedule={(date) => {
                                         // 콘텐츠 저장
+                                        const { activeSlotId } = useSlotStore.getState();
+                                        if (!activeSlotId) {
+                                            alert("슬롯이 선택되지 않았습니다.");
+                                            return;
+                                        }
+
                                         contentStore.addContent({
+                                            slotId: activeSlotId,
                                             title,
                                             body: content,
                                             status: 'SCHEDULED',
