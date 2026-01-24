@@ -11,6 +11,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/naver/, ''),
         secure: false
+      },
+      '/api/rss': {
+        target: 'https://rss.blog.naver.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/rss/, ''),
+        secure: false
       }
     }
   }

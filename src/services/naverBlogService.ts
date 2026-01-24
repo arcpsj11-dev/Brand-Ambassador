@@ -24,24 +24,19 @@ export const naverBlogService = {
      * RSS Feed URL: https://rss.blog.naver.com/{blogId}.xml
      */
     async fetchBlogPosts(blogId: string): Promise<NaverBlogSearchResponse> {
-        // [RSS STRATEGY] Switch to RSS Feed for 100% accuracy on recent posts
-        // RSS URL: https://rss.blog.naver.com/{blogId}.xml
-        // [FIX] Add timestamp to bypass proxy caching
-        const rssUrl = `https://rss.blog.naver.com/${blogId}.xml?t=${Date.now()}`;
+        // [RSS STRATEGY] Use consistent internal proxy path for local & prod
+        const rssUrl = `/api/rss/${blogId}.xml?t=${Date.now()}`;
         console.log(`[NaverBlogService] 🚀 Fetching fresh RSS data from: ${rssUrl}`);
 
         try {
-            // Use allorigins.win to bypass CORS (Returning JSON with stringified XML)
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
-            const response = await fetch(proxyUrl);
+            const response = await fetch(rssUrl);
 
             if (!response.ok) {
                 console.error('[NaverBlogService] ❌ RSS Error:', response.status);
                 throw new Error(`RSS Error: ${response.status}`);
             }
 
-            const data = await response.json();
-            const xmlText = data.contents; // allorigins returns content in 'contents' field
+            const xmlText = await response.text();
 
             if (!xmlText) throw new Error("Empty response from Proxy");
 

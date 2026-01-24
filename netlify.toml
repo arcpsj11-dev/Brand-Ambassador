@@ -10,6 +10,13 @@
   force = true
   headers = {X-From = "Netlify Proxy"}
 
+# Proxy /api/rss requests to Naver RSS
+[[redirects]]
+  from = "/api/rss/*"
+  to = "https://rss.blog.naver.com/*"
+  status = 200
+  force = true
+
 # Handle SPA routing (redirect all other 404s to index.html)
 [[redirects]]
   from = "/*"
