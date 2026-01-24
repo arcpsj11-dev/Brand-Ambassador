@@ -120,209 +120,203 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
         }
     }
 
-    // 4. Clear Planner Store (Now handles Slot Store reset too)
-    clearPlanner();
 
-    alert("모든 플랜 데이터가 초기화되었습니다. 새로운 키워드로 전략을 생성해보세요.");
-}
-    }
+    return (
+        <div className="space-y-6">
+            {!activeClusters ? (
+                // 1. [EMPTY STATE] Search Input
+                <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-brand-primary/5 border border-brand-primary/10">
+                        <p className="text-xs text-brand-primary font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <Target size={14} /> Topic Strategy
+                        </p>
+                        <p className="text-sm text-gray-400 leading-relaxed font-medium">
+                            슬롯의 성격에 맞는 핵심 키워드를 입력해주세요. <br />
+                            나머지는 제가 알아서 제목을 찾아드리겠습니다.
+                        </p>
+                    </div>
 
-return (
-    <div className="space-y-6">
-        {!activeClusters ? (
-            // 1. [EMPTY STATE] Search Input
-            <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-brand-primary/5 border border-brand-primary/10">
-                    <p className="text-xs text-brand-primary font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                        <Target size={14} /> Topic Strategy
-                    </p>
-                    <p className="text-sm text-gray-400 leading-relaxed font-medium">
-                        슬롯의 성격에 맞는 핵심 키워드를 입력해주세요. <br />
-                        나머지는 제가 알아서 제목을 찾아드리겠습니다.
-                    </p>
-                </div>
-
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={keyword}
-                        onChange={(e) => setKeyword(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-                        placeholder="예: 교통사고 후유증, 다이어트 한약, 임플란트..."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-4 pr-12 text-white font-bold placeholder:text-gray-600 focus:outline-none focus:border-brand-primary/30 transition-all font-mono"
-                    />
-                    <button
-                        onClick={handleGenerate}
-                        disabled={isGenerating || !keyword.trim()}
-                        className="absolute right-2 top-2 bottom-2 px-4 rounded-lg bg-brand-primary text-black font-black uppercase text-[10px] tracking-widest hover:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
-                    >
-                        {isGenerating ? <RefreshCw size={14} className="animate-spin" /> : 'Generate'}
-                    </button>
-                </div>
-            </div>
-        ) : (
-            // 2. [ACTIVE / PREVIEW STATE] List
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-4"
-            >
-                <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <Sparkles size={14} className="text-brand-primary" />
-                        {isPreview ? "Generated Preview (Not Saved)" : "Active 30-Day Plan"}
-                    </h4>
-                    <div className="flex gap-2">
-                        {/* Only show 'Reset' (Clear) if it's persistent data, or 'Cancel' if preview */}
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={keyword}
+                            onChange={(e) => setKeyword(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+                            placeholder="예: 교통사고 후유증, 다이어트 한약, 임플란트..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-4 pr-12 text-white font-bold placeholder:text-gray-600 focus:outline-none focus:border-brand-primary/30 transition-all font-mono"
+                        />
                         <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (isPreview) {
-                                    setPreviewClusters(null);
-                                } else {
-                                    handleReset(e);
-                                }
-                            }}
-                            className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-gray-500 hover:text-red-400 hover:border-red-400/30 uppercase transition-all"
+                            onClick={handleGenerate}
+                            disabled={isGenerating || !keyword.trim()}
+                            className="absolute right-2 top-2 bottom-2 px-4 rounded-lg bg-brand-primary text-black font-black uppercase text-[10px] tracking-widest hover:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
                         >
-                            {isPreview ? "Cancel" : "Reset Plan"}
+                            {isGenerating ? <RefreshCw size={14} className="animate-spin" /> : 'Generate'}
                         </button>
                     </div>
                 </div>
+            ) : (
+                // 2. [ACTIVE / PREVIEW STATE] List
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-4"
+                >
+                    <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                            <Sparkles size={14} className="text-brand-primary" />
+                            {isPreview ? "Generated Preview (Not Saved)" : "Active 30-Day Plan"}
+                        </h4>
+                        <div className="flex gap-2">
+                            {/* Only show 'Reset' (Clear) if it's persistent data, or 'Cancel' if preview */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isPreview) {
+                                        setPreviewClusters(null);
+                                    } else {
+                                        handleReset(e);
+                                    }
+                                }}
+                                className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-gray-500 hover:text-red-400 hover:border-red-400/30 uppercase transition-all"
+                            >
+                                {isPreview ? "Cancel" : "Reset Plan"}
+                            </button>
+                        </div>
+                    </div>
 
-                <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-                    {activeClusters.map((cluster: any, cIdx: number) => {
-                        const pillar = cluster.topics.find((t: any) => t.type === 'pillar');
-                        const satellites = cluster.topics.filter((t: any) => t.type === 'supporting');
+                    <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                        {activeClusters.map((cluster: any, cIdx: number) => {
+                            const pillar = cluster.topics.find((t: any) => t.type === 'pillar');
+                            const satellites = cluster.topics.filter((t: any) => t.type === 'supporting');
 
-                        return (
-                            <div key={cIdx} className="space-y-2">
-                                <div
-                                    onClick={() => {
-                                        if (!isPreview) {
-                                            setCurrentTopic(slotId, cIdx, 0); // [FIX] Pass slotId
-                                            updateSlot(slotId, {
-                                                currentCluster: {
-                                                    ...slot.currentCluster,
-                                                    currentIndex: 0
-                                                }
-                                            });
-                                        }
-                                    }}
-                                    className={`p-4 rounded-xl border relative overflow-hidden group/pillar cursor-pointer transition-all
+                            return (
+                                <div key={cIdx} className="space-y-2">
+                                    <div
+                                        onClick={() => {
+                                            if (!isPreview) {
+                                                setCurrentTopic(slotId, cIdx, 0); // [FIX] Pass slotId
+                                                updateSlot(slotId, {
+                                                    currentCluster: {
+                                                        ...slot.currentCluster,
+                                                        currentIndex: 0
+                                                    }
+                                                });
+                                            }
+                                        }}
+                                        className={`p-4 rounded-xl border relative overflow-hidden group/pillar cursor-pointer transition-all
                                             ${pillar?.isPublished
-                                            ? 'bg-brand-primary/20 border-brand-primary/50'
-                                            : (cIdx === currentClusterIndex && currentTopicIndex === 0)
-                                                ? 'bg-white/10 border-brand-primary shadow-neon shadow-brand-primary/20'
-                                                : 'bg-brand-primary/10 border-brand-primary/30 hover:bg-white/10 hover:border-white/30'
-                                        }
+                                                ? 'bg-brand-primary/20 border-brand-primary/50'
+                                                : (cIdx === currentClusterIndex && currentTopicIndex === 0)
+                                                    ? 'bg-white/10 border-brand-primary shadow-neon shadow-brand-primary/20'
+                                                    : 'bg-brand-primary/10 border-brand-primary/30 hover:bg-white/10 hover:border-white/30'
+                                            }
                                         `}
-                                >
-                                    <div className="absolute top-0 right-0 bg-brand-primary text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter flex items-center gap-1">
-                                        {pillar?.isPublished && <CheckCircle2 size={8} />}
-                                        Cluster {cIdx + 1} Pillar
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <Layers size={16} className={`${pillar?.isPublished ? 'text-brand-primary' : 'text-brand-primary'} shrink-0 mt-0.5`} />
-                                        <p className={`text-sm font-black ${pillar?.isPublished ? 'text-white line-through opacity-50' : 'text-white'}`}>
-                                            {pillar?.title || cluster.category}
-                                        </p>
-                                    </div>
-                                    {/* Hover Badge */}
-                                    {!isPreview && !pillar?.isPublished && !(cIdx === currentClusterIndex && currentTopicIndex === 0) && (
-                                        <div className="absolute right-3 bottom-2 opacity-0 group-hover/pillar:opacity-100 transition-opacity">
-                                            <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded font-bold uppercase">Select Pillar</span>
+                                    >
+                                        <div className="absolute top-0 right-0 bg-brand-primary text-black text-[8px] font-black px-2 py-0.5 uppercase tracking-tighter flex items-center gap-1">
+                                            {pillar?.isPublished && <CheckCircle2 size={8} />}
+                                            Cluster {cIdx + 1} Pillar
                                         </div>
-                                    )}
-                                    {/* Active Indicator */}
-                                    {!isPreview && cIdx === currentClusterIndex && currentTopicIndex === 0 && (
-                                        <div className="absolute right-3 bottom-2">
-                                            <span className="text-[9px] bg-brand-primary text-black px-1.5 py-0.5 rounded font-black uppercase shadow-neon">Active</span>
+                                        <div className="flex items-start gap-3">
+                                            <Layers size={16} className={`${pillar?.isPublished ? 'text-brand-primary' : 'text-brand-primary'} shrink-0 mt-0.5`} />
+                                            <p className={`text-sm font-black ${pillar?.isPublished ? 'text-white line-through opacity-50' : 'text-white'}`}>
+                                                {pillar?.title || cluster.category}
+                                            </p>
                                         </div>
-                                    )}
-                                </div>
-                                <div className="pl-4 border-l-2 border-white/5 space-y-2">
-                                    {satellites.map((sat: any, sIdx: number) => {
-                                        // Calculate global index (simulated for simplicity, or strictly based on logic)
-                                        // Pillar is Topic 0 of cluster. Satellites are 1..9.
-                                        // Store tracks by clusterIndex and topicIndex.
-                                        // This loop is for display.
-                                        // Need to find if THIS specific topic is active or done.
-
-                                        // Logic: 
-                                        // cIdx < currentClusterIndex => DONE (All topics in prev clusters done?) - Assuming sequential
-                                        // cIdx === currentClusterIndex:
-                                        //    active if sIdx+1 === currentTopicIndex (assuming Pillar is 0)
-                                        // Actually use t.isPublished from Store
-
-                                        // Note: 'sat' here is a topic object.
-                                        const isDone = sat.isPublished;
-                                        // Active if: (This Cluster is Current) AND (This Topic Index is Current)
-                                        // Satellites index in 'topics' array: 1 + sIdx
-                                        // Because 0 is pillar.
-                                        const topicRealIndex = 1 + sIdx;
-                                        const isActive = !isPreview && (cIdx === currentClusterIndex && topicRealIndex === currentTopicIndex);
-
-                                        return (
-                                            <div key={sIdx}
-                                                onClick={() => {
-                                                    // [SYNC] Set global current topic on click
-                                                    if (!isPreview) {
-                                                        setCurrentTopic(slotId, cIdx, topicRealIndex); // [FIX] Added slotId
-                                                        // Also update Slot Store visual (optional, but good for consistency)
-                                                        updateSlot(slotId, {
-                                                            currentCluster: {
-                                                                ...slot.currentCluster,
-                                                                currentIndex: topicRealIndex
-                                                            }
-                                                        });
-                                                    }
-                                                }}
-                                                className={`p-3 rounded-lg border transition-all flex items-start gap-3 cursor-pointer relative group/item
-                                                        ${isDone
-                                                        ? 'bg-brand-primary/20 border-brand-primary/50' // Done
-                                                        : isActive
-                                                            ? 'bg-white/10 border-brand-primary shadow-neon shadow-brand-primary/20 scale-[1.02] z-10' // Active
-                                                            : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10' // Pending
-                                                    }
-                                                    `}
-                                            >
-                                                <span className={`font-mono font-bold text-xs ${isDone ? 'text-brand-primary' : 'text-gray-600'}`}>
-                                                    {isDone ? <CheckCircle2 size={14} /> : String(sIdx + 1).padStart(2, '0')}
-                                                </span>
-                                                <p className={`text-xs font-bold ${isDone ? 'text-white line-through opacity-50' : isActive ? 'text-white' : 'text-gray-300'}`}>
-                                                    {sat.title}
-                                                </p>
-
-                                                {/* Active Badge */}
-                                                {isActive && <div className="ml-auto text-[8px] bg-brand-primary text-black px-1.5 rounded font-black uppercase">Next</div>}
-
-                                                {/* Hover Badge (Click to Select) */}
-                                                {!isActive && !isDone && !isPreview && (
-                                                    <div className="absolute right-3 top-3 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                        <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded font-bold uppercase">Select</span>
-                                                    </div>
-                                                )}
+                                        {/* Hover Badge */}
+                                        {!isPreview && !pillar?.isPublished && !(cIdx === currentClusterIndex && currentTopicIndex === 0) && (
+                                            <div className="absolute right-3 bottom-2 opacity-0 group-hover/pillar:opacity-100 transition-opacity">
+                                                <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded font-bold uppercase">Select Pillar</span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                                        )}
+                                        {/* Active Indicator */}
+                                        {!isPreview && cIdx === currentClusterIndex && currentTopicIndex === 0 && (
+                                            <div className="absolute right-3 bottom-2">
+                                                <span className="text-[9px] bg-brand-primary text-black px-1.5 py-0.5 rounded font-black uppercase shadow-neon">Active</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="pl-4 border-l-2 border-white/5 space-y-2">
+                                        {satellites.map((sat: any, sIdx: number) => {
+                                            // Calculate global index (simulated for simplicity, or strictly based on logic)
+                                            // Pillar is Topic 0 of cluster. Satellites are 1..9.
+                                            // Store tracks by clusterIndex and topicIndex.
+                                            // This loop is for display.
+                                            // Need to find if THIS specific topic is active or done.
 
-                {isPreview && (
-                    <button
-                        onClick={handleApply}
-                        className="w-full py-4 rounded-xl bg-brand-primary text-black font-black uppercase tracking-widest shadow-neon hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                    >
-                        <span>Apply Full Plan (30 Days)</span>
-                        <ArrowRight size={18} />
-                    </button>
-                )}
-            </motion.div>
-        )}
-    </div>
-);
+                                            // Logic: 
+                                            // cIdx < currentClusterIndex => DONE (All topics in prev clusters done?) - Assuming sequential
+                                            // cIdx === currentClusterIndex:
+                                            //    active if sIdx+1 === currentTopicIndex (assuming Pillar is 0)
+                                            // Actually use t.isPublished from Store
+
+                                            // Note: 'sat' here is a topic object.
+                                            const isDone = sat.isPublished;
+                                            // Active if: (This Cluster is Current) AND (This Topic Index is Current)
+                                            // Satellites index in 'topics' array: 1 + sIdx
+                                            // Because 0 is pillar.
+                                            const topicRealIndex = 1 + sIdx;
+                                            const isActive = !isPreview && (cIdx === currentClusterIndex && topicRealIndex === currentTopicIndex);
+
+                                            return (
+                                                <div key={sIdx}
+                                                    onClick={() => {
+                                                        // [SYNC] Set global current topic on click
+                                                        if (!isPreview) {
+                                                            setCurrentTopic(slotId, cIdx, topicRealIndex); // [FIX] Added slotId
+                                                            // Also update Slot Store visual (optional, but good for consistency)
+                                                            updateSlot(slotId, {
+                                                                currentCluster: {
+                                                                    ...slot.currentCluster,
+                                                                    currentIndex: topicRealIndex
+                                                                }
+                                                            });
+                                                        }
+                                                    }}
+                                                    className={`p-3 rounded-lg border transition-all flex items-start gap-3 cursor-pointer relative group/item
+                                                        ${isDone
+                                                            ? 'bg-brand-primary/20 border-brand-primary/50' // Done
+                                                            : isActive
+                                                                ? 'bg-white/10 border-brand-primary shadow-neon shadow-brand-primary/20 scale-[1.02] z-10' // Active
+                                                                : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10' // Pending
+                                                        }
+                                                    `}
+                                                >
+                                                    <span className={`font-mono font-bold text-xs ${isDone ? 'text-brand-primary' : 'text-gray-600'}`}>
+                                                        {isDone ? <CheckCircle2 size={14} /> : String(sIdx + 1).padStart(2, '0')}
+                                                    </span>
+                                                    <p className={`text-xs font-bold ${isDone ? 'text-white line-through opacity-50' : isActive ? 'text-white' : 'text-gray-300'}`}>
+                                                        {sat.title}
+                                                    </p>
+
+                                                    {/* Active Badge */}
+                                                    {isActive && <div className="ml-auto text-[8px] bg-brand-primary text-black px-1.5 rounded font-black uppercase">Next</div>}
+
+                                                    {/* Hover Badge (Click to Select) */}
+                                                    {!isActive && !isDone && !isPreview && (
+                                                        <div className="absolute right-3 top-3 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                            <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded font-bold uppercase">Select</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {isPreview && (
+                        <button
+                            onClick={handleApply}
+                            className="w-full py-4 rounded-xl bg-brand-primary text-black font-black uppercase tracking-widest shadow-neon hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                        >
+                            <span>Apply Full Plan (30 Days)</span>
+                            <ArrowRight size={18} />
+                        </button>
+                    )}
+                </motion.div>
+            )}
+        </div>
+    );
 };
