@@ -38,7 +38,9 @@ export const naverBlogService = {
             ? 'https://cors-anywhere.herokuapp.com/https://openapi.naver.com/v1/search/blog.json'
             : '/api/naver/v1/search/blog.json';
 
-        const url = `${baseUrl}?query=${encodeURIComponent(blogId)}&display=5&sort=date`;
+        // [FIX] Search by Blog URL to find ALL indexed posts (better than keyword search)
+        const searchQuery = `blog.naver.com/${blogId}`;
+        const url = `${baseUrl}?query=${encodeURIComponent(searchQuery)}&display=5&sort=date`;
         console.log(`[NaverBlogService] 🚀 Fetching REAL data. URL: ${url}`);
         console.log(`[NaverBlogService] Using Naver Client ID length: ${naverClientId?.length || 0}`);
 
