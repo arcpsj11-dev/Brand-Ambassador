@@ -76,14 +76,18 @@ export const naverBlogService = {
             // Naver Search API returns any post matching the query, so we must filter.
             const filteredItems = (data.items || []).filter((item: any) => {
                 const bloggerLink = item.bloggerlink || '';
-                return bloggerLink.includes(blogId);
+                const postLink = item.link || '';
+                const lowerId = blogId.toLowerCase();
+
+                // Allow if bloggerlink or the post link contains the ID (Case Insensitive)
+                return bloggerLink.toLowerCase().includes(lowerId) || postLink.toLowerCase().includes(lowerId);
             });
 
             console.log(`[NaverBlogService] 🎯 Filtered items for ${blogId}:`, filteredItems.length);
 
             // If no items found for THIS blog, fall back to mock or return empty (but mock is better for the motivation system UX)
             if (filteredItems.length === 0) {
-                console.warn(`[NaverBlogService] No posts found SPECIFICALLY for ${blogId}. Using mock data to avoid empty UI.`);
+                console.warn(`[NaverBlogService] No posts found SPECIFICALLY for ${blogId}. Raw items: ${data.items?.length}. Using mock data.`);
                 return this.generateMockData(blogId);
             }
 
