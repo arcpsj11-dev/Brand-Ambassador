@@ -37,14 +37,25 @@ export const naverBlogService = {
             }
 
             const xmlText = await response.text();
+            console.log(`[NaverBlogService] RSS Raw (First 100 chars): ${xmlText.substring(0, 100)}`);
 
-            if (!xmlText) throw new Error("Empty response from Proxy");
+            if (!xmlText || xmlText.includes("<!DOCTYPE html")) {
+                console.warn("[NaverBlogService] Received HTML instead of XML. Proxy might be redirecting to an error page.");
+                throw new Error("Invalid RSS response (HTML)");
+            }
 
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlText, "text/xml");
 
-            const items = Array.from(xmlDoc.querySelectorAll("item"));
-            console.log('[NaverBlogService] ✅ RSS Fetched. Items found:', items.length);
+            // Use getElementsByTagName for better compatibility
+            let items = Array.from(xmlDoc.getElementsByTagName("item"));
+
+            // If empty, try searching without namespace
+            if (items.length === 0) {
+                items = Array.from(xmlDoc.querySelectorAll("item"));
+            }
+
+            console.log('[NaverBlogService] ✅ RSS Parsed. Items found:', items.length);
 
             if (items.length === 0) {
                 console.warn(`[NaverBlogService] RSS returned 0 items. ID might be wrong or blog is empty.`);
