@@ -32,8 +32,13 @@ export const naverBlogService = {
             return this.generateMockData(blogId);
         }
 
-        // Call REAL Naver API via Vite proxy to bypass CORS!
-        const url = `/api/naver/v1/search/blog.json?query=${encodeURIComponent(blogId)}&display=5&sort=date`;
+        // Call REAL Naver API via Vite proxy (local) or CORS Proxy (prod) to bypass CORS!
+        const isProd = import.meta.env.PROD;
+        const baseUrl = isProd
+            ? 'https://cors-anywhere.herokuapp.com/https://openapi.naver.com/v1/search/blog.json'
+            : '/api/naver/v1/search/blog.json';
+
+        const url = `${baseUrl}?query=${encodeURIComponent(blogId)}&display=5&sort=date`;
         console.log(`[NaverBlogService] 🚀 Fetching REAL data. URL: ${url}`);
         console.log(`[NaverBlogService] Using Naver Client ID length: ${naverClientId?.length || 0}`);
 
