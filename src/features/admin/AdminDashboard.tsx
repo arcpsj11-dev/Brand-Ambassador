@@ -380,9 +380,21 @@ export const AdminDashboard: React.FC = () => {
 
                         {/* Config Section */}
                         <div className="space-y-6 pt-8 border-t border-white/5">
-                            <div className="flex items-center gap-3">
-                                <ShieldCheck size={20} className="text-brand-primary" />
-                                <h3 className="text-lg font-black uppercase tracking-tight">Membership Configuration (등급별 정책 설정)</h3>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <ShieldCheck size={20} className="text-brand-primary" />
+                                    <h3 className="text-lg font-black uppercase tracking-tight">Membership Configuration (등급별 정책 설정)</h3>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        await adminState.saveSettings();
+                                        alert('멤버십 정책이 저장되었습니다.');
+                                    }}
+                                    className="flex items-center gap-2 px-6 py-3 bg-brand-primary text-black font-black uppercase tracking-widest rounded-xl hover:shadow-neon transition-all text-xs"
+                                >
+                                    <Save size={16} />
+                                    <span>정책 저장 (Save Policy)</span>
+                                </button>
                             </div>
 
                             <div className="grid grid-cols-3 gap-6">
