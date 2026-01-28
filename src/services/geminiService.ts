@@ -286,7 +286,8 @@ export const geminiReasoningService = {
                 .replace(/{{topic}}/g, input)
                 .replace(/{{target}}/g, profile.targetDemographic || '환자분들')
                 .replace(/{{department}}/g, profile.mainTopic || '한방 진료')
-                + `\n\n위 설정과 함께 아래 병원 프로파일 정보를 본문에 자연스럽게 녹여내어 신뢰감 있는 글을 작성해 주세요.\n${profileInfo}`;
+                + `\n\n위 설정과 함께 아래 병원 프로파일 정보를 본문에 자연스럽게 녹여내어 신뢰감 있는 글을 작성해 주세요.\n${profileInfo}`
+                + (context.extraPrompt ? `\n\n${context.extraPrompt}` : ''); // [NEW] Append dynamic prompt
 
             const result = await model.generateContentStream(prompt);
             for await (const chunk of result.stream) {

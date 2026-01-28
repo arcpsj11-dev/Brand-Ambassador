@@ -14,6 +14,8 @@ import { useProfileStore } from '../../store/useProfileStore';
 import { useTopicStore } from '../../store/useTopicStore';
 import { imageService } from '../../services/imageService';
 import { videoService } from '../../services/videoService';
+import { getNextUnwrittenTopic, markTopicAsCompleted } from '../../services/topicClusterService'; // [NEW]
+import { buildContentPrompt } from '../../services/promptBuilder'; // [NEW]
 
 import { useSlotStore } from '../../store/useSlotStore'; // [NEW]
 
@@ -168,45 +170,83 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
 
         try {
             let targetTopic = '';
-            let targetType = 'supporting';
+            let targetType: 'pillar' | 'supporting' = 'supporting';
             let pillarTitle = '';
             let currentDay = 1;
+            let currentTopicId: number | null = null;
+            let nextTopicTitle: string | undefined;
 
             if (regenerationTopic) {
+                // Regeneration mode - use old logic
                 targetTopic = regenerationTopic;
-                setRegenerationTopic(null); // 사용 후 초기화
+                setRegenerationTopic(null);
             } else {
-                // 1. 클러스터데이터가 없으면 생성
-                if (clusters.length === 0) {
-                    const mainTopic = keyKeywords[0] || '교통사고 후유증';
-                    const clusteredData = await geminiReasoningService.generateMonthlyTitles(
-                        mainTopic
-                    );
-                    if (clusteredData && clusteredData.clusters) {
-                        setClusters(activeSlotId, clusteredData.clusters); // [FIX] Added activeSlotId
+                // [NEW] DB-driven workflow
+                // 1. Try to get next unwritten topic from DB
+                const topicData = await getNextUnwrittenTopic(activeSlotId);
+
+                if (!topicData || !topicData.current) {
+                    // No topics in DB yet - generate clusters first
+                    if (clusters.length === 0) {
+                        const mainTopic = keyKeywords[0] || '교통사고 후유증';
+                        const clusteredData = await geminiReasoningService.generateMonthlyTitles(
+                            mainTopic
+                        );
+                        if (clusteredData && clusteredData.clusters) {
+                            setClusters(activeSlotId, clusteredData.clusters);
+                        }
                     }
-                }
 
-                // 2. 다음 주제 가져오기
-                const nextData = getNextTopic(activeSlotId); // [FIX] Added activeSlotId
-                if (!nextData) {
-                    setClusters(activeSlotId, []); // [RESET] 잘못된 데이터일 수 있으므로 초기화
-                    throw new Error("분석된 주제가 없습니다. (데이터 형식 오류)");
-                }
+                    // Fallback to Zustand-based logic
+                    const nextData = getNextTopic(activeSlotId);
+                    if (!nextData) {
+                        setClusters(activeSlotId, []);
+                        throw new Error("분석된 주제가 없습니다. (데이터 형식 오류)");
+                    }
 
-                targetTopic = nextData.topic.title;
-                targetType = nextData.topic.type;
-                pillarTitle = nextData.pillarTitle || '';
-                currentDay = nextData.topic.day;
+                    targetTopic = nextData.topic.title;
+                    targetType = nextData.topic.type;
+                    pillarTitle = nextData.pillarTitle || '';
+                    currentDay = nextData.topic.day;
+                } else {
+                    // [NEW] Use DB data
+                    const { current, next, pillarTitle: dbPillar } = topicData;
+                    currentTopicId = current.id ?? null;
+                    targetTopic = current.title;
+                    targetType = current.content_type;
+                    pillarTitle = dbPillar || '';
+                    currentDay = current.day_number;
+                    nextTopicTitle = next?.title;
+                }
             }
 
-            // 3. 본문 생성
+            // 3. [NEW] Build dynamic prompt with next topic preview
+            let extraPrompt = '';
+            if (currentTopicId && nextTopicTitle !== undefined) {
+                // We have DB data - use dynamic prompt
+                const topicData = await getNextUnwrittenTopic(activeSlotId);
+                if (topicData && topicData.current) {
+                    extraPrompt = buildContentPrompt({
+                        currentTopic: topicData.current,
+                        nextTopic: topicData.next,
+                        pillarTitle,
+                        clinicInfo: {
+                            name: brand.clinicName || '도담한의원',
+                            address: brand.address || '김포시 운양동',
+                            phone: brand.phoneNumber || '031-988-1575'
+                        }
+                    });
+                }
+            }
+
+            // 4. 본문 생성
             const contentGen = geminiReasoningService.generateStream(targetTopic, {
                 clinicName: brand.clinicName || '도담한의원',
                 address: brand.address || '김포시 운양동',
                 phoneNumber: brand.phoneNumber || '031-988-1575',
-                pillarTitle, // [SYNC] Pass pillarTitle for internal linking context
-                profile: useProfileStore.getState() // [NEW] Pass profile context
+                pillarTitle,
+                profile: useProfileStore.getState(),
+                extraPrompt: extraPrompt || undefined // [NEW] Pass dynamic prompt
             });
 
             let fullBody = "";
@@ -214,7 +254,7 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                 fullBody += chunk;
             }
 
-            // 4. [NEW] 이미지 프롬프트 생성 (병렬 처리 가능하지만, 본문 내용 기반이므로 순차 처리)
+            // 5. 이미지 프롬프트 생성
             const profilePhotos = Object.keys(useProfileStore.getState().clinicPhotos || {});
             const imagePrompts = await geminiReasoningService.generateImagePrompts(fullBody, profilePhotos);
 
@@ -224,22 +264,27 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
                 type: targetType,
                 pillarTitle,
                 day: currentDay,
-                imagePrompts // 저장용
+                imagePrompts
             };
 
             setCurrentContent(newContentData);
 
-            // [자동 저장] 생성 즉시 아카이브에 DRAFT 상태로 저장
+            // 6. [자동 저장] 생성 즉시 아카이브에 DRAFT 상태로 저장
             const id = await addContent({
                 slotId: activeSlotId,
                 title: newContentData.title,
                 body: newContentData.body,
                 status: 'DRAFT',
                 riskCheckPassed: true,
-                imagePrompts: imagePrompts, // [NEW] 이미지 프롬프트 저장
+                imagePrompts: imagePrompts,
                 logs: []
             });
             setCurrentContentId(id);
+
+            // 7. [NEW] If from DB, mark as completed in content_clusters table
+            if (currentTopicId) {
+                await markTopicAsCompleted(currentTopicId, fullBody);
+            }
 
             setFlowState('FINAL_CHECK');
 
@@ -249,10 +294,9 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             if (errorMessage === "API_KEY_MISSING") {
                 alert("관리자 설정에서 Gemini API Key를 먼저 설정해주세요.");
             } else if (errorMessage === "USAGE_LIMIT_REACHED") {
-                alert("원장님, 이번 달(또는 현재 등급)의 AI 생성 사용 한도에 도달했습니다.\n\n한도 증액이나 등급 상향은 관리자에게 문의해 주세요! 🍌🚀");
+                alert("원장님, 이번 달(또는 현재 등급)의 AI 생성 사용 한도에 도달했습니다.\\n\\n한도 증액이나 등급 상향은 관리자에게 문의해 주세요! 🍌🚀");
             } else {
-                // [DEBUG] 실제 에러 메시지 노출 (사용자 요청)
-                alert(`오류가 발생했습니다: ${errorMessage}\n\n잠시 후 다시 시도해주세요.`);
+                alert(`오류가 발생했습니다: ${errorMessage}\\n\\n잠시 후 다시 시도해주세요.`);
             }
             onClose();
         }

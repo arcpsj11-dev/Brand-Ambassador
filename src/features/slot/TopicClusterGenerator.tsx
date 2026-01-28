@@ -11,6 +11,8 @@ import {
 import { useSlotStore } from '../../store/useSlotStore';
 import { geminiReasoningService } from '../../services/geminiService';
 import { useTopicStore } from '../../store/useTopicStore'; // [NEW]
+import { batchInsertTopics, deleteAllTopicsForSlot } from '../../services/topicClusterService'; // [NEW]
+import { useAuthStore } from '../../store/useAuthStore'; // [NEW]
 
 import { usePlannerStore } from '../../store/usePlannerStore'; // [NEW]
 
@@ -89,14 +91,25 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
         }
     };
 
-    const handleApply = () => {
+    const handleApply = async () => {
         if (!previewClusters || previewClusters.length === 0) return;
 
         // All persistence now handled inside setClusters(previewClusters)
         setClusters(previewClusters);
 
+        // [NEW] Batch insert to content_clusters table
+        const userId = useAuthStore.getState().user?.id;
+        if (userId && slotId) {
+            const result = await batchInsertTopics(userId, slotId, previewClusters);
+            if (!result.success) {
+                console.error('[TopicClusterGenerator] Batch insert failed:', result.error);
+                alert(`주제 저장 실패: ${result.error}\n\nZustand에는 저장되었지만 DB 동기화에 실패했습니다.`);
+            } else {
+                console.log(`[TopicClusterGenerator] Successfully inserted ${result.insertedCount} topics to DB`);
+            }
+        }
+
         if (onComplete) onComplete();
-        // alert(`성공적으로 30일치 플랜(${previewClusters.length}개 클러스터)이 생성되었습니다.\n대시보드에서 순차적으로 글쓰기를 시작하세요!`);
         setPreviewClusters(null); // Clear preview, falls back to store
         setKeyword('');
     };
@@ -108,7 +121,13 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
             // 1. Clear Local Preview
             setPreviewClusters(null);
 
-            // 2. [DEEP PURGE] Delete all articles for this slot
+            // 2. [NEW] Delete from content_clusters DB table
+            const deleteResult = await deleteAllTopicsForSlot(slotId);
+            if (!deleteResult.success) {
+                console.error('[TopicClusterGenerator] Failed to delete topics from DB:', deleteResult.error);
+            }
+
+            // 3. [DEEP PURGE] Delete all articles for this slot
             const { useContentStore } = await import('../../store/useContentStore');
             await useContentStore.getState().purgeSlotArticles(slotId);
 
