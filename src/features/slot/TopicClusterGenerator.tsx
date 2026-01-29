@@ -94,8 +94,8 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
     const handleApply = async () => {
         if (!previewClusters || previewClusters.length === 0) return;
 
-        // All persistence now handled inside setClusters(previewClusters)
-        setClusters(previewClusters);
+        // All persistence now handled inside setClusters(slotId, previewClusters)
+        setClusters(slotId, previewClusters); // [FIX] Pass slotId to ensure slot isolation
 
         // [NEW] Batch insert to content_clusters table
         const userId = useAuthStore.getState().user?.id;

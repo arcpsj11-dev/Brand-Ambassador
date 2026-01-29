@@ -51,14 +51,15 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
     setClusters: async (arg1, arg2) => {
         // Handle overloaded signature: (clusters) or (slotId, clusters)
         const clusters = Array.isArray(arg1) ? arg1 : (arg2 || []);
-        const activeSlotId = useSlotStore.getState().activeSlotId;
+        // [FIX] Prioritize passed slotId, fallback to activeSlotId
+        const targetSlotId = (typeof arg1 === 'string' ? arg1 : null) || useSlotStore.getState().activeSlotId;
 
-        if (activeSlotId) {
+        if (targetSlotId) {
             const firstCluster = clusters[0];
             const pillar = firstCluster?.topics.find(t => t.type === 'pillar');
             const satellites = firstCluster?.topics.filter(t => t.type === 'supporting') || [];
 
-            await useSlotStore.getState().updateSlot(activeSlotId, {
+            await useSlotStore.getState().updateSlot(targetSlotId, {
                 clusters,
                 currentClusterIndex: 0,
                 currentTopicIndex: 1,
