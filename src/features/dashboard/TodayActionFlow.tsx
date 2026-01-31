@@ -175,15 +175,21 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             let currentDay = 1;
             let currentTopicId: number | null = null;
             let nextTopicTitle: string | undefined;
+            let fullTopicData: any = null; // [FIX] Store for prompt building
 
             if (regenerationTopic) {
                 // Regeneration mode - use old logic
                 targetTopic = regenerationTopic;
                 setRegenerationTopic(null);
             } else {
-                // [NEW] DB-driven workflow
-                // 1. Try to get next unwritten topic from DB
-                const topicData = await getNextUnwrittenTopic(activeSlotId);
+                // [NEW] DB-driven workflow with Sync
+                // 1. Get the current active topic's day number from store
+                const nextData = getNextTopic(activeSlotId);
+                const preferredDay = nextData?.topic.day;
+
+                // 2. Try to get unwritten topic from DB, favoring the one selected in UI
+                const topicData = await getNextUnwrittenTopic(activeSlotId, preferredDay);
+                fullTopicData = topicData;
 
                 if (!topicData || !topicData.current) {
                     // No topics in DB yet - generate clusters first
@@ -224,11 +230,10 @@ export const TodayActionFlow: React.FC<TodayActionFlowProps> = ({ onClose }) => 
             let extraPrompt = '';
             if (currentTopicId && nextTopicTitle !== undefined) {
                 // We have DB data - use dynamic prompt
-                const topicData = await getNextUnwrittenTopic(activeSlotId);
-                if (topicData && topicData.current) {
+                if (fullTopicData && fullTopicData.current) {
                     extraPrompt = buildContentPrompt({
-                        currentTopic: topicData.current,
-                        nextTopic: topicData.next,
+                        currentTopic: fullTopicData.current,
+                        nextTopic: fullTopicData.next,
                         pillarTitle,
                         clinicInfo: {
                             name: brand.clinicName || '도담한의원',

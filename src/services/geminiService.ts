@@ -571,8 +571,6 @@ Output JSON format (PURE JSON):
         }
     },
 
-<<<<<<< HEAD
-=======
     /**
      * Regenerate a single topic title based on context
      */
@@ -599,8 +597,6 @@ Output JSON format (PURE JSON):
             throw error;
         }
     },
-
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
     // [나노바나나] 슬롯 기반 콘텐츠 생성
     async generateSlotContent(params: {
         topicIndex: number;

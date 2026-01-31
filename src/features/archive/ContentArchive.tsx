@@ -4,11 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useBrandStore } from '../../store/useBrandStore';
 import { geminiReasoningService } from '../../services/geminiService';
 import { useProfileStore } from '../../store/useProfileStore';
-<<<<<<< HEAD
-import { FileText, Calendar, Clock, Search, Copy, Check, Wand2, Loader2, X } from 'lucide-react';
-=======
 import { FileText, Calendar, Clock, Search, Copy, Check, Wand2, Loader2, X, ShieldCheck } from 'lucide-react';
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
 
 export const ContentArchive: React.FC = () => {
     const { contents } = useContentStore();
@@ -128,13 +124,10 @@ export const ContentArchive: React.FC = () => {
                                         <Calendar size={12} />
                                         {new Date(content.createdAt).toLocaleDateString()}
                                     </span>
-<<<<<<< HEAD
-=======
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${content.riskCheckPassed ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}`}>
                                         <ShieldCheck size={10} />
                                         {content.riskCheckPassed ? 'MEDICAL SAFE' : 'RISK DETECTED'}
                                     </span>
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${content.status === 'PUBLISHED' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
                                         }`}>
                                         {content.status}
@@ -158,13 +151,10 @@ export const ContentArchive: React.FC = () => {
                                         <Clock size={14} />
                                         {formatDate(selectedContent.createdAt)}
                                     </span>
-<<<<<<< HEAD
-=======
                                     <div className={`flex items-center gap-2 px-2 py-0.5 rounded text-[10px] font-black uppercase ${selectedContent.riskCheckPassed ? 'bg-blue-500/10 text-blue-400' : 'bg-red-500/10 text-red-400'}`}>
                                         <ShieldCheck size={12} />
                                         Medical Safety: {selectedContent.riskCheckPassed ? 'High' : 'Action Required'}
                                     </div>
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                                     {isAdmin && (
                                         <div className="flex items-center gap-2 px-2 py-0.5 rounded bg-brand-primary/10 text-brand-primary text-[10px] font-black uppercase">
                                             Admin View

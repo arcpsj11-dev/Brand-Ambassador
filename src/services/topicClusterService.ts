@@ -73,19 +73,27 @@ export async function batchInsertTopics(
  * Get the next unwritten topic (status = false) for a slot
  * Returns the topic details plus the next topic title for preview
  */
-export async function getNextUnwrittenTopic(slotId: string): Promise<{
+export async function getNextUnwrittenTopic(slotId: string, preferredDayNumber?: number): Promise<{
     current: ContentClusterRow | null;
     next: ContentClusterRow | null;
     pillarTitle?: string;
 } | null> {
     try {
-        // Get current topic (first unwritten)
-        const { data: current, error: currentError } = await supabase
+        // Get current topic 
+        let query = supabase
             .from('content_clusters')
             .select('*')
-            .eq('slot_id', slotId)
-            .eq('status', false)
-            .order('day_number', { ascending: true })
+            .eq('slot_id', slotId);
+
+        if (preferredDayNumber !== undefined) {
+            // If user explicitly selected a day (from UI), prioritize that
+            query = query.eq('day_number', preferredDayNumber);
+        } else {
+            // Default: First unwritten topic
+            query = query.eq('status', false).order('day_number', { ascending: true });
+        }
+
+        const { data: current, error: currentError } = await query
             .limit(1)
             .single();
 
@@ -223,34 +231,20 @@ export async function getSlotProgress(slotId: string): Promise<{
             return { total: 0, completed: 0, remaining: 0, currentDay: null };
         }
 
-<<<<<<< HEAD
-        const completed = all.filter(t => t.status).length;
-=======
         const completed = all.filter((t: any) => t.status).length;
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
         const total = all.length;
         const remaining = total - completed;
 
         // Find current day (first incomplete)
-<<<<<<< HEAD
-        const nextIncomplete = all.find(t => !t.status);
-        const currentDay = nextIncomplete?.day_number || null;
-
-        return { total, completed, remaining, currentDay };
-
-=======
         const nextIncomplete = all.find((t: any) => !t.status);
         const currentDay = nextIncomplete?.day_number || null;
 
         return { total, completed, remaining, currentDay };
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
     } catch (err) {
         console.error('[topicClusterService] Error getting progress:', err);
         return { total: 0, completed: 0, remaining: 0, currentDay: null };
     }
 }
-<<<<<<< HEAD
-=======
 
 /**
  * Update a specific topic's title in the DB
@@ -280,4 +274,3 @@ export async function updateTopicTitleInDB(
         return { success: false, error: String(err) };
     }
 }
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)

@@ -150,44 +150,6 @@ OUTPUT RULES:
 - Pure JSON only
 - Verify: clusters.length === 3 && each cluster has 10 topics`,
 
-<<<<<<< HEAD
-    body: `## Role
-당신은 {{region}} 지역 기반의 40대 경력직 한의사이자, {{clinic_name}}의 원장입니다.
-환자의 고민에 깊이 공감하면서도 의학적 전문성을 잃지 않는 따뜻하고 신뢰감 있는 어조로 글을 작성합니다.
-단순 마케팅 문구가 아닌, 원장님이 직접 환자에게 건네는 건강 조언과 같은 깊이를 담아주세요.
-
-## Variables
-- 지역: {{region}}
-- 주제: {{topic}} ({{title}})
-- 타겟: {{target}}
-- 병원명: {{clinic_name}}
-- 진료과목: {{department}}
-
-## Core Constraints (반드시 준수)
-1. **Tone & Style**
-    - "~입니다", "~하죠" 등 정중하고 신뢰감 있는 문체 유지.
-    - 너무 가벼운 MZ 세대 감성이나 유행어는 지양하되, 어려운 한의학 용어는 쉽게 풀어서 설명하세요.
-    - [중요] 본문 작성 시 **절대로 bold(**) 나 italic(*) 같은 마크다운 강조 기호를 사용하지 마세요.** 모든 텍스트는 평문(Plain Text)으로 작성합니다.
-2. **Structure**
-    - 도입(증상에 대한 공감과 환자의 일상 이야기) -> 본론(한의학적 원리 및 치료적 접근법) -> 해결(자가 관리법 및 {{clinic_name}}의 진료 철학) -> 마무리(완쾌를 향한 조원과 내원 안내).
-3. **SEO Rule**
-    - {{region}}, {{topic}}, {{department}} 키워드를 문맥에 맞게 자연스럽게 녹여내세요. (과도한 반복 금지)
-4. **Professionalism**
-    - 한의학적 근거(동의보감 근거 혹은 임상 연구 등)를 예시로 들어 설명하여 신뢰도를 높이세요.
-
-## Content Expansion
-1. 도입부: {{target}}이 {{topic}}로 인해 일상에서 겪는 실질적인 신체적, 심리적 고통을 묘사하며 공감을 이끕니다.
-2. 정보·근거: {{topic}}의 근원적인 원인을 한의학 관점에서(혈액 순환, 기력 저하 등) 알기 쉽게 설명합니다.
-3. 해결책: {{clinic_name}}의 {{department}} 진료 방식과 일상에서 실천 가능한 루틴 3단계를 제안합니다.
-4. 결말부: 회복된 미래에 대한 희망과 함께 따뜻한 응원을 전합니다.
-
-## Image Guide
-- 본문 중간에 3~5개 이미지 삽입 위치 표시: [이미지N: 장면 설명, ALT: {{region}} + {{topic}} 관련 핵심 키워드 포함된 문장]
-
-## CTA & Tag
-- 글 하단에 {{clinic_name}} ({{address}}, {{phoneNumber}}) 정보를 자연스럽게 노출하세요.
-- 마지막에 관련 태그 10개를 #태그 형식으로 작성하세요.`,
-=======
     body: `Role
 당신은 {{region}} 지역에서 신뢰받는 경력직 한의사이자, {{clinic_name}}의 대표 원장입니다.
 
@@ -260,7 +222,6 @@ Output
 
 문의: {{phoneNumber}}
 글의 주제와 연관된 해시태그 10개를 #키워드 형식으로 생성합니다.`,
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
 
     image: `Role: 블로그 콘텐츠 분석 및 이미지 프롬프트 생성 전문가
 Task: 주어진 본문 내용을 분석하여, 본문 속에 포함된 모든 \`[이미지번호: 설명, ALT: ...]\` 태그를 찾아내고, 각 태그의 '설명'과 'ALT' 내용을 바탕으로 영문 프롬프트와 키워드 ALT를 생성합니다.
@@ -338,8 +299,6 @@ JSON Format: { "images": [ { "prompt": "...", "alt": "..." } ] }`,
 전문성을 강조하며 명확한 해결책을 제시하는 것을 선호합니다.`
 };
 
-<<<<<<< HEAD
-=======
 const DEFAULT_PROMPTS_MARKETER: PromptSet = {
     title: DEFAULT_PROMPTS_ORIENTAL.title,
     body: `## Role
@@ -383,8 +342,6 @@ const DEFAULT_PROMPTS_MARKETER: PromptSet = {
 진솔하고 따뜻한 어조로 사용자의 고민을 철학적으로 풀어서 답변해 주세요.
 전문 지식보다는 '왜' 이 일을 하는지에 대한 진정성을 강조하세요.`
 };
-
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
 export const useAdminStore = create<AdminState>()(
     persist(
         (set, get) => ({
@@ -406,14 +363,11 @@ export const useAdminStore = create<AdminState>()(
                     id: 'doctor',
                     label: '의사',
                     prompts: DEFAULT_PROMPTS_DOCTOR
-<<<<<<< HEAD
-=======
                 },
                 'marketer': {
                     id: 'marketer',
                     label: '마케터 원장',
                     prompts: DEFAULT_PROMPTS_MARKETER
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                 }
             },
 
@@ -728,14 +682,11 @@ export const useAdminStore = create<AdminState>()(
                         id: 'doctor',
                         label: '의사',
                         prompts: DEFAULT_PROMPTS_DOCTOR
-<<<<<<< HEAD
-=======
                     },
                     'marketer': {
                         id: 'marketer',
                         label: '마케터 원장',
                         prompts: DEFAULT_PROMPTS_MARKETER
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                     }
                 }
             }),
@@ -746,11 +697,7 @@ export const useAdminStore = create<AdminState>()(
             }
         }),
         {
-<<<<<<< HEAD
-            name: 'brand-ambassador-admin-storage-v8', // [v8.0] Force reset for fixed prompts
-=======
             name: 'brand-ambassador-admin-storage-v9', // [v9.0] Force reset for fixed/detailed prompts
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
             partialize: (state) => ({
                 geminiApiKey: state.geminiApiKey,
                 nanoBananaApiKey: state.nanoBananaApiKey,

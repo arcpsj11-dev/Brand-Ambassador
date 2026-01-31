@@ -110,13 +110,8 @@ export const useContentStore = create<ContentState>()((set, get) => ({
             ...content,
             id,
             slotId: activeId || '',
-<<<<<<< HEAD
-            createdAt: new Date(),
-            updatedAt: new Date(),
-=======
             createdAt: new Date().toISOString() as any,
             updatedAt: new Date().toISOString() as any,
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
             logs: [],
         };
 
@@ -186,11 +181,7 @@ export const useContentStore = create<ContentState>()((set, get) => ({
                     body: updates.body,
                     status: updates.status,
                     image_prompts: updates.imagePrompts,
-<<<<<<< HEAD
-                    updated_at: new Date()
-=======
                     updated_at: new Date().toISOString()
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                 })
                 .eq('id', id)
                 .eq('user_id', userId);
@@ -199,11 +190,7 @@ export const useContentStore = create<ContentState>()((set, get) => ({
         set((state: ContentState) => ({
             contents: state.contents.map((content) =>
                 content.id === id
-<<<<<<< HEAD
-                    ? { ...content, ...updates, updatedAt: new Date() }
-=======
                     ? { ...content, ...updates, updatedAt: new Date().toISOString() as any }
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                     : content
             ),
         }));
@@ -310,11 +297,7 @@ export const useContentStore = create<ContentState>()((set, get) => ({
         const userId = (await import('./useAuthStore')).useAuthStore.getState().user?.id;
         if (userId) {
             await supabase.from('blog_contents')
-<<<<<<< HEAD
-                .update({ status, updated_at: new Date() })
-=======
                 .update({ status, updated_at: new Date().toISOString() })
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                 .eq('id', id)
                 .eq('user_id', userId);
         }
@@ -322,11 +305,7 @@ export const useContentStore = create<ContentState>()((set, get) => ({
         set((state: ContentState) => ({
             contents: state.contents.map((content) =>
                 content.id === id
-<<<<<<< HEAD
-                    ? { ...content, status, updatedAt: new Date() }
-=======
                     ? { ...content, status, updatedAt: new Date().toISOString() as any }
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                     : content
             ),
         }));

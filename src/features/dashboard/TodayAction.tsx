@@ -116,8 +116,6 @@ export const TodayAction: React.FC = () => {
                                                 ? '관리자 권한으로 일일 제한을 무시하고 새로운 액션을 실행할 수 있습니다.'
                                                 : 'A-READ 구조 기반의 맞춤형 콘텐츠 생성을 시작합니다.'}
                         </p>
-<<<<<<< HEAD
-=======
 
                         {/* [NEW] Mini Progress Map (10-day cluster visualization) */}
                         {activeSlot && (
@@ -135,15 +133,14 @@ export const TodayAction: React.FC = () => {
                                         <div
                                             key={i}
                                             className={`h-1 flex-1 rounded-full transition-all duration-500 ${isDone ? 'bg-brand-primary shadow-neon-sm' :
-                                                    isActive ? 'bg-brand-primary/40 animate-pulse ring-1 ring-brand-primary/30' :
-                                                        'bg-white/10'
+                                                isActive ? 'bg-brand-primary/40 animate-pulse ring-1 ring-brand-primary/30' :
+                                                    'bg-white/10'
                                                 }`}
                                         />
                                     );
                                 })}
                             </div>
                         )}
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                     </div>
                     {!isLocked && (
                         <div className="w-auto mt-0">

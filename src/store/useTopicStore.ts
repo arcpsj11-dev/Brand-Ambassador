@@ -28,10 +28,7 @@ interface TopicStoreState {
     getNextTopic: (slotId?: string) => { topic: Topic; clusterId: string; pillarTitle?: string } | null;
     markAsPublished: (slotId: string | number, day?: number) => Promise<void>;
     setCurrentTopic: (slotId: string | number, clusterIdx: number | string, topicIdx?: number) => void;
-<<<<<<< HEAD
-=======
     updateTopicTitle: (slotId: string, clusterIdx: number, topicIdx: number, newTitle: string) => Promise<void>;
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
     resetTopics: (slotId?: string) => Promise<void>;
     clearAllTopics: () => void;
     getSlotData: (slotId: string) => { clusters: TopicCluster[]; currentClusterIndex: number; currentTopicIndex: number } | null;
@@ -195,8 +192,6 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
         set({ currentClusterIndex: clusterIdx, currentTopicIndex: topicIdx });
     },
 
-<<<<<<< HEAD
-=======
     updateTopicTitle: async (slotId: string, clusterIdx: number, topicIdx: number, newTitle: string) => {
         const { clusters } = get();
         const newClusters = [...clusters];
@@ -245,8 +240,6 @@ export const useTopicStore = create<TopicStoreState>()((set, get) => ({
             await updateTopicTitleInDB(targetRecord.id, newTitle);
         }
     },
-
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
     resetTopics: async (slotId?: string) => {
         const activeSlotId = slotId || useSlotStore.getState().activeSlotId;
         if (activeSlotId) {

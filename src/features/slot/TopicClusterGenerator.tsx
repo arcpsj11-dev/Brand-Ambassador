@@ -5,15 +5,10 @@ import {
     Target,
     Layers,
     RefreshCw,
-<<<<<<< HEAD
-    CheckCircle2,
-    ArrowRight
-=======
     RotateCcw,
     CheckCircle2,
     ArrowRight,
     Pencil
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
 } from 'lucide-react';
 import { useSlotStore } from '../../store/useSlotStore';
 import { geminiReasoningService } from '../../services/geminiService';
@@ -51,12 +46,9 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
 
     const [keyword, setKeyword] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-<<<<<<< HEAD
-=======
     const [regeneratingIndex, setRegeneratingIndex] = useState<{ cIdx: number, sIdx: number } | null>(null);
     const [editingIndex, setEditingIndex] = useState<{ cIdx: number, sIdx: number } | null>(null);
     const [editValue, setEditValue] = useState('');
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
     // Remove local preview state, rely on store (or use local just for confirmation)
     const [previewClusters, setPreviewClusters] = useState<any[] | null>(null);
 
@@ -128,8 +120,6 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
         setKeyword('');
     };
 
-<<<<<<< HEAD
-=======
     const handleEditStart = (cIdx: number, sIdx: number, currentTitle: string) => {
         setEditingIndex({ cIdx, sIdx });
         setEditValue(currentTitle);
@@ -156,8 +146,6 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
             setRegeneratingIndex(null);
         }
     };
-
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
     const handleReset = async (e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
 
@@ -316,31 +304,16 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
 
                                             // Note: 'sat' here is a topic object.
                                             const isDone = sat.isPublished;
-<<<<<<< HEAD
-                                            // Active if: (This Cluster is Current) AND (This Topic Index is Current)
-                                            // Satellites index in 'topics' array: 1 + sIdx
-                                            // Because 0 is pillar.
-                                            const topicRealIndex = 1 + sIdx;
-                                            const isActive = !isPreview && (cIdx === currentClusterIndex && topicRealIndex === currentTopicIndex);
-=======
                                             const topicRealIndex = 1 + sIdx;
                                             const isActive = !isPreview && (cIdx === currentClusterIndex && topicRealIndex === currentTopicIndex);
                                             const isEditingThis = editingIndex?.cIdx === cIdx && editingIndex?.sIdx === topicRealIndex;
                                             const isRegeneratingThis = regeneratingIndex?.cIdx === cIdx && regeneratingIndex?.sIdx === topicRealIndex;
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
 
                                             return (
                                                 <div key={sIdx}
                                                     onClick={() => {
-<<<<<<< HEAD
-                                                        // [SYNC] Set global current topic on click
-                                                        if (!isPreview) {
-                                                            setCurrentTopic(cIdx, topicRealIndex);
-                                                            // Also update Slot Store visual (optional, but good for consistency)
-=======
                                                         if (!isPreview && !isEditingThis) {
                                                             setCurrentTopic(cIdx, topicRealIndex);
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                                                             updateSlot(slotId, {
                                                                 currentCluster: {
                                                                     ...slot.currentCluster,
@@ -351,31 +324,6 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                                                     }}
                                                     className={`p-3 rounded-lg border transition-all flex items-start gap-3 cursor-pointer relative group/item
                                                         ${isDone
-<<<<<<< HEAD
-                                                            ? 'bg-brand-primary/20 border-brand-primary/50' // Done
-                                                            : isActive
-                                                                ? 'bg-white/10 border-brand-primary shadow-neon shadow-brand-primary/20 scale-[1.02] z-10' // Active
-                                                                : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10' // Pending
-                                                        }
-                                                    `}
-                                                >
-                                                    <span className={`font-mono font-bold text-xs ${isDone ? 'text-brand-primary' : 'text-gray-600'}`}>
-                                                        {isDone ? <CheckCircle2 size={14} /> : String(sIdx + 1).padStart(2, '0')}
-                                                    </span>
-                                                    <p className={`text-xs font-bold ${isDone ? 'text-white line-through opacity-50' : isActive ? 'text-white' : 'text-gray-300'}`}>
-                                                        {sat.title}
-                                                    </p>
-
-                                                    {/* Active Badge */}
-                                                    {isActive && <div className="ml-auto text-[8px] bg-brand-primary text-black px-1.5 rounded font-black uppercase">Next</div>}
-
-                                                    {/* Hover Badge (Click to Select) */}
-                                                    {!isActive && !isDone && !isPreview && (
-                                                        <div className="absolute right-3 top-3 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                            <span className="text-[9px] bg-white text-black px-1.5 py-0.5 rounded font-bold uppercase">Select</span>
-                                                        </div>
-                                                    )}
-=======
                                                             ? 'bg-brand-primary/20 border-brand-primary/50'
                                                             : isActive
                                                                 ? 'bg-white/10 border-brand-primary shadow-neon shadow-brand-primary/20 scale-[1.02] z-10'
@@ -439,7 +387,6 @@ export const TopicClusterGenerator: React.FC<TopicClusterGeneratorProps> = ({ sl
                                                     )}
 
                                                     {isActive && !isEditingThis && <div className="ml-auto text-[8px] bg-brand-primary text-black px-1.5 rounded font-black uppercase shrink-0">Next</div>}
->>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
                                                 </div>
                                             );
                                         })}
