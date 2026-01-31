@@ -1,0 +1,24 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Proxy /api/naver requests to Naver Open API
+[[redirects]]
+  from = "/api/naver/*"
+  to = "https://openapi.naver.com/*"
+  status = 200
+  force = true
+  headers = {X-From = "Netlify Proxy"}
+
+# Proxy /api/rss requests to Naver RSS
+[[redirects]]
+  from = "/api/rss/*"
+  to = "https://rss.blog.naver.com/*"
+  status = 200
+  force = true
+
+# Handle SPA routing (redirect all other 404s to index.html)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

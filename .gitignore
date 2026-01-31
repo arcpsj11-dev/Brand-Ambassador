@@ -1,0 +1,45 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.env
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+<<<<<<< HEAD
+*.sw?
+=======
+>>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)
+
+# Workspace tools
+temp_tools/
+brain/
+.vercel/
+<<<<<<< HEAD
+node-v*/
+*.log
+build_errors.txt
+build_full_log.txt
+build_log*.txt
+debug_build_log.txt
+final_build_log.txt
+full_build_log.txt
+=======
+
+>>>>>>> 0cca739 (feat: integrate detailed medical prompts and update content archive persistence)

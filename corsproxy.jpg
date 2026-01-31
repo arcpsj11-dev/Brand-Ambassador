@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": 403,
+    "message": "Server-side requests are not allowed. If you think this is a mistake, please contact us at support@corsproxy.io"
+  }
+}
